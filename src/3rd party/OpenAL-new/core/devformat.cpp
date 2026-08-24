@@ -1,6 +1,8 @@
 
 #include "config.h"
 
+#include <cstdint>
+
 #include "devformat.h"
 
 

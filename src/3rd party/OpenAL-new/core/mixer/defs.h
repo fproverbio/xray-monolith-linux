@@ -2,6 +2,7 @@
 #define CORE_MIXER_DEFS_H
 
 #include <array>
+#include <cstdint>
 #include <stdlib.h>
 
 #include "alspan.h"

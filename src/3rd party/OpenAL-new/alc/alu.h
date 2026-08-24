@@ -2,6 +2,7 @@
 #define ALU_H
 
 #include <bitset>
+#include <cstdint>
 
 #include "aloptional.h"
 

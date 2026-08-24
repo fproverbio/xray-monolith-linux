@@ -1,9 +1,6 @@
-/* Define to the library version */
+/* Hand-written for the Linux/Vulkan port build - see config.h. */
 #define ALSOFT_VERSION "1.23.1"
-#define ALSOFT_VERSION_NUM 1,23,1,0
+#define ALSOFT_VERSION_NUM 0x010301
 
-/* Define the branch being built */
-#define ALSOFT_GIT_BRANCH "UNKNOWN"
-
-/* Define the hash of the head commit */
+#define ALSOFT_GIT_BRANCH "linux-vulkan-port"
 #define ALSOFT_GIT_COMMIT_HASH "unknown"

@@ -4,6 +4,7 @@
 #include "context.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <numeric>

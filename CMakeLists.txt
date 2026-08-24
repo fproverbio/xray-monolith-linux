@@ -27,4 +27,10 @@ include_directories(
   "${CMAKE_SOURCE_DIR}/sdk/include"
 )
 
+# Vendored 3rd-party libs that need their own build (not header-only,
+# not folded into another module's sources like LZO is inside xrCore).
+add_subdirectory(sdk/include/ogg/src)
+add_subdirectory(sdk/include/vorbis/lib)
+add_subdirectory("src/3rd party/OpenAL-new")
+
 add_subdirectory(src)

@@ -79,6 +79,6 @@ set(XRAY_ENABLE_WARNINGS
   -Wno-unused-parameter
   -Wno-switch
   -Wno-trigraphs
-  $<$<CXX_COMPILER_ID:GNU>:-Wno-class-memaccess>
+  $<$<AND:$<CXX_COMPILER_ID:GNU>,$<COMPILE_LANGUAGE:CXX>>:-Wno-class-memaccess>
 )
 add_compile_options(${XRAY_ENABLE_WARNINGS})

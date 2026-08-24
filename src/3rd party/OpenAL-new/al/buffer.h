@@ -2,6 +2,7 @@
 #define AL_BUFFER_H
 
 #include <atomic>
+#include <cstdint>
 
 #include "AL/al.h"
 

@@ -1,6 +1,8 @@
 
 #include "config.h"
 
+#include <cstdint>
+
 #include "fmt_traits.h"
 
 
