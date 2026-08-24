@@ -260,7 +260,11 @@ IC xr_string UTF8_to_CP1251(xr_string const& utf8)
 		int wchlen = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), utf8.size(), nullptr, 0);
 		if (wchlen > 0 && wchlen != 0xFFFD)
 		{
-			xr_vector<wchar_t> wbuf(wchlen);
+			// char16_t, not wchar_t: a real UTF-16 code unit is always 2
+			// bytes, but wchar_t is platform-defined (4 bytes on Linux) -
+			// using wchar_t here would silently misalign every buffer
+			// access below on Linux.
+			xr_vector<char16_t> wbuf(wchlen);
 			MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), utf8.size(), &wbuf[0], wchlen);
 			xr_vector<char> buf(wchlen);
 			WideCharToMultiByte(1251, 0, &wbuf[0], wchlen, &buf[0], wchlen, 0, 0);

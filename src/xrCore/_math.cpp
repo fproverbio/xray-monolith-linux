@@ -1,8 +1,13 @@
 #include "stdafx.h"
 #pragma hdrstop
 
+#ifdef _WIN32
 #include <process.h>
+#else
+#include <pthread.h>
+#endif
 
+#ifdef _WIN32
 // mmsystem.h
 #define MMNOSOUND
 #define MMNOMIDI
@@ -10,6 +15,7 @@
 #define MMNOMIXER
 #define MMNOJOY
 #include <mmsystem.h>
+#endif
 
 #include "profiler.h"
 
@@ -18,7 +24,12 @@ XRCORE_API Fmatrix Fidentity;
 XRCORE_API Dmatrix Didentity;
 XRCORE_API CRandom Random;
 
-#ifdef _M_AMD64
+// _M_AMD64 is MSVC-only; GCC/Clang signal the same thing via __x86_64__/
+// __amd64__. Matters here specifically: the #else branch below is 32-bit-
+// only MSVC-syntax inline asm (x87 FPU control word, dead weight on any
+// x64 build - see playground/xray-monolith-vulkan-port-notes.md section 5),
+// so without this GCC would silently take the wrong, unsupported branch.
+#if defined(_M_AMD64) || defined(__x86_64__) || defined(__amd64__)
 u16 getFPUsw() { return 0; }
 
 namespace FPU
@@ -139,7 +150,7 @@ void initialize()
 
 #endif //XRCORE_STATIC
 
-    ::Random.seed(u32(CPU::GetCLK() % (1i64 << 32i64)));
+    ::Random.seed(u32(CPU::GetCLK() % (1LL << 32LL)));
 }
 };
 #endif
@@ -239,8 +250,12 @@ void Detect()
 	a = 1000000.0;
 	clk_to_microsec = float(a / b);
 
-	// Ensure the OS timer resolution is set to 1ms globally for the engine
+#ifdef _WIN32
+	// Ensure the OS timer resolution is set to 1ms globally for the engine.
+	// Not needed on Linux: no equivalent coarse default timer tick to work
+	// around (CLOCK_MONOTONIC is already sub-millisecond).
 	timeBeginPeriod(1);
+#endif
 }
 };
 
@@ -324,6 +339,12 @@ void _initialize_cpu_thread()
 		_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 		if (_denormals_are_zero_supported)
 		{
+			// __try/__except here just defensively probes whether the CPU
+			// faults on this MXCSR bit; every x86-64 CPU worth targeting
+			// supports DAZ unconditionally, and setting an unsupported bit
+			// is masked by hardware rather than faulting - no SEH
+			// equivalent needed on Linux.
+#ifdef _MSC_VER
 			__try
 			{
 				_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
@@ -332,11 +353,15 @@ void _initialize_cpu_thread()
 			{
 				_denormals_are_zero_supported = FALSE;
 			}
+#else
+			_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+#endif
 		}
 	}
 }
 #endif
 // threading API
+#ifdef _WIN32
 #pragma pack(push,8)
 struct THREAD_NAME
 {
@@ -362,6 +387,15 @@ void thread_name(const char* name)
 	}
 }
 #pragma pack(pop)
+#else // !_WIN32
+// The MSVC version sets the debugger-visible thread name via a magic SEH
+// exception (0x406D1388) the debugger intercepts; pthreads has a real,
+// non-hacky equivalent for the same purpose.
+void thread_name(const char* name)
+{
+	pthread_setname_np(pthread_self(), name);
+}
+#endif
 
 struct THREAD_STARTUP
 {
@@ -370,10 +404,9 @@ struct THREAD_STARTUP
 	void* args;
 };
 
-void __cdecl thread_entry(void* _params)
+static void thread_startup_run(THREAD_STARTUP* startup)
 {
 	// initialize
-	THREAD_STARTUP* startup = (THREAD_STARTUP*)_params;
 	thread_name(startup->name);
 	thread_t* entry = startup->entry;
 	void* arglist = startup->args;
@@ -389,6 +422,19 @@ void __cdecl thread_entry(void* _params)
 	entry(arglist);
 }
 
+#ifdef _WIN32
+void __cdecl thread_entry(void* _params)
+{
+	thread_startup_run((THREAD_STARTUP*)_params);
+}
+#else
+static void* thread_entry(void* _params)
+{
+	thread_startup_run((THREAD_STARTUP*)_params);
+	return nullptr;
+}
+#endif
+
 void thread_spawn(thread_t* entry, const char* name, unsigned stack, void* arglist)
 {
 	Debug._initialize(false);
@@ -397,7 +443,18 @@ void thread_spawn(thread_t* entry, const char* name, unsigned stack, void* argli
 	startup->entry = entry;
 	startup->name = (char*)name;
 	startup->args = arglist;
+#ifdef _WIN32
 	_beginthread(thread_entry, stack, startup);
+#else
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	if (stack)
+		pthread_attr_setstacksize(&attr, stack);
+	pthread_t tid;
+	pthread_create(&tid, &attr, thread_entry, startup);
+	pthread_attr_destroy(&attr);
+	pthread_detach(tid);
+#endif
 }
 
 //void spline1(float t, Fvector* p, Fvector* ret)

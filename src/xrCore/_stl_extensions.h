@@ -192,7 +192,13 @@ public:
     void clear() { clear_not_free(); }
 #endif
 
-	const_reference operator[](size_type _Pos) const
+	// reference/const_reference are nested types of the template-dependent
+	// base (std::vector<T, allocator>) - need typename Base:: qualification
+	// for GCC to find them at instantiation time; MSVC's laxer two-phase
+	// lookup let the unqualified form slide (unlike the begin()/capacity()/
+	// etc member *function* calls below, which GCC only warns about under
+	// -fpermissive rather than hard-erroring on).
+	typename inherited::const_reference operator[](typename inherited::size_type _Pos) const
 	{
 		{
 			VERIFY2(_Pos < size(),
@@ -202,7 +208,7 @@ public:
 		return (*(begin() + _Pos));
 	}
 
-	reference operator[](size_type _Pos)
+	typename inherited::reference operator[](typename inherited::size_type _Pos)
 	{
 		{
 			VERIFY2(_Pos < size(),
@@ -240,11 +246,12 @@ public:
 template <typename T, typename allocator = xalloc<T>>
 class xr_deque : public std::deque<T, allocator>
 {
+	using inherited = std::deque<T, allocator>;
 public:
 	typedef typename allocator allocator_type;
 	typedef typename allocator_type::value_type value_type;
 	typedef typename allocator_type::size_type size_type;
-	u32 size() const { return (u32)__super::size(); }
+	u32 size() const { return (u32)inherited::size(); }
 };
 
 // stack
@@ -325,45 +332,57 @@ using xr_unordered_flat_set = std::unordered_set<T, Hasher, Traits, allocator>;
 template <typename T, typename allocator = xalloc<T>>
 class xr_list : public std::list<T, allocator>
 {
+	using inherited = std::list<T, allocator>;
 public:
-	u32 size() const { return (u32)__super::size(); }
+	u32 size() const { return (u32)inherited::size(); }
 };
 
 template <typename K, class P = std::less<K>, typename allocator = xalloc<K>>
 class xr_set : public std::set<K, P, allocator>
 {
+	using inherited = std::set<K, P, allocator>;
 public:
-	u32 size() const { return (u32)__super::size(); }
+	u32 size() const { return (u32)inherited::size(); }
 };
 
 template <typename K, class P = std::less<K>, typename allocator = xalloc<K>>
 class xr_multiset : public std::multiset<K, P, allocator>
 {
+	using inherited = std::multiset<K, P, allocator>;
 public:
-	u32 size() const { return (u32)__super::size(); }
+	u32 size() const { return (u32)inherited::size(); }
 };
 
 template <typename K, class V, class P = std::less<K>, typename allocator = xalloc<std::pair<const K, V>>>
 class xr_map : public std::map<K, V, P, allocator>
 {
+	using inherited = std::map<K, V, P, allocator>;
 public:
-	u32 size() const { return (u32)__super::size(); }
+	u32 size() const { return (u32)inherited::size(); }
 };
 
 template <typename K, class V, class P = std::less<K>, typename allocator = xalloc<std::pair<const K, V>>>
 class xr_multimap : public std::multimap<K, V, P, allocator>
 {
+	using inherited = std::multimap<K, V, P, allocator>;
 public:
-	u32 size() const { return (u32)__super::size(); }
+	u32 size() const { return (u32)inherited::size(); }
 };
 
-#ifdef STLPORT
+// STLPORT and stdext::hash_map (old pre-standard MSVC/Dinkumware STL
+// extensions) both have no GCC/Clang equivalent. xr_hash_map/xr_hash_set
+// have exactly one real consumer in xrCore (FS_impl.h's id2pos_container)
+// and the codebase already has a modern, portable hash-table
+// implementation two dozen lines up (USE_ROBINHOOD's xr_unordered_map/
+// xr_unordered_set) - alias to those on non-MSVC rather than adding a
+// third parallel hash-table implementation.
+#if defined(STLPORT) && defined(_MSC_VER)
 template <typename V, class _HashFcn = std::hash<V>, class _EqualKey = std::equal_to<V>, typename allocator = xalloc<V> > class xr_hash_set : public std::hash_set < V, _HashFcn, _EqualKey, allocator > { public: u32 size() const { return (u32)__super::size(); } };
 template <typename V, class _HashFcn = std::hash<V>, class _EqualKey = std::equal_to<V>, typename allocator = xalloc<V> > class xr_hash_multiset : public std::hash_multiset < V, _HashFcn, _EqualKey, allocator > { public: u32 size() const { return (u32)__super::size(); } };
 
 template <typename K, class V, class _HashFcn = std::hash<K>, class _EqualKey = std::equal_to<K>, typename allocator = xalloc<std::pair<K, V> > > class xr_hash_map : public std::hash_map < K, V, _HashFcn, _EqualKey, allocator > { public: u32 size() const { return (u32)__super::size(); } };
 template <typename K, class V, class _HashFcn = std::hash<K>, class _EqualKey = std::equal_to<K>, typename allocator = xalloc<std::pair<K, V> > > class xr_hash_multimap : public std::hash_multimap < K, V, _HashFcn, _EqualKey, allocator > { public: u32 size() const { return (u32)__super::size(); } };
-#else
+#elif defined(_MSC_VER)
 template <typename K, class V, class _Traits = stdext::hash_compare<K, std::less<K>>, typename allocator = xalloc<std::
 	          pair<const K, V>>>
 class xr_hash_map : public stdext::hash_map<K, V, _Traits, allocator>
@@ -371,7 +390,13 @@ class xr_hash_map : public stdext::hash_map<K, V, _Traits, allocator>
 public:
 	u32 size() const { return (u32)__super::size(); }
 };
-#endif // #ifdef STLPORT
+#else // GCC/Clang
+template <typename K, class V, class Hasher = xr_hash<K>>
+using xr_hash_map = xr_unordered_map<K, V, Hasher>;
+
+template <class T, class Hasher = xr_hash<T>>
+using xr_hash_set = xr_unordered_set<T, Hasher>;
+#endif
 
 #endif
 

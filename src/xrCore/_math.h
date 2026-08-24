@@ -2,6 +2,9 @@
 #define __XR_MATH_H__
 
 #include "cpuid.h"
+#if !defined(_MSC_VER) && (defined(__x86_64__) || defined(__i386__))
+#include <x86intrin.h> // __rdtsc()
+#endif
 
 namespace FPU
 {
@@ -50,6 +53,12 @@ IC u64 GetCLK(void)
 
 #ifdef M_BORLAND
 XRCORE_API u64 __fastcall GetCLK (void);
+#endif
+#if !defined(M_VISUAL) && !defined(M_BORLAND) // GCC/Clang
+IC u64 GetCLK(void)
+{
+	return __rdtsc();
+}
 #endif
 };
 

@@ -31,7 +31,10 @@ typedef int   BOOL;
 #define TRUE  1
 typedef unsigned char  BYTE;
 typedef unsigned short WORD;
-typedef unsigned long  DWORD;
+// DWORD already provided by win32_compat.h (as unsigned int, matching
+// real Win32 semantics) - this file's own typedef used unsigned long,
+// which conflicts (and would be wrong: DWORD must stay 32-bit, unsigned
+// long is 64-bit on Linux/LP64).
 typedef unsigned int   UINT;
 #endif /* defined(_WIN32_ENVIRONMENT_)  */
 

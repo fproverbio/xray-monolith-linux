@@ -62,6 +62,19 @@
 #endif
 #pragma warning(pop)
 
+#else // !_WIN32
+
+// windows.h transitively provided a huge surface (basic types, file I/O,
+// synchronization primitives, ...) that plenty of files in this codebase
+// rely on without their own explicit include - these three headers are
+// the portable replacement for that surface, real implementations not
+// stubs (see each file's own header comment, and
+// playground/xray-monolith-vulkan-port-notes.md section 14).
+#include "win32_compat.h"
+#include "posix_filemap.h"
+#include "posix_sync.h"
+#include "posix_lowio.h"
+
 #endif // _WIN32
 
 #endif

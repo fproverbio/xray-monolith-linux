@@ -3,11 +3,12 @@
 
 #ifndef _EDITOR
 
-#include "xrdebug.h"
+#include "xrDebug.h"
+#ifdef _WIN32
 #include "resource.h"
 #include "dbghelp.h"
-
 #include "dxerr.h"
+#endif
 
 #ifdef __BORLANDC__
 #include "d3d9.h"

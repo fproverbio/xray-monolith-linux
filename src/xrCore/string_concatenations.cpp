@@ -58,6 +58,7 @@ namespace xray
 				}
 			} // namespace strconcat_error
 
+#ifdef _MSC_VER
 			int stack_overflow_exception_filter(int exception_code)
 			{
 				if (exception_code == EXCEPTION_STACK_OVERFLOW)
@@ -84,6 +85,22 @@ namespace xray
 					_resetstkoflw();
 				}
 			}
+#else
+			// SEH (structured exception handling) has no Linux equivalent
+			// without sigaltstack+SIGSEGV-handler plumbing; this is purely
+			// a defensive pre-check (verify headroom before a stack-based
+			// concat buffer alloc, called from the STRCONCAT macro), not
+			// something anything's correctness depends on in the common
+			// case - a genuine stack overflow here now crashes normally
+			// instead of degrading gracefully, which is a real (if
+			// narrow) gap. Worth a real sigaltstack-based implementation
+			// later if it's ever hit in practice.
+			void check_stack_overflow(u32 stack_increment)
+			{
+				volatile void* p = _alloca(stack_increment);
+				(void)p;
+			}
+#endif
 
 			void string_tupples::error_process() const
 			{

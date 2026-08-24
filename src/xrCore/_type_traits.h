@@ -72,9 +72,12 @@ struct is_pm_classify<false>
 template <typename T>
 struct is_polymorphic
 {
+	// `template` disambiguator required: _detail is a template member of a
+	// template-dependent base, which needs explicit disambiguation under
+	// strict two-phase lookup (MSVC never enforced this).
 	enum
 	{
-		result = is_pm_classify<is_class<T>::result>::_detail<T>::result
+		result = is_pm_classify<is_class<T>::result>::template _detail<T>::result
 	};
 };
 

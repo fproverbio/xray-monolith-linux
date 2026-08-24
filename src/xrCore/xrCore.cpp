@@ -3,11 +3,15 @@
 #include "stdafx.h"
 #pragma hdrstop
 
+#ifdef _WIN32
 #include <mmsystem.h>
 #include <objbase.h>
+#endif
 #include "xrCore.h"
 
+#ifdef _MSC_VER
 #pragma comment(lib,"winmm.lib")
+#endif
 
 #ifdef DEBUG
 # include <malloc.h>

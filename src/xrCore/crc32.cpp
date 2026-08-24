@@ -1,5 +1,9 @@
 #include "stdafx.h"
 
+#ifndef _MSC_VER
+#include <nmmintrin.h> // _mm_crc32_u8/u16/u32/u64
+#endif
+
 #include <array>
 
 namespace
@@ -35,6 +39,16 @@ namespace
 
     static constexpr auto crc32_table = generate_crc32_lookup_table();
 
+    // The engine's SSE3 compile baseline doesn't include SSE4.2 (this
+    // function is only ever called after a runtime _CPU_FEATURE_SSE4_2
+    // check - see call site), so the CRC32 intrinsics below need their
+    // own target attribute to compile/inline at all; without it GCC
+    // rejects them outright ("target specific option mismatch") since
+    // they're always_inline in the system header at a target level this
+    // TU wasn't compiled with.
+#ifndef _MSC_VER
+    __attribute__((target("sse4.2")))
+#endif
     u32 crc32_sse42(const void* P, u32 len, u32 starting_crc = ~0u) noexcept
     {
         const u8* buffer = static_cast<const u8*>(P);

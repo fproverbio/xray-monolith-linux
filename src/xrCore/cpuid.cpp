@@ -2,7 +2,30 @@
 #pragma hdrstop
 
 #include "cpuid.h"
+#ifdef _MSC_VER
 #include <intrin.h>
+#else
+// __cpuid/__cpuidex are real MSVC intrinsics, not available via any
+// header on GCC/Clang - GCC's own <cpuid.h> exists but defines a macro
+// named __cpuid with a *different* calling convention (5 by-reference
+// args, not MSVC's int[4]+function_id), so it can't just be included
+// here without colliding. Implemented directly via the cpuid
+// instruction instead. Not PIC-safe (clobbers ebx directly) - fine for
+// this project's plain statically-linked executables; would need the
+// usual save/restore-ebx dance if this tree ever built as a PIE/shared lib.
+inline void __cpuid(int cpuInfo[4], int function_id)
+{
+	asm volatile("cpuid"
+	             : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3])
+	             : "a"(function_id), "c"(0));
+}
+inline void __cpuidex(int cpuInfo[4], int function_id, int subfunction_id)
+{
+	asm volatile("cpuid"
+	             : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3])
+	             : "a"(function_id), "c"(subfunction_id));
+}
+#endif
 
 #include <array>
 #include <bitset>

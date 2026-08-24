@@ -262,10 +262,14 @@ public:
 typedef _vector4<float> Fvector4;
 typedef _vector4<double> Dvector4;
 typedef _vector4<s32> Ivector4;
-#ifndef __BORLANDC__
+#if !defined(__BORLANDC__) && defined(_MSC_VER)
 typedef __declspec(align(16)) _vector4<float> Fvector4a;
 typedef __declspec(align(16)) _vector4<double> Dvector4a;
 typedef __declspec(align(16)) _vector4<s32> Ivector4a;
+#elif !defined(__BORLANDC__)
+typedef _vector4<float> Fvector4a __attribute__((aligned(16)));
+typedef _vector4<double> Dvector4a __attribute__((aligned(16)));
+typedef _vector4<s32> Ivector4a __attribute__((aligned(16)));
 #endif
 
 template <class T>

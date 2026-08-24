@@ -85,7 +85,11 @@ std::string timeInHMSMMM()
 }
 
 BOOL logTimestamps = FALSE;
-enum Console_mark;
+// Forward-declared, never actually defined anywhere in xrCore (used only
+// as an opaque tag type here) - standard C++ requires an explicit
+// underlying type on a forward-declared unscoped enum without a body,
+// MSVC let it slide without one.
+enum Console_mark : int;
 extern bool is_console_mark(Console_mark type);
 
 void AddOne(const char* split)

@@ -4,10 +4,14 @@
 #include "FS_internal.h"
 
 #pragma warning(disable:4995)
+#ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #include <fcntl.h>
 #include <sys\stat.h>
+#else
+#include "posix_lowio.h"
+#endif
 #pragma warning(default:4995)
 
 //typedef void DUMMY_STUFF (const void*,const u32&,void*);

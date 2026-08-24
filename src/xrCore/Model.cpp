@@ -4,6 +4,12 @@
  *  1999-2001                                                               *
  *  Contents: PPMII model description and encoding/decoding routines        *
  ****************************************************************************/
+// No explicit stdafx.h include in the original - this file relied
+// entirely on MSVC's forced precompiled-header injection (/Yu"stdafx.h"
+// in the .vcxproj), not on any #include line, unlike every other .cpp
+// in this module. Added explicitly since CMake/GCC has no equivalent
+// force-include mechanism configured.
+#include "stdafx.h"
 #include <string.h>
 #include "PPMd.h"
 #pragma hdrstop

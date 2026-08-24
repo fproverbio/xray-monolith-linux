@@ -5,9 +5,11 @@
 #include "stdafx.h"
 #pragma hdrstop
 
+#ifdef _WIN32
 #include "cderr.h"
 #include "commdlg.h"
 #include "vfw.h"
+#endif
 
 EFS_Utils* xr_EFS = NULL;
 //----------------------------------------------------
@@ -116,6 +118,13 @@ void MakeFilter(string1024& dest, LPCSTR info, LPCSTR ext)
 //------------------------------------------------------------------------------
 // start_flt_ext = -1-all 0..n-indices
 //------------------------------------------------------------------------------
+
+// Native Open/Save file-picker dialogs (Win32 comdlg32 API). PORT TODO:
+// no Linux implementation yet (would need GTK/Qt or an xdg-desktop-portal
+// call) - editor/tool-only functionality, not exercised by the runtime
+// game itself, so stubbed to fail cleanly rather than blocking xrCore's
+// build. See playground/xray-monolith-vulkan-port-notes.md section 14.
+#ifdef _WIN32
 
 // Vista uses this hook for old-style save dialog
 UINT_PTR CALLBACK OFNHookProcOldStyle(HWND, UINT, WPARAM, LPARAM)
@@ -284,6 +293,13 @@ bool EFS_Utils::GetSaveName(LPCSTR initial, string_path& buffer, LPCSTR offset, 
 	strlwr(buffer);
 	return bRes;
 }
+
+#else // !_WIN32
+
+bool EFS_Utils::GetOpenNameInternal(LPCSTR, LPSTR, int, bool, LPCSTR, int) { return false; }
+bool EFS_Utils::GetSaveName(LPCSTR, string_path&, LPCSTR, int) { return false; }
+
+#endif // _WIN32
 
 //----------------------------------------------------
 LPCSTR EFS_Utils::AppendFolderToName(LPSTR tex_name, u32 const tex_name_size, int depth, BOOL full_name)

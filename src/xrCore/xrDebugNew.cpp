@@ -1,11 +1,13 @@
 #include "stdafx.h"
 #pragma hdrstop
 
-#include "xrdebug.h"
+#include "xrDebug.h"
 #include "os_clipboard.h"
 
+#ifdef _WIN32
 #include <sal.h>
 #include <dxerr.h>
+#endif
 
 #pragma warning(push)
 #pragma warning(disable:4995)

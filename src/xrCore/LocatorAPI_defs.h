@@ -45,9 +45,17 @@ namespace std
 struct _finddata_t;
 };
 # define _FINDDATA_T std::_finddata_t
-#else
+#elif defined(_MSC_VER)
 struct _finddata64i32_t;
 # define _FINDDATA_T _finddata64i32_t
+#else
+// _finddata64i32_t is a real MSVC CRT type (the 64-bit-time_t variant of
+// _finddata_t), only ever forward-declared here and completed by <io.h>
+// on the real toolchain - on Linux that never happens, so this was
+// perpetually an incomplete type. Route to posix_findfile.h's complete
+// _finddata_t shim instead (already aliased as _FINDDATA_T there too;
+// this override just needs to come before that one loses to it).
+# define _FINDDATA_T _finddata_t
 #endif
 
 struct XRCORE_API FS_File

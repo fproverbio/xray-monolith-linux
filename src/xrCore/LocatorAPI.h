@@ -18,6 +18,7 @@
 #include "LocatorAPI_defs.h"
 
 class XRCORE_API CStreamReader;
+class CFS_PathNotificator;
 
 class XRCORE_API CLocatorAPI
 {
@@ -65,6 +66,14 @@ private:
 
 	DEFINE_MAP_PRED(LPCSTR, FS_Path*, PathMap, PathPairIt, pred_str);
 	PathMap pathes;
+
+	// Was defined in LocatorAPI_Notifications.cpp but never declared here -
+	// SetEventNotification/ClearEventNotification were consequently
+	// uncallable (not part of the class's public interface at all,
+	// pre-existing/pre-port). Completing the declaration to match what
+	// the .cpp already assumes, not changing any behavior - see
+	// playground/xray-monolith-vulkan-port-notes.md section 14.
+	CFS_PathNotificator* FThread = nullptr;
 
 	DEFINE_SET_PRED(file, files_set, files_it, file_pred);
 
@@ -137,6 +146,8 @@ public:
 	~CLocatorAPI();
 	void _initialize(u32 flags, LPCSTR target_folder = 0, LPCSTR fs_name = 0);
 	void _destroy();
+	void SetEventNotification();
+	void ClearEventNotification();
 
 	CStreamReader* rs_open(LPCSTR initial, LPCSTR N);
 	IReader* r_open(LPCSTR initial, LPCSTR N);

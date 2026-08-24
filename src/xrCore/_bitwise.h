@@ -2,6 +2,11 @@
 #define _BITWISE_
 #pragma once
 
+// Needs PI_DIV_2 (apx_acos below) - relied on implicit MSVC precompiled-
+// header include order before; safe despite the circularity (vector.h
+// includes this file too) since both have proper include guards.
+#include "vector.h"
+
 // float values defines
 #define fdSGN 0x080000000 // mask for sign bit
 #define fdMABS 0x07FFFFFFF // mask for absolute value (~sgn)

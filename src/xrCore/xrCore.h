@@ -110,8 +110,30 @@
 // inline control - redefine to use compiler's heuristics ONLY
 // it seems "IC" is misused in many places which cause code-bloat
 // ...and VC7.1 really don't miss opportunities for inline :)
-#ifdef _EDITOR
-# define __forceinline inline
+//
+// __forceinline/__declspec(noinline) are raw MSVC keywords/extensions -
+// previously only handled under _EDITOR (an SDK/tooling-only define, never
+// set for a normal engine build), so GCC/Clang saw the literal token
+// __forceinline with no meaning at all, corrupting every declaration using
+// ICF (i.e. most of the math library - the actual root cause behind a
+// large fraction of the errors this build hit). Defined for every non-MSVC
+// compiler now, not just _EDITOR.
+#ifndef _MSC_VER
+# define __forceinline __attribute__((always_inline)) inline
+// Raw __stdcall (distinct from the already-portable xr_stdcall macro -
+// see 3rd party/fastdelegate/fastdelegate.h) used directly in ~26 files.
+// x86-64 has only one calling convention, so this is a correct no-op
+// there; would need __attribute__((stdcall)) if this tree ever targeted
+// 32-bit x86.
+# define __stdcall
+# define __cdecl
+# define _cdecl // older alternate spelling MSVC also recognizes
+// __declspec(novtable)/__declspec(align(N))/etc - raw MSVC attribute
+// syntax GCC doesn't parse at all (not just an unknown identifier, an
+// actual syntax error - "struct __declspec ( novtable ) X" is invalid
+// grammar to GCC). A variadic macro discarding its argument is the
+// standard porting pattern.
+# define __declspec(x)
 #endif
 #define _inline inline
 #define __inline inline
@@ -119,8 +141,10 @@
 #define ICF __forceinline // !!! this should be used only in critical places found by PROFILER
 #ifdef _EDITOR
 # define ICN
-#else
+#elif defined(_MSC_VER)
 # define ICN __declspec (noinline)
+#else
+# define ICN __attribute__((noinline))
 #endif
 
 #define UNUSED(...) (void)(__VA_ARGS__)
@@ -203,7 +227,7 @@
 #include <set>
 #include <map>
 
-#ifndef _EDITOR
+#if !defined(_EDITOR) && defined(_MSC_VER)
 # include <hash_map>
 # include <hash_set>
 #endif
@@ -304,18 +328,19 @@ DEFINE_VECTOR(xr_rtoken, RTokenVec, RTokenVecIt);
 #include "log.h"
 #include "xr_trims.h"
 #include "xr_ini.h"
-#ifdef NO_FS_SCAN
-# include "ELocatorAPI.h"
-#else
-# include "LocatorAPI.h"
-#endif
+// ELocatorAPI.h (a lightweight no-filesystem-scan LocatorAPI variant)
+// doesn't exist anywhere in this repo - genuinely incomplete/abandoned
+// upstream, not something this port broke. NO_FS_SCAN only got defined
+// at all because XRCORE_STATIC now is (see CMakeLists.txt); the real,
+// complete LocatorAPI.h is what's actually needed regardless.
+#include "LocatorAPI.h"
 #include "FileSystem.h"
 #include "FTimer.h"
 #include <fastdelegate/fastdelegate.h>
 #include "_noncopyable.h"
 #include "intrusive_ptr.h"
 
-#include "net_utils.h"
+#include "NET_utils.h"
 
 // CRC32 functions
 XRCORE_API u32 crc32(const void* P, u32 len);

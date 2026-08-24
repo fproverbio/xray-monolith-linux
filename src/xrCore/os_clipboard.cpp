@@ -9,6 +9,28 @@
 #pragma hdrstop
 #include "os_clipboard.h"
 
+#ifndef _WIN32
+// Win32's clipboard API (OpenClipboard/GlobalAlloc/SetClipboardData/...)
+// has no equivalent in xrCore, and can't get one here: unlike everything
+// else fixed in this port pass, clipboard access is not just a different
+// OS API call - on X11 it requires owning a selection and running an
+// event loop answering SelectionRequest events, which means a live
+// display connection that doesn't exist in this foundational,
+// windowing-agnostic module. Real support belongs in the windowing layer
+// once it exists (xrEngine), most likely via SDL2's
+// SDL_SetClipboardText()/SDL_GetClipboardText() - both one-liners once
+// there's an SDL_Window to hang them off. Stubbed to no-op for now
+// rather than blocking xrCore's build - see
+// playground/xray-monolith-vulkan-port-notes.md section 14.
+void os_clipboard::copy_to_clipboard(LPCSTR) {}
+void os_clipboard::paste_from_clipboard(LPSTR buffer, u32 const& buffer_size)
+{
+	if (buffer && buffer_size > 0)
+		buffer[0] = 0;
+}
+void os_clipboard::update_clipboard(LPCSTR) {}
+#else
+
 void os_clipboard::copy_to_clipboard(LPCSTR buf)
 {
 	if (!OpenClipboard(0))
@@ -89,3 +111,5 @@ void os_clipboard::update_clipboard(LPCSTR string)
     xr_free (buffer);
 #endif // #ifdef _EDITOR
 }
+
+#endif // _WIN32

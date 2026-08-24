@@ -1,3 +1,13 @@
+// This file had no include guard at all before the port (worked by luck -
+// never got pulled in twice in the same TU under the original code).
+#pragma once
+
+// is_polymorphic<T>::result (below) is this codebase's own portable
+// implementation, already defined in _type_traits.h - no MSVC-specific
+// trick here, it was just relying on implicit MSVC precompiled-header
+// include order like everything else this port has hit.
+#include "_type_traits.h"
+
 #ifdef DEBUG_MEMORY_NAME
 // new(0)
 template <class T>

@@ -81,8 +81,13 @@ target_sources_grouped(
   xrstring.cpp
 )
 
+# XRCORE_STATIC: the original codebase already has this exact escape
+# hatch for a statically-linked xrCore (guards out DllMain and other
+# DLL-only code via #ifndef XRCORE_STATIC) - just needed to actually be
+# defined, since we build xrCore as a static library, not a DLL.
 target_compile_definitions(xrCore PRIVATE
   PURE_ALLOC
   _USRDLL
   XRCORE_EXPORTS
+  XRCORE_STATIC
 )

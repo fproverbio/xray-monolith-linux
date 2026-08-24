@@ -2,6 +2,11 @@
 #define xrDebugH
 #pragma once
 
+// Needs LPCSTR - included before vector.h (the file that actually pulls in
+// _types.h) in xrCore.h's own include order; relied on implicit MSVC
+// precompiled-header ordering before.
+#include "_types.h"
+
 typedef void crashhandler(void);
 typedef void on_dialog(bool before);
 

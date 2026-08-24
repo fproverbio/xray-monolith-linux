@@ -1,6 +1,8 @@
 #include "stdafx.h"
-#include <malloc.h>
 #include <errno.h>
+#include <malloc.h>
+
+#ifdef _WIN32
 
 XRCORE_API void vminfo(size_t* _free, size_t* reserved, size_t* committed)
 {
@@ -25,6 +27,36 @@ XRCORE_API void vminfo(size_t* _free, size_t* reserved, size_t* committed)
 	}
 }
 
+#else // !_WIN32
+
+// Windows' VirtualQuery-based free/reserved/committed split is a Windows-
+// specific memory model concept (address space can be "reserved" without
+// being "committed" to physical/swap backing) that Linux's overcommit
+// model doesn't have an equivalent three-way state for. Best-effort
+// mapping from /proc/self/status for this diagnostic-only function:
+// VmSize (total virtual address space) as "reserved", VmRSS (actually
+// resident pages) as "committed", "free" left at 0 (no Linux equivalent
+// of "reserved-but-unbacked" to report).
+XRCORE_API void vminfo(size_t* _free, size_t* reserved, size_t* committed)
+{
+	*_free = *reserved = *committed = 0;
+	FILE* f = fopen("/proc/self/status", "r");
+	if (!f)
+		return;
+	char line[256];
+	while (fgets(line, sizeof(line), f))
+	{
+		unsigned long kb = 0;
+		if (sscanf(line, "VmSize: %lu kB", &kb) == 1)
+			*reserved = static_cast<size_t>(kb) * 1024;
+		else if (sscanf(line, "VmRSS: %lu kB", &kb) == 1)
+			*committed = static_cast<size_t>(kb) * 1024;
+	}
+	fclose(f);
+}
+
+#endif // _WIN32
+
 XRCORE_API void log_vminfo()
 {
 	size_t w_free, w_reserved, w_committed;
@@ -39,6 +71,7 @@ XRCORE_API void log_vminfo()
 
 size_t xrMemory::mem_usage()
 {
+#ifdef _WIN32
 	_HEAPINFO hinfo = {};
 	int status;
 	size_t bytesUsed = 0;
@@ -64,4 +97,15 @@ size_t xrMemory::mem_usage()
 		break;
 	}
 	return bytesUsed;
+#else
+	// MSVC's _heapwalk iterates individual heap blocks to sum used bytes;
+	// glibc has no equivalent per-block walk API, but mallinfo2() gives
+	// the same aggregate total directly (uordblks = bytes in use by
+	// allocated chunks) without needing one. mallinfo2 (not the older,
+	// deprecated mallinfo) specifically because mallinfo's fields are
+	// `int` and silently overflow/wrap on multi-GB heaps, which a game
+	// engine can easily reach.
+	struct mallinfo2 mi = mallinfo2();
+	return static_cast<size_t>(mi.uordblks);
+#endif
 }

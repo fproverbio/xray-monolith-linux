@@ -4,9 +4,13 @@
 #include "stdafx.h"
 #pragma hdrstop
 
+#ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
 #include <sys\stat.h>
+#else
+#include "posix_lowio.h"
+#endif
 
 #define MODULE
 

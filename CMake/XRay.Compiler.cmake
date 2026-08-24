@@ -43,19 +43,31 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_compile_options(-Og -g)
 endif()
 
-# Preprocessor definitions Monolith's .vcxproj files set globally across
-# every module (see e.g. src/xrCore/xrCore.vcxproj). WIN32 is kept
-# deliberately for now: large parts of the tree still branch on it and
-# ripping it out is real per-module porting work (see notes), not
-# something to paper over at the top-level compiler module. This flag
-# only gets us "compiles", not "is actually a Linux-native code path" -
-# expect real WIN32-gated logic to need per-file attention as modules
-# come online.
+# NOT defining WIN32 globally (originally kept as a broad compatibility
+# measure - see notes section 14 history). Reverted: a repo-wide grep
+# confirms zero code in xrCore actually branches on the project's own
+# WIN32 macro (every fix in this port keys off the real compiler-native
+# _WIN32/_MSC_VER instead), and keeping it defined actively broke correct
+# third-party code - the vendored LZO library's own internal consistency
+# check (rt_lzodefs.h) reasonably assumes WIN32 implies LLP64 (32-bit
+# unsigned long), which is false on Linux/LP64, and correctly fired its
+# own "this should not happen" sanity error once fooled into thinking it
+# was targeting real Windows.
 add_compile_definitions(
-  WIN32
   $<$<CONFIG:Debug>:_DEBUG>
   $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
 )
+
+# This 2010s-era codebase leans on MSVC's historically lax template-body
+# checking (two-phase lookup violations in code paths that happen to never
+# get instantiated) and a handful of implicit-conversion patterns GCC
+# treats as hard errors by default. -fpermissive downgrades both classes
+# to warnings, matching what actually happened under MSVC (silently
+# ignored) rather than a new problem introduced by this port - see
+# playground/xray-monolith-vulkan-port-notes.md section 14. Worth
+# revisiting once the engine builds cleanly end to end, to separate real
+# latent bugs from genuinely-dead template code.
+add_compile_options(-fpermissive)
 
 set(XRAY_ENABLE_WARNINGS
   -Wall

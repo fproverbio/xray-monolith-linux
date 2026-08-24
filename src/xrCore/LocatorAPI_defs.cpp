@@ -3,10 +3,14 @@
 
 #include "LocatorAPI_defs.h"
 #pragma warning(disable:4995)
+#ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #include <fcntl.h>
 #include <sys\stat.h>
+#else
+#include "posix_findfile.h"
+#endif
 #pragma warning(default:4995)
 
 //////////////////////////////////////////////////////////////////////

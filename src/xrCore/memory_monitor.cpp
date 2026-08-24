@@ -2,14 +2,20 @@
 
 #ifdef USE_MEMORY_MONITOR
 # include <time.h>
+# ifdef _WIN32
 # include <direct.h>
+# endif
 
 #define STATIC
 //#define STATIC static
 
 // constants
 STATIC const u32 buffer_size = 512 * 1024;
+#ifdef _WIN32
 STATIC LPCSTR output_folder = "d:/memory_monitor_stats/";
+#else
+STATIC LPCSTR output_folder = "/tmp/memory_monitor_stats/";
+#endif
 STATIC LPCSTR output_extension = ".bin";
 
 // for internal use only
@@ -26,10 +32,12 @@ LPCSTR inline file_name()
     {
         _mkdir(output_folder);
 
-        __time64_t long_time;
-        _time64(&long_time);
+        // time_t is already 64-bit on 64-bit Linux - no separate "64"
+        // variant needed like MSVC's __time64_t/_time64/_localtime64.
+        time_t long_time;
+        time(&long_time);
         tm new_time;
-        new_time = *_localtime64(&long_time);
+        new_time = *localtime(&long_time);
         string256 file_name;
         strftime(file_name, sizeof(file_name), "%Y.%m.%d.%H.%M.%S", &new_time);
         strconcat(sizeof(file), file, output_folder, file_name, output_extension);
