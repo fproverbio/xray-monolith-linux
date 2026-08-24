@@ -4,3 +4,4 @@
 # ported - see playground/xray-monolith-vulkan-port-notes.md.
 add_subdirectory(xrCore)
 add_subdirectory(xrCDB)
+add_subdirectory(xrXMLParser)
