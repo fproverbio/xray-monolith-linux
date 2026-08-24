@@ -31,6 +31,7 @@ include_directories(
 # not folded into another module's sources like LZO is inside xrCore).
 add_subdirectory(sdk/include/ogg/src)
 add_subdirectory(sdk/include/vorbis/lib)
+add_subdirectory(sdk/include/theora/lib)
 add_subdirectory("src/3rd party/OpenAL-new")
 add_subdirectory("src/3rd party/luajit-2")
 add_subdirectory("src/3rd party/Vulkan")
