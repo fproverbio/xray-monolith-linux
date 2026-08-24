@@ -1,0 +1,74 @@
+Vendored Vulkan-Headers + volk - provenance
+=============================================
+
+Both libraries are pinned to tag vulkan-sdk-1.4.321.0, chosen to exactly
+match this machine's installed Vulkan runtime loader
+(/usr/lib/x86_64-linux-gnu/libvulkan.so.1, reported version 1.4.321).
+
+Vulkan-Headers
+--------------
+Upstream:  https://github.com/KhronosGroup/Vulkan-Headers
+Tag:       vulkan-sdk-1.4.321.0
+Commit:    2cd90f9d20df57eac214c148f3aed885372ddcfe
+Date:      2025-07-04 00:55:43 +0100
+Subject:   "Update for Vulkan-Docs 1.4.321"
+License:   Apache-2.0 OR MIT (see Vulkan-Headers/LICENSE.md and
+           Vulkan-Headers/LICENSES/)
+
+Only the include/ tree was vendored (include/vulkan/ + include/vk_video/,
+the latter pulled in unconditionally by vulkan_core.h for the video
+extension structs). Dropped from upstream: registry/ (registry XML +
+generator scripts), tests/, BUILD.gn, BUILD.md, Makefile.release,
+CONTRIBUTING.md, CODE_OF_CONDUCT.adoc, SECURITY.md, README.md, and
+upstream's own CMakeLists.txt (replaced by the hand-written one in this
+directory). Headers themselves are unmodified upstream source.
+
+volk
+----
+Upstream:  https://github.com/zeux/volk  (Arseny Kapoulkine - this is the
+           real canonical repo; verified by cloning and checking commit
+           history/README before vendoring)
+Tag:       vulkan-sdk-1.4.321.0
+Commit:    a8da8ef3368482b0ee9b0ec0c6079a16a89c6924
+Date:      2025-07-04 16:17:54 +0000
+Subject:   "Merge pull request #244 from zeux/update/321"
+License:   MIT (see volk/LICENSE.md)
+
+Only volk.h, volk.c and LICENSE.md were vendored (dropped: README.md,
+generate.py, cmake/, test/, upstream's own CMakeLists.txt). Files
+themselves are unmodified upstream source - no local patches.
+
+Why volk instead of linking -lvulkan directly
+----------------------------------------------
+This machine has no Vulkan dev headers under /usr/include, no
+pkg-config binary, and no unversioned libvulkan.so symlink (only the
+versioned libvulkan.so.1) - so a conventional find_package(Vulkan) or
+-lvulkan link cannot work here even though the runtime loader and Mesa
+drivers are installed and functional. volk sidesteps this entirely: it
+dlopen()s the loader at runtime (via CMAKE_DL_LIBS/libdl) and resolves
+every Vulkan function pointer dynamically, so no link-time dependency on
+libvulkan.so is needed at all. This is the standard, well-established
+solution to this exact problem and is what future Vulkan call sites in
+this port should use.
+
+volk usage requirements for future call sites
+-----------------------------------------------
+1. volkInitialize() must be called exactly once, before any other Vulkan
+   or volk API call (including vkCreateInstance). It dlopen()s the
+   Vulkan loader and resolves the global entry points
+   (vkGetInstanceProcAddr, vkCreateInstance, ...).
+2. After vkCreateInstance succeeds, call volkLoadInstance(instance) (or
+   volkLoadInstanceOnly(instance) if no device will be loaded through
+   this same volk state) so subsequent instance-level and
+   physical-device calls are resolved through pointers specialized for
+   that VkInstance.
+3. After vkCreateDevice succeeds, call volkLoadDevice(device). For best
+   performance with a single VkDevice, device-level calls (vkCmd*,
+   vkQueueSubmit, vkQueuePresentKHR, ...) should go through pointers
+   loaded directly for that device (volkLoadDevice does this) rather
+   than the instance-level trampolines, since the latter carry extra
+   dispatch overhead. If the engine ever needs to support multiple
+   VkDevice objects concurrently, use volkLoadDeviceTable(&table,
+   device) per device instead of the global volkLoadDevice, and dispatch
+   through the appropriate table - the global volkLoadDevice approach
+   only tracks one device's function pointers at a time.

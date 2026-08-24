@@ -33,6 +33,7 @@ add_subdirectory(sdk/include/ogg/src)
 add_subdirectory(sdk/include/vorbis/lib)
 add_subdirectory("src/3rd party/OpenAL-new")
 add_subdirectory("src/3rd party/luajit-2")
+add_subdirectory("src/3rd party/Vulkan")
 
 # luabind's own CMakeLists.txt (src/3rd party/luabind/) expects this to
 # select the LuaJIT link, and defaults BUILD_SHARED_LIBS to ON itself -
