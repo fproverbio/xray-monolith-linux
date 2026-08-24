@@ -22,6 +22,7 @@
 #include <iconv.h>
 #include <malloc.h>
 #include <map>
+#include <pwd.h>
 #include <sched.h>
 #include <string>
 #include <sys/stat.h>
@@ -37,12 +38,62 @@
 using BYTE = unsigned char;
 using WORD = unsigned short;
 using DWORD = unsigned int;
+#define CALLBACK // __stdcall calling-convention marker, no-op on x86-64 (single calling convention)
 using LONG = long;
 using ULONG = unsigned long;
+using BOOL = int;
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
 using UINT_PTR = uintptr_t;
 using DWORD_PTR = uintptr_t;
 using ULONG_PTR = uintptr_t;
+using INT_PTR = intptr_t;
 using PSTR = char*;
+using LPVOID = void*;
+
+#ifndef MAX_PATH
+#define MAX_PATH _MAX_PATH
+#endif
+
+// itoa: MSVC CRT integer-to-string with arbitrary radix (this codebase's
+// one call site uses base 16). No POSIX equivalent (only base-10 via
+// sprintf); real minimal implementation, not just base-10 special-cased.
+inline char* itoa(int value, char* buf, int radix)
+{
+	if (radix == 10)
+	{
+		std::sprintf(buf, "%d", value);
+		return buf;
+	}
+	unsigned int uvalue = static_cast<unsigned int>(value);
+	bool negative = false;
+	if (radix == 10 && value < 0)
+	{
+		negative = true;
+		uvalue = static_cast<unsigned int>(-value);
+	}
+	char tmp[34];
+	int i = 0;
+	if (uvalue == 0)
+		tmp[i++] = '0';
+	while (uvalue != 0)
+	{
+		int digit = uvalue % radix;
+		tmp[i++] = (digit < 10) ? static_cast<char>('0' + digit) : static_cast<char>('a' + digit - 10);
+		uvalue /= static_cast<unsigned int>(radix);
+	}
+	int j = 0;
+	if (negative)
+		buf[j++] = '-';
+	while (i > 0)
+		buf[j++] = tmp[--i];
+	buf[j] = '\0';
+	return buf;
+}
 
 // --- CPU topology (cpuid.cpp's hyperthreading/physical-core detection) ---
 // Real /proc/cpuinfo + sched_getaffinity-backed implementation, not a
@@ -298,6 +349,39 @@ inline void _tzset() { tzset(); }
 inline size_t _msize(void* ptr) { return malloc_usable_size(ptr); }
 inline void* _expand(void*, size_t) { return nullptr; }
 
+// MSVC's _aligned_* CRT family - real posix_memalign()-backed
+// implementation (distinct from this codebase's own xr_aligned_* pooled
+// allocator, which is a separate thing living in xrMemory_align.cpp).
+inline void* _aligned_malloc(size_t size, size_t alignment)
+{
+	if (alignment < sizeof(void*))
+		alignment = sizeof(void*); // posix_memalign requires >= sizeof(void*)
+	void* p = nullptr;
+	return (posix_memalign(&p, alignment, size) == 0) ? p : nullptr;
+}
+inline void _aligned_free(void* ptr) { free(ptr); }
+inline size_t _aligned_msize(void* ptr, size_t /*alignment*/, size_t /*offset*/) { return malloc_usable_size(ptr); }
+inline void* _aligned_realloc(void* ptr, size_t size, size_t alignment)
+{
+	if (!ptr)
+		return _aligned_malloc(size, alignment);
+	if (size == 0)
+	{
+		free(ptr);
+		return nullptr;
+	}
+	// No posix/glibc aligned-realloc - allocate fresh aligned block, copy,
+	// free old (same approach _aligned_realloc's own contract requires
+	// anyway: the returned pointer may differ from the input).
+	size_t old_size = malloc_usable_size(ptr);
+	void* p = _aligned_malloc(size, alignment);
+	if (!p)
+		return nullptr;
+	memcpy(p, ptr, (old_size < size) ? old_size : size);
+	free(ptr);
+	return p;
+}
+
 // Real debugger-output API on Windows (visible in the attached debugger's
 // output window); stderr is the direct portable equivalent for the same
 // "developer sees this regardless of the normal log" purpose.
@@ -319,6 +403,60 @@ inline int MessageBox(void* /*hwnd*/, const char* text, const char* caption, uns
 }
 
 inline int _utime(const char* path, const utimbuf* times) { return utime(path, times); }
+
+// --- System/user info (xrCore.cpp startup logging) ------------------------
+inline DWORD GetCurrentDirectory(DWORD bufLen, char* buf)
+{
+	if (!getcwd(buf, bufLen))
+		return 0;
+	return static_cast<DWORD>(std::strlen(buf));
+}
+
+inline BOOL GetUserName(char* buf, DWORD* size)
+{
+	const char* name = getlogin();
+	if (!name)
+	{
+		struct passwd* pw = getpwuid(getuid());
+		name = pw ? pw->pw_name : "user";
+	}
+	std::strncpy(buf, name, *size - 1);
+	buf[*size - 1] = '\0';
+	*size = static_cast<DWORD>(std::strlen(buf));
+	return TRUE;
+}
+
+inline BOOL GetComputerName(char* buf, DWORD* size)
+{
+	if (gethostname(buf, *size) != 0)
+		return FALSE;
+	*size = static_cast<DWORD>(std::strlen(buf));
+	return TRUE;
+}
+
+// GetProcessHeap() is only used here for a %08x debug-log line
+// ("Process heap 0x...") - no real Linux "process heap handle" concept
+// to report, a fixed placeholder value is harmless.
+inline void* GetProcessHeap() { return reinterpret_cast<void*>(1); }
+
+// GetModuleHandle/GetModuleFileName - this codebase's one call site
+// (xrCore.cpp startup) uses these together purely to find the running
+// executable's own path (GetModuleHandle(MODULE_NAME) - the main module
+// - immediately fed into GetModuleFileName). No real "loaded module"
+// concept to model for a statically-linked Linux binary; /proc/self/exe
+// gives the real, correct answer directly.
+inline void* GetModuleHandle(const char*) { return nullptr; }
+inline DWORD GetModuleFileName(void*, char* buf, DWORD size)
+{
+	ssize_t n = readlink("/proc/self/exe", buf, size - 1);
+	if (n < 0)
+	{
+		buf[0] = '\0';
+		return 0;
+	}
+	buf[n] = '\0';
+	return static_cast<DWORD>(n);
+}
 
 // GetCommandLine() - real /proc/self/cmdline-backed implementation (used
 // pervasively for -flag style engine startup switches: strstr(GetCommandLine(),
@@ -348,6 +486,17 @@ inline const char* GetCommandLine()
 
 // IsDebuggerPresent() - real /proc/self/status-backed implementation
 // (TracerPid is nonzero when attached to a debugger/strace/ptrace).
+#ifndef _WIN32
+inline void DebugBreak()
+{
+#if defined(__x86_64__) || defined(__i386__)
+	__asm__ __volatile__("int3");
+#else
+	__builtin_trap();
+#endif
+}
+#endif
+
 inline bool IsDebuggerPresent()
 {
 	FILE* f = std::fopen("/proc/self/status", "r");
@@ -385,6 +534,8 @@ inline int _fpclass(double) { return 0; }
 #define _PC_64 3
 #define _RC_CHOP 1
 #define _RC_NEAR 2
+#define MCW_EM 0
+#define _MCW_EM 0
 #define _FPCLASS_SNAN 0
 #define _FPCLASS_QNAN 1
 #define _FPCLASS_NINF 2

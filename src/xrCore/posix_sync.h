@@ -14,13 +14,9 @@
 #include <unistd.h>
 #include <vector>
 
-using BOOL = int;
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE 0
-#endif
+// BOOL/TRUE/FALSE now defined in win32_compat.h (included before this
+// file) - moved there because win32_compat.h's own functions started
+// needing BOOL too, and it's the first-loaded of the compat headers.
 
 // --- CRITICAL_SECTION (used via xrCriticalSection, xrSyncronize.cpp) ---
 // Win32 critical sections are recursive by default - match that.

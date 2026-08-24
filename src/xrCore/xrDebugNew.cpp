@@ -12,7 +12,9 @@
 #pragma warning(push)
 #pragma warning(disable:4995)
 #include <malloc.h>
+#ifdef _WIN32
 #include <direct.h>
+#endif
 #pragma warning(pop)
 
 #include "../build_config_defines.h"
@@ -45,7 +47,9 @@ static BOOL bException = FALSE;
 # endif
 #endif
 
+#ifdef _WIN32
 #include <dbghelp.h> // MiniDump flags
+#endif
 
 #ifdef USE_BUG_TRAP
 # include <BugTrap/source/BugTrap.h> // for BugTrap functionality
@@ -56,7 +60,9 @@ static BOOL bException = FALSE;
 #endif
 #endif // USE_BUG_TRAP
 
+#ifdef _WIN32
 #include <new.h> // for _set_new_mode
+#endif
 #include <signal.h> // for signals
 
 #ifdef NO_BUG_TRAP //DEBUG
@@ -84,8 +90,9 @@ namespace crash_saving
 }
 
 // demonized: print stack trace
-#include <Windows.h>
 #include "mezz_stringbuffer.h"
+#ifdef _WIN32
+#include <Windows.h>
 #include "../3rd party/stackwalker/include/StackWalker.h"
 class xr_StackWalker : public StackWalker {
 public:
@@ -93,7 +100,7 @@ public:
         | StackWalker::StackWalkOptions::RetrieveLine
         | StackWalker::StackWalkOptions::SymBuildPath
     ) {}
-protected:    
+protected:
     virtual void OnOutput(LPCSTR szText) {
         std::string s = szText;
         std::string sLowered = s;
@@ -109,6 +116,50 @@ protected:
         Msg("%s", s.c_str());
     }
 };
+#else
+// Real backtrace()/__cxa_demangle-based implementation, not a stub -
+// matches the plan from playground/xray-monolith-vulkan-port-notes.md
+// section 10e/15 (same pattern OpenXRay's own StackTrace.cpp uses on
+// non-Windows). Same public interface (ShowCallstack()) as the Windows
+// StackWalker-based class above, so LogStackTrace() below needs no
+// changes either way.
+#include <cxxabi.h>
+#include <execinfo.h>
+class xr_StackWalker
+{
+public:
+	void ShowCallstack()
+	{
+		void* frames[64];
+		int count = backtrace(frames, 64);
+		char** symbols = backtrace_symbols(frames, count);
+		if (!symbols)
+			return;
+		for (int i = 0; i < count; ++i)
+		{
+			std::string line = symbols[i];
+			// symbols[i] is typically "module(mangled_name+0xoffset) [0xaddr]" -
+			// extract and demangle the C++ symbol name if present.
+			size_t open = line.find('(');
+			size_t plus = line.find('+', open);
+			if (open != std::string::npos && plus != std::string::npos && plus > open + 1)
+			{
+				std::string mangled = line.substr(open + 1, plus - open - 1);
+				int status = 0;
+				char* demangled = abi::__cxa_demangle(mangled.c_str(), nullptr, nullptr, &status);
+				if (status == 0 && demangled)
+				{
+					Msg("%s%s", line.substr(0, open + 1).c_str(), demangled);
+					free(demangled);
+					continue;
+				}
+			}
+			Msg("%s", line.c_str());
+		}
+		free(symbols);
+	}
+};
+#endif
 extern void printLuaStack();
 void LogStackTrace(LPCSTR header = nullptr, bool printStack = false)
 {
@@ -241,10 +292,25 @@ void xrDebug::gather_info(const char* expression, const char* description, const
 void xrDebug::do_exit(const std::string& message)
 {
 	FlushLog();
+#ifdef _WIN32
 	MessageBox(NULL, message.c_str(), "Error", MB_OK | MB_ICONERROR | MB_SYSTEMMODAL);
 	TerminateProcess(GetCurrentProcess(), 1);
+#else
+	std::fprintf(stderr, "[Error] %s\n", message.c_str());
+	std::exit(1);
+#endif
 }
 
+// The entire dual-implementation block below (NO_BUG_TRAP simplified
+// path vs. the full dialog-driven path) is Win32 MessageBox/dialog-result
+// driven with no portable equivalent (see os_clipboard.cpp/notes section
+// 14/15 for the same "needs a real GUI toolkit, doesn't belong in
+// xrCore" reasoning) - guarded behind _WIN32 wholesale rather than
+// per-branch, with a single portable fallback that reuses gather_info()
+// (already fully portable, does the real work: formatting, logging,
+// stack trace, clipboard) and then aborts, matching every dialog path's
+// ultimate "terminate" outcome.
+#ifdef _WIN32
 #ifdef NO_BUG_TRAP
 //AVO: simplified function
 void xrDebug::backend(const char* expression, const char* description, const char* argument0, const char* argument1,
@@ -384,24 +450,57 @@ void xrDebug::backend(const char* expression, const char* description, const cha
 
     CS.Leave();
 }
-#endif
+#endif // NO_BUG_TRAP
+#else // !_WIN32
+void xrDebug::backend(const char* expression, const char* description, const char* argument0, const char* argument1,
+                      const char* file, int line, const char* function, bool& ignore_always)
+{
+	static xrCriticalSection CS;
+	CS.Enter();
+
+	string4096 assertion_info;
+	gather_info(expression, description, argument0, argument1, file, line, function, assertion_info,
+	            sizeof(assertion_info));
+
+	if (handler)
+		handler();
+
+	FlushLog();
+
+	if (IsDebuggerPresent())
+		DebugBreak();
+
+	(void)ignore_always;
+	CS.Leave();
+	std::abort();
+}
+#endif // _WIN32
 
 LPCSTR xrDebug::error2string(long code)
 {
 	char* result = 0;
 	static string1024 desc_storage;
 
+#ifdef _WIN32
 #ifdef _M_AMD64
 #else
 	WCHAR err_result[1024];
     DXGetErrorDescription(code,err_result,sizeof(err_result));
 	wcstombs(result, err_result, sizeof(err_result));
 #endif
+#else
+	// `code` is a GetLastError()-family value in this port (== errno, see
+	// win32_compat.h) - strerror() is the direct portable equivalent.
+	xr_strcpy(desc_storage, strerror(static_cast<int>(code)));
+	result = desc_storage;
+#endif
+#ifdef _WIN32
 	if (0 == result)
 	{
 		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, code, 0, desc_storage, sizeof(desc_storage) - 1, 0);
 		result = desc_storage;
 	}
+#endif
 	return result;
 }
 
@@ -647,14 +746,16 @@ void SetupExceptionHandler(const bool& dedicated)
 }
 #endif //-USE_BUG_TRAP
 
+#ifdef _WIN32
 //extern void BuildStackTrace(struct _EXCEPTION_POINTERS* pExceptionInfo);
 typedef LONG WINAPI UnhandledExceptionFilterType(struct _EXCEPTION_POINTERS* pExceptionInfo);
 typedef LONG (__stdcall* PFNCHFILTFN)(EXCEPTION_POINTERS* pExPtrs);
 extern "C" BOOL __stdcall SetCrashHandlerFilter(PFNCHFILTFN pFn);
 
 static UnhandledExceptionFilterType* previous_filter = 0;
+#endif
 
-#ifdef USE_OWN_MINI_DUMP
+#if defined(USE_OWN_MINI_DUMP) && defined(_WIN32)
 typedef BOOL (WINAPI* MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
     CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
     CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
@@ -768,6 +869,7 @@ void save_mini_dump (_EXCEPTION_POINTERS* pExceptionInfo)
 }
 #endif //-USE_OWN_MINI_DUMP
 
+#ifdef _WIN32
 void format_message(LPSTR buffer, const u32& buffer_size)
 {
 	LPVOID message;
@@ -794,7 +896,7 @@ void format_message(LPSTR buffer, const u32& buffer_size)
 	LocalFree(message);
 }
 
-#ifndef _EDITOR
+#if !defined(_EDITOR) && defined(_WIN32)
 #include <errorrep.h>
 #pragma comment( lib, "faultrep.lib" )
 #endif //-!_EDITOR
@@ -966,6 +1068,7 @@ LONG WINAPI UnhandledFilter(_EXCEPTION_POINTERS* pExceptionInfo)
     return (EXCEPTION_CONTINUE_SEARCH);
 }
 #endif //-NO_BUG_TRAP
+#endif // _WIN32
 
 //////////////////////////////////////////////////////////////////////
 #ifdef M_BORLAND
@@ -987,9 +1090,11 @@ void xrDebug::_initialize (const bool& dedicated)
     // ::SetUnhandledExceptionFilter (UnhandledFilter); // exception handler to all "unhandled" exceptions
 }
 #else
+#ifdef _MSC_VER
 typedef int (__cdecl* _PNH)(size_t);
 _CRTIMP int __cdecl _set_new_mode(int);
 //_CRTIMP _PNH __cdecl _set_new_handler(_PNH);
+#endif
 
 #ifdef LEGACY_CODE
 #ifndef USE_BUG_TRAP
@@ -1050,6 +1155,10 @@ static void handler_base(LPCSTR reason_string)
 	);
 }
 
+// _set_invalid_parameter_handler is an MSVC CRT-specific hook (no glibc
+// equivalent concept - invalid libc argument use is undefined behavior
+// on Linux, not a catchable event), so this whole handler is Windows-only.
+#ifdef _WIN32
 static void invalid_parameter_handler(
 	const wchar_t* expression,
 	const wchar_t* function,
@@ -1112,6 +1221,7 @@ static void invalid_parameter_handler(
 		ignore_always
 	);
 }
+#endif // _WIN32
 
 static void pure_call_handler()
 {
@@ -1158,15 +1268,20 @@ void debug_on_thread_spawn()
 	//std::set_terminate (_terminate);
 #endif // USE_BUG_TRAP
 
+#ifdef _WIN32
 	_set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
+#endif
 	signal(SIGABRT, abort_handler);
-	signal(SIGABRT_COMPAT, abort_handler);
+#ifdef _WIN32
+	signal(SIGABRT_COMPAT, abort_handler); // legacy Windows CRT signal alias, no POSIX equivalent
+#endif
 	signal(SIGFPE, floating_point_handler);
 	signal(SIGILL, illegal_instruction_handler);
 	signal(SIGINT, 0);
 	// signal (SIGSEGV, storage_access_handler);
 	signal(SIGTERM, termination_handler);
 
+#ifdef _WIN32
 	_set_invalid_parameter_handler(&invalid_parameter_handler);
 
 	_set_new_mode(1);
@@ -1174,6 +1289,13 @@ void debug_on_thread_spawn()
 	// std::set_new_handler (&std_out_of_memory_handler);
 
 	_set_purecall_handler(&pure_call_handler);
+#else
+	// _set_new_handler/_set_purecall_handler are MSVC CRT-specific hooks;
+	// std::set_new_handler is the real portable equivalent for OOM (libstdc++
+	// already calls std::terminate on a pure-virtual call by default, no
+	// hook needed to match pure_call_handler's behavior).
+	std::set_new_handler([]() { out_of_memory_handler(0); });
+#endif
 
 #if 0// should be if we use exceptions
     std::set_unexpected(_terminate);
@@ -1191,7 +1313,9 @@ void xrDebug::_initialize(const bool& dedicated)
 #ifdef USE_BUG_TRAP
     SetupExceptionHandler(is_dedicated);
 #endif // USE_BUG_TRAP
+#ifdef _WIN32
 	previous_filter = ::SetUnhandledExceptionFilter(UnhandledFilter); // exception handler to all "unhandled" exceptions
+#endif
 
 #if 0
     struct foo

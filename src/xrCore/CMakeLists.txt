@@ -64,7 +64,13 @@ target_sources_grouped(
   stream_reader.cpp
   string_concatenations.cpp
   xrCore.cpp
-  xrDebug.cpp
+  # xrDebug.cpp intentionally excluded: the original .vcxproj marks it
+  # <ExcludedFromBuild>true</ExcludedFromBuild> for every real config
+  # (Release/Verified/ProfiledDX11/Release-AVX), only ever built for
+  # Debug. xrDebugNew.cpp (no exclusion, always built) defines the exact
+  # same xrDebug:: member functions - both files can't be compiled
+  # together (ODR violation). xrDebugNew.cpp is the actually-shipped
+  # implementation, so that's what gets ported, not xrDebug.cpp.
   xrDebugNew.cpp
   xrMemory.cpp
   xrMemory_POOL.cpp

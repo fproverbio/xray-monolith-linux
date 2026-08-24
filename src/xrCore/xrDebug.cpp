@@ -36,6 +36,7 @@ static const char* dlgExpr = NULL;
 static const char* dlgFile = NULL;
 static char dlgLine[16];
 
+#ifdef _WIN32
 static INT_PTR CALLBACK DialogProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 {
 	switch (msg)
@@ -76,6 +77,7 @@ static INT_PTR CALLBACK DialogProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 	}
 	return TRUE;
 }
+#endif // _WIN32
 
 void xrDebug::backend(const char* reason, const char* expression, const char* argument0, const char* argument1,
                       const char* file, int line, const char* function, bool& ignore_always)
@@ -94,9 +96,9 @@ void xrDebug::backend(const char* reason, const char* expression, const char* ar
 	if (IsDebuggerPresent())
 		DebugBreak();
 
+#ifdef _WIN32
 	// Call the dialog
 	dlgExpr = reason;
-	xr_sprintf()
 	dlgFile = file;
 	xr_sprintf(dlgLine, "%d", line);
 	INT_PTR res = -1;
@@ -122,6 +124,15 @@ void xrDebug::backend(const char* reason, const char* expression, const char* ar
 		DEBUG_INVOKE;
 		break;
 	}
+#else
+	// No interactive Abort/Retry/Ignore dialog on Linux (would need a real
+	// GUI toolkit - doesn't belong in xrCore, see notes section 14/15 for
+	// the os_clipboard/native-file-dialog precedent for the same
+	// reasoning). Behavior matches the dialog's default "Stop" action:
+	// log (already done above) and terminate.
+	(void)ignore_always;
+	std::abort();
+#endif
 
 	CS.Leave();
 }
@@ -131,6 +142,7 @@ LPCSTR xrDebug::error2string(long code)
 	LPCSTR result = 0;
 	static string1024 desc_storage;
 
+#ifdef _WIN32
 #ifdef _M_AMD64
 #else
     result = DXGetErrorDescription(code);
@@ -140,6 +152,13 @@ LPCSTR xrDebug::error2string(long code)
 		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, code, 0, desc_storage, sizeof(desc_storage) - 1, 0);
 		result = desc_storage;
 	}
+#else
+	// `code` is a GetLastError()-family value in this port, which we
+	// implement as `errno` (see win32_compat.h) - strerror() is the
+	// direct, correct portable equivalent to look it up.
+	xr_strcpy(desc_storage, strerror(static_cast<int>(code)));
+	result = desc_storage;
+#endif
 	return result;
 }
 
@@ -194,8 +213,13 @@ void __cdecl xrDebug::fatal(const char* file, int line, const char* function, co
 void xrDebug::do_exit(const std::string& message)
 {
 	FlushLog();
+#ifdef _WIN32
 	MessageBox(NULL, message.c_str(), "Error", MB_OK | MB_ICONERROR | MB_SYSTEMMODAL);
 	TerminateProcess(GetCurrentProcess(), 1);
+#else
+	std::fprintf(stderr, "[Error] %s\n", message.c_str());
+	std::exit(1);
+#endif
 }
 
 int __cdecl _out_of_memory(size_t size)
@@ -209,6 +233,7 @@ void __cdecl _terminate()
 	FATAL("Unexpected application termination");
 }
 
+#ifdef _WIN32
 // based on dbghelp.h
 typedef BOOL (WINAPI* MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
                                          CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
@@ -326,6 +351,7 @@ LONG WINAPI UnhandledFilter(struct _EXCEPTION_POINTERS* pExceptionInfo)
 
 	return retval;
 }
+#endif // _WIN32
 
 //////////////////////////////////////////////////////////////////////
 #ifdef M_BORLAND
@@ -351,7 +377,7 @@ void xrDebug::_initialize(const bool& dedicated)
     std::set_new_handler(def_new_handler); // exception-handler for 'out of memory' condition
     ::SetUnhandledExceptionFilter(UnhandledFilter); // exception handler to all "unhandled" exceptions
 }
-#else
+#elif defined(_MSC_VER)
 typedef int (__cdecl* _PNH)(size_t);
 _CRTIMP int __cdecl _set_new_mode(int);
 _CRTIMP _PNH __cdecl _set_new_handler(_PNH);
@@ -364,6 +390,25 @@ void xrDebug::_initialize(const bool& dedicated)
 	std::set_terminate(_terminate);
 	std::set_unexpected(_terminate);
 	::SetUnhandledExceptionFilter(UnhandledFilter); // exception handler to all "unhandled" exceptions
+}
+
+#else // GCC/Clang
+// _set_new_mode/_set_new_handler/_CRTIMP are MSVC-specific; std::set_new_handler
+// is the real, portable C++ standard equivalent (matches the M_BORLAND
+// branch above, which already used it). SetUnhandledExceptionFilter is
+// real Win32 SEH with no portable equivalent (would need a
+// sigaction()-based SIGSEGV/SIGABRT handler) - not called here, a real
+// implementation is future work if crash telemetry is needed.
+static void def_new_handler()
+{
+	FATAL("Out of memory.");
+}
+
+void xrDebug::_initialize(const bool& dedicated)
+{
+	handler = 0;
+	std::set_new_handler(def_new_handler);
+	std::set_terminate(_terminate);
 }
 
 #endif
