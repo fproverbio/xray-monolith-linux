@@ -5,6 +5,11 @@
 #ifndef fsH
 #define fsH
 
+// Relied on being transitively visible via stdafx.h include order under
+// MSVC's precompiled-header build; made explicit here since that ordering
+// isn't guaranteed once files compile standalone.
+#include "vector.h"
+
 #define CFS_CompressMark (1ul << 31ul)
 #define CFS_HeaderChunkID (666)
 

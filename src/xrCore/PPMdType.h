@@ -10,9 +10,14 @@
 
 #include <stdio.h>
 
+// Library already ships a POSIX branch (below) - just needed to pick it on
+// non-Windows instead of hardcoding _WIN32_ENVIRONMENT_.
+#ifdef _WIN32
 #define _WIN32_ENVIRONMENT_
+#else
+#define _POSIX_ENVIRONMENT_
+#endif
 //#define _DOS32_ENVIRONMENT_
-//#define _POSIX_ENVIRONMENT_
 //#define _UNKNOWN_ENVIRONMENT_
 #if defined(_WIN32_ENVIRONMENT_)+defined(_DOS32_ENVIRONMENT_)+defined(_POSIX_ENVIRONMENT_)+defined(_UNKNOWN_ENVIRONMENT_) != 1
 #error Only one environment must be defined

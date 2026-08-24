@@ -703,6 +703,11 @@ static inline void UpdateModel(PPM_CONTEXT* MinContext)
 		}
 	}
 
+	// Declared here (uninitialized) rather than at first use below, so the
+	// `goto RESTART_MODEL` jumps above don't cross a variable initialization
+	// - permissive under MSVC, an error under strict GCC/Clang.
+	PPM_CONTEXT* Successor;
+
 	if (!OrderFall && FSuccessor)
 	{
 		FoundState->Successor = CreateSuccessors(TRUE, p, MinContext);
@@ -714,7 +719,7 @@ static inline void UpdateModel(PPM_CONTEXT* MinContext)
 
 	*pText++ = FSymbol;
 
-	PPM_CONTEXT* Successor = (PPM_CONTEXT*)pText;
+	Successor = (PPM_CONTEXT*)pText;
 
 	if (pText >= UnitsStart)
 		goto RESTART_MODEL;

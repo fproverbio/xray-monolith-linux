@@ -3,10 +3,14 @@
 #pragma once
 
 #include "lzhuf.h"
-#include <io.h>
 #include <fcntl.h>
+#ifdef _WIN32
+#include <io.h>
 #include <sys\stat.h>
 #include <share.h>
+#else
+#include <sys/stat.h>
+#endif
 
 void* FileDownload(LPCSTR fn, u32* pdwSize = NULL);
 void FileCompress(const char* fn, const char* sign, void* data, u32 size);

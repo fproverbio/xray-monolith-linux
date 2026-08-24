@@ -30,14 +30,14 @@
 
 #if (defined(_DEBUG) || defined(MIXED) || defined(DEBUG)) && !defined(FORCE_NO_EXCEPTIONS)
 // "debug" or "mixed"
-#if !defined(_CPPUNWIND)
+#if defined(_MSC_VER) && !defined(_CPPUNWIND)
 #error Please enable exceptions...
 #endif
 #define _HAS_EXCEPTIONS 1 // STL
 #define XRAY_EXCEPTIONS 1 // XRAY
 #else
 // "release"
-#if defined(_CPPUNWIND) && !defined __BORLANDC__
+#if defined(_MSC_VER) && defined(_CPPUNWIND) && !defined __BORLANDC__
 #error Please disable exceptions...
 #endif
 #define _HAS_EXCEPTIONS 1 // STL
@@ -46,7 +46,12 @@
 #pragma warning(disable:4530)
 #endif
 
-#if !defined(_MT)
+// _CPPUNWIND/_MT are MSVC-only predefined macros (exceptions-enabled and
+// multithreaded-CRT respectively); GCC/Clang have no equivalent distinction
+// to check (exceptions are on unless -fno-exceptions, and there's no
+// separate MT/non-MT runtime split), so these sanity checks only apply
+// when actually building with MSVC.
+#if defined(_MSC_VER) && !defined(_MT)
 // multithreading disabled
 #error Please enable multi-threaded library...
 #endif
@@ -158,10 +163,15 @@
 #define _RC_CHOP RC_CHOP
 #define _RC_NEAR RC_NEAR
 #define _MCW_EM MCW_EM
-#else
+#elif defined(_MSC_VER)
 #define ALIGN(a) __declspec(align(a))
 #include <sys\utime.h>
 #define MODULE_NAME "xrCore.dll"
+#else // GCC/Clang on Linux
+#define ALIGN(a) alignas(a)
+#include <utime.h>
+#define _utimbuf utimbuf
+#define MODULE_NAME "xrCore.so"
 #endif
 
 

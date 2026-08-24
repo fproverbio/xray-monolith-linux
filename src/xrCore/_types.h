@@ -11,8 +11,9 @@ typedef unsigned short u16;
 typedef signed int s32;
 typedef unsigned int u32;
 
-typedef signed __int64 s64;
-typedef unsigned __int64 u64;
+// __int64 is an MSVC extended-integer keyword, no GCC/Clang equivalent.
+typedef signed long long s64;
+typedef unsigned long long u64;
 
 typedef float f32;
 typedef double f64;
@@ -65,6 +66,13 @@ typedef char string512[512];
 typedef char string1024[1024];
 typedef char string2048[2048];
 typedef char string4096[4096];
+
+// MSVC CRT macro, normally pulled in via windows.h; kept at the same value
+// here (not POSIX's larger PATH_MAX) to preserve existing buffer sizing
+// throughout the engine.
+#ifndef _MAX_PATH
+#define _MAX_PATH 260
+#endif
 
 typedef char string_path[2 * _MAX_PATH];
 

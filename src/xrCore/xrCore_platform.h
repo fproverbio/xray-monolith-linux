@@ -2,6 +2,15 @@
 #define XRCORE_PLATFORM_H
 #pragma once
 
+// _WIN32 is the compiler-native "actually targeting Windows" signal (set
+// by MSVC/MinGW/clang-cl), distinct from the project's own WIN32 macro
+// which several files still check as a general "this is the Windows-era
+// codebase" compatibility flag during the Linux port (see
+// playground/xray-monolith-vulkan-port-notes.md). Only _WIN32 gates the
+// actual windows.h pull below - on native GCC/Clang Linux builds this
+// whole block is skipped.
+#ifdef _WIN32
+
 #define VC_EXTRALEAN // Exclude rarely-used stuff from Windows headers
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #ifndef STRICT
@@ -52,5 +61,7 @@
 #include <windowsx.h>
 #endif
 #pragma warning(pop)
+
+#endif // _WIN32
 
 #endif
