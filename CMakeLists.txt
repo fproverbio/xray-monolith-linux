@@ -36,6 +36,30 @@ add_subdirectory("src/3rd party/OpenAL-new")
 add_subdirectory("src/3rd party/luajit-2")
 add_subdirectory("src/3rd party/Vulkan")
 
+# SDL2's own real upstream CMakeLists.txt (src/3rd party/SDL2/) is used
+# verbatim via add_subdirectory - configured entirely through cache
+# variables rather than a hand-written wrapper. Audio is off (OpenAL-Soft
+# already owns audio in this port). X11/OpenGL are left requested ON so
+# they activate for free once real dev headers exist on the build machine
+# (none are present right now - verified empirically, /usr/include/X11 is
+# an empty stub directory, no Xlib.h/GL/gl.h anywhere - SDL2's own CMake
+# gracefully resolves both to OFF rather than erroring, falling back to
+# the offscreen/dummy video drivers). Vulkan/OpenGLES support both build
+# clean regardless since SDL2 bundles its own Khronos headers for those
+# and loads the actual libraries via dlopen at runtime, same approach as
+# volk (src/3rd party/Vulkan) above.
+set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+set(SDL_STATIC ON CACHE BOOL "" FORCE)
+set(SDL_STATIC_PIC ON CACHE BOOL "" FORCE)
+set(SDL_TEST OFF CACHE BOOL "" FORCE)
+set(SDL_AUDIO OFF CACHE BOOL "" FORCE)
+set(SDL_X11 ON CACHE BOOL "" FORCE)
+set(SDL_WAYLAND OFF CACHE BOOL "" FORCE)
+set(SDL_VULKAN ON CACHE BOOL "" FORCE)
+set(SDL_OPENGL ON CACHE BOOL "" FORCE)
+set(SDL_OPENGLES ON CACHE BOOL "" FORCE)
+add_subdirectory("src/3rd party/SDL2")
+
 # luabind's own CMakeLists.txt (src/3rd party/luabind/) expects this to
 # select the LuaJIT link, and defaults BUILD_SHARED_LIBS to ON itself -
 # force it to match every other target in this tree (static).
