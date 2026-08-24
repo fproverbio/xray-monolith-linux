@@ -22,6 +22,7 @@
 #include <iconv.h>
 #include <malloc.h>
 #include <map>
+#include <pthread.h>
 #include <pwd.h>
 #include <sched.h>
 #include <string>
@@ -62,6 +63,22 @@ using ULONG_PTR = uintptr_t;
 using INT_PTR = intptr_t;
 using PSTR = char*;
 using LPVOID = void*;
+using PVOID = void*;
+
+// HRESULT - the small subset actually used in this tree (xrNetServer's
+// message-handler-shaped return codes, never real COM error codes since
+// nothing here talks to real COM anymore). Standard values/macros, not a
+// behavior shim.
+using HRESULT = long;
+#define S_OK ((HRESULT)0L)
+#define S_FALSE ((HRESULT)1L)
+#define FAILED(hr) (((HRESULT)(hr)) < 0)
+#define SUCCEEDED(hr) (((HRESULT)(hr)) >= 0)
+
+inline unsigned long GetCurrentThreadId()
+{
+	return static_cast<unsigned long>(pthread_self());
+}
 
 // WAVEFORMATEX - standard <mmsystem.h>/<mmreg.h> WAV format header
 // (xrSound stores one per loaded sound as SoundRender_Source::m_wformat).
@@ -238,6 +255,12 @@ inline bool GetLogicalProcessorInformation(SYSTEM_LOGICAL_PROCESSOR_INFORMATION*
 
 // --- CRT "secure" (_s suffix) functions ---------------------------------
 using errno_t = int;
+
+// Real sscanf_s takes an extra size_t per %s/%c conversion; every call
+// site in this tree only uses numeric conversions (%u/%d/etc, verified
+// per call site before adding), where sscanf_s and plain sscanf behave
+// identically - a straight alias, not a general-purpose sscanf_s shim.
+#define sscanf_s sscanf
 
 inline errno_t strncpy_s(char* dest, size_t destsz, const char* src, size_t count)
 {

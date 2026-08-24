@@ -1,6 +1,6 @@
 #pragma once
 
-#include "net_shared.h"
+#include "NET_Shared.h"
 #include "NET_Common.h"
 
 struct ip_address;
@@ -41,17 +41,20 @@ class XRNETSERVER_API
 protected:
 	struct HOST_NODE //deprecated...
 	{
-		DPN_APPLICATION_DESC dpAppDesc;
-		IDirectPlay8Address* pHostAddress;
+		// Was DPN_APPLICATION_DESC dpAppDesc; IDirectPlay8Address*
+		// pHostAddress; - real DirectPlay8 session-enumeration state,
+		// dropped with the rest of the DirectPlay8 transport.
 		shared_str dpSessionName;
 	};
 
 	GameDescriptionData m_game_description;
 	CTimer* device_timer;
 protected:
-	IDirectPlay8Client* NET;
-	IDirectPlay8Address* net_Address_device;
-	IDirectPlay8Address* net_Address_server;
+	// Was IDirectPlay8Client* NET; IDirectPlay8Address*
+	// net_Address_device/net_Address_server; - the real DirectPlay8
+	// client handle and address objects. Multiplayer dropped as a
+	// concept (notes §11/§12/§13/§18) - nothing constructs a real
+	// transport to hold here.
 
 	xrCriticalSection net_csEnumeration;
 	xr_vector<HOST_NODE> net_Hosts;

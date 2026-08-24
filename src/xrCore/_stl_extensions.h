@@ -248,7 +248,12 @@ class xr_deque : public std::deque<T, allocator>
 {
 	using inherited = std::deque<T, allocator>;
 public:
-	typedef typename allocator allocator_type;
+	// Was "typedef typename allocator allocator_type;" - `allocator` is
+	// the template parameter itself here (already a known type, not a
+	// dependent nested name), so `typename` doesn't apply; harmless
+	// under -fpermissive until xr_deque was actually instantiated for
+	// the first time by xrNetServer's INetQueue.
+	typedef allocator allocator_type;
 	typedef typename allocator_type::value_type value_type;
 	typedef typename allocator_type::size_type size_type;
 	u32 size() const { return (u32)inherited::size(); }

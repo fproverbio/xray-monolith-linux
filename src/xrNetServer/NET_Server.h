@@ -1,6 +1,6 @@
 #pragma once
 
-#include "net_shared.h"
+#include "NET_Shared.h"
 #include "ip_filter.h"
 #include "NET_Common.h"
 #include "NET_PlayersMonitor.h"
@@ -164,8 +164,9 @@ public:
 
 protected:
 	shared_str connect_options;
-	IDirectPlay8Server* NET;
-	IDirectPlay8Address* net_Address_device;
+	// Was IDirectPlay8Server* NET; IDirectPlay8Address* net_Address_device;
+	// - the real DirectPlay8 server handle and address object.
+	// Multiplayer dropped as a concept (notes §11/§12/§13/§18).
 
 	NET_Compressor net_Compressor;
 
@@ -195,7 +196,11 @@ protected:
 	IClient* ID_to_client(ClientID ID, bool ScanAll = false);
 
 	virtual IClient* new_client(SClientConnectData* cl_data) =0;
-	bool GetClientAddress(IDirectPlay8Address* pClientAddress, ip_address& Address, DWORD* pPort = NULL);
+	// Was bool GetClientAddress(IDirectPlay8Address* pClientAddress, ...)
+	// - real address extraction out of a DirectPlay8 address object.
+	// The public ClientID-keyed overload below now reads IClient's own
+	// stored m_cAddress/m_dwPort directly instead, which needs no
+	// DirectPlay8 object to begin with.
 
 	IBannedClient* GetBannedClient(const ip_address& Address);
 	void BannedList_Save();

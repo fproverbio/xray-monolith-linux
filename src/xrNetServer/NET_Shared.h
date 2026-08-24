@@ -11,12 +11,23 @@
 #endif
 #endif
 
-#include "../xrCore/net_utils.h"
-#include <dplay/dplay8.h>
-#include "net_messages.h"
+#include "../xrCore/NET_utils.h"
+
+// Were real DirectPlay8 send-flags bits (from <dplay/dplay8.h>), used
+// throughout this module (as default-parameter values and bitwise-
+// combined in NET_Common.cpp/NET_Messages.h) purely as opaque flag bits
+// - nothing inspects their real DirectPlay8 semantics anymore
+// (Send()/SendTo_LL() are stubs), they just need to stay distinct.
+// Must precede NET_Messages.h below, which uses them directly.
+#define DPNSEND_NOCOMPLETE 0x0002
+#define DPNSEND_NONSEQUENTIAL 0x0004
+#define DPNSEND_GUARANTEED 0x0008
+#define DPNSEND_PRIORITY_HIGH 0x0010
+
+#include "NET_Messages.h"
 
 
-#include "net_compressor.h"
+#include "NET_Compressor.h"
 
 XRNETSERVER_API extern ClientID BroadcastCID;
 
@@ -31,80 +42,12 @@ XRNETSERVER_API extern int psNET_ServerPending;
 
 XRNETSERVER_API extern BOOL psNET_direct_connect;
 
-// work around for GUID symbol conflicts
-#define XR_GUID(x) xrInternalGuid_ ## x
-
-// externs
-extern const GUID XR_GUID(CLSID_DirectPlay8Client);
-
-// {DA825E1B-6830-43d7-835D-0B5AD82956A2}
-extern const GUID XR_GUID(CLSID_DirectPlay8Server);
-
-// {286F484D-375E-4458-A272-B138E2F80A6A}
-extern const GUID XR_GUID(CLSID_DirectPlay8Peer);
-
-
-// CLSIDs added for DirectX 9
-
-// {FC47060E-6153-4b34-B975-8E4121EB7F3C}
-extern const GUID XR_GUID(CLSID_DirectPlay8ThreadPool);
-
-// {E4C1D9A2-CBF7-48bd-9A69-34A55E0D8941}
-extern const GUID XR_GUID(CLSID_DirectPlay8NATResolver);
-
-/****************************************************************************
- *
- * DirectPlay8 Interface IIDs
- *
- ****************************************************************************/
-
-typedef REFIID DP8REFIID;
-
-
-// {5102DACD-241B-11d3-AEA7-006097B01411}
-extern const GUID XR_GUID(IID_IDirectPlay8Client);
-
-// {5102DACE-241B-11d3-AEA7-006097B01411}
-extern const GUID XR_GUID(IID_IDirectPlay8Server);
-
-// {5102DACF-241B-11d3-AEA7-006097B01411}
-extern const GUID XR_GUID(IID_IDirectPlay8Peer);
-
-
-// IIDs added for DirectX 9
-
-// {0D22EE73-4A46-4a0d-89B2-045B4D666425}
-extern const GUID XR_GUID(IID_IDirectPlay8ThreadPool);
-
-// {A9E213F2-9A60-486f-BF3B-53408B6D1CBB}
-extern const GUID XR_GUID(IID_IDirectPlay8NATResolver);
-
-// {53934290-628D-11D2-AE0F-006097B01411}
-extern const GUID XR_GUID(CLSID_DP8SP_IPX);
-
-
-// {6D4A3650-628D-11D2-AE0F-006097B01411}
-extern const GUID XR_GUID(CLSID_DP8SP_MODEM);
-
-
-// {743B5D60-628D-11D2-AE0F-006097B01411}
-extern const GUID XR_GUID(CLSID_DP8SP_SERIAL);
-
-
-// {EBFE7BA0-628D-11D2-AE0F-006097B01411}
-extern const GUID XR_GUID(CLSID_DP8SP_TCPIP);
-
-
-// Service providers added for DirectX 9
-
-
-// {995513AF-3027-4b9a-956E-C772B3F78006}
-extern const GUID XR_GUID(CLSID_DP8SP_BLUETOOTH);
-
-extern const GUID XR_GUID(CLSID_DirectPlay8Address);
-
-extern const GUID XR_GUID(IID_IDirectPlay8Address);
-
+// DirectPlay8 CLSID/IID externs and DP8REFIID removed - this whole block
+// only ever existed to declare symbols for real DirectPlay8 COM calls
+// (CoCreateInstance(CLSID_DirectPlay8Client, ...) etc.) in NET_Client.cpp/
+// NET_Server.cpp, both of which are now dependency-free stubs (multiplayer
+// dropped as a concept - see notes §11/§12/§13/§18). Nothing else in this
+// tree ever referenced these symbols.
 
 enum
 {
@@ -119,7 +62,15 @@ IC u32 TimerAsync(CTimer* timer) { return TimeGlobal(timer); }
 
 class XRNETSERVER_API IClientStatistic
 {
-	DPN_CONNECTION_INFO ci_last;
+	// Was a single DPN_CONNECTION_INFO ci_last (a live DirectPlay8 struct
+	// filled in by IClientStatistic::Update(), called from the real
+	// message-handler code in NET_Client.cpp/NET_Server.cpp). Both of
+	// those are dependency-free stubs now with no DirectPlay8 message
+	// loop to call Update() from, so it's dropped entirely - these fields
+	// stay zero-initialized (see ZeroMemory below), which is the correct
+	// "no live connection" reading for every getter.
+	u32 ci_dwRoundTripLatencyMS, ci_dwThroughputBPS, ci_dwPeakThroughputBPS;
+	u32 ci_dwPacketsDropped, ci_dwPacketsRetried;
 	u32 mps_recive, mps_receive_base;
 	u32 mps_send, mps_send_base;
 	u32 dwBaseTime;
@@ -132,13 +83,11 @@ public:
 		dwBaseTime = TimeGlobal(device_timer);
 	}
 
-	void Update(DPN_CONNECTION_INFO& CI);
-
-	IC u32 getPing() { return ci_last.dwRoundTripLatencyMS; }
-	IC u32 getBPS() { return ci_last.dwThroughputBPS; }
-	IC u32 getPeakBPS() { return ci_last.dwPeakThroughputBPS; }
-	IC u32 getDroppedCount() { return ci_last.dwPacketsDropped; }
-	IC u32 getRetriedCount() { return ci_last.dwPacketsRetried; }
+	IC u32 getPing() { return ci_dwRoundTripLatencyMS; }
+	IC u32 getBPS() { return ci_dwThroughputBPS; }
+	IC u32 getPeakBPS() { return ci_dwPeakThroughputBPS; }
+	IC u32 getDroppedCount() { return ci_dwPacketsDropped; }
+	IC u32 getRetriedCount() { return ci_dwPacketsRetried; }
 	IC u32 getMPS_Receive() { return mps_recive; }
 	IC u32 getMPS_Send() { return mps_send; }
 	IC u32 getReceivedPerSec() { return dwBytesReceivedPerSec; }

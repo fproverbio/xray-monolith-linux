@@ -11,14 +11,11 @@
 
 #include "../xrCore/xrCore.h"
 
-#pragma warning(push)
-#pragma warning(disable:4995)
-#include <DPlay/dplay8.h>
-#pragma warning(pop)
+// <DPlay/dplay8.h> and the _RELEASE/_SHOW_REF COM-idiom macros dropped -
+// only ever used by the real DirectPlay8 client/server code in
+// NET_Client.cpp/NET_Server.cpp, both now dependency-free stubs (see
+// notes §18 - multiplayer dropped as a concept per §11/§12/§13).
 
 #include "NET_Shared.h"
-
-#define _RELEASE(x)			{ if(x) { (x)->Release();       (x)=NULL; } }
-#define _SHOW_REF(msg, x)   { if(x) { x->AddRef(); Log(msg,u32(x->Release()));}}
 
 #endif //stdafxH
