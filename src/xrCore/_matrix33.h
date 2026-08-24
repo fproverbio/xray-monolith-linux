@@ -323,35 +323,41 @@ public:
 		return *this;
 	}
 
-	IC SelfRef MxMpV(SelfCRef M1, SelfCRef M2, const Tvector& T)
+	// Parameter was named "T", shadowing this class's own template
+	// parameter T - legal C++ in isolation, but combined with GCC's
+	// -Wtemplate-body dependent-name pre-check it made this whole
+	// template instantiate as errored the first time any TU actually
+	// needed _matrix33<float> (never instantiated before xrSound).
+	// Renamed, no behavior change.
+	IC SelfRef MxMpV(SelfCRef M1, SelfCRef M2, const Tvector& trans)
 	{
 		m[0][0] = (M1.m[0][0] * M2.m[0][0] +
 			M1.m[0][1] * M2.m[1][0] +
-			M1.m[0][2] * M2.m[2][0] + T.x);
+			M1.m[0][2] * M2.m[2][0] + trans.x);
 		m[1][0] = (M1.m[1][0] * M2.m[0][0] +
 			M1.m[1][1] * M2.m[1][0] +
-			M1.m[1][2] * M2.m[2][0] + T.y);
+			M1.m[1][2] * M2.m[2][0] + trans.y);
 		m[2][0] = (M1.m[2][0] * M2.m[0][0] +
 			M1.m[2][1] * M2.m[1][0] +
-			M1.m[2][2] * M2.m[2][0] + T.z);
+			M1.m[2][2] * M2.m[2][0] + trans.z);
 		m[0][1] = (M1.m[0][0] * M2.m[0][1] +
 			M1.m[0][1] * M2.m[1][1] +
-			M1.m[0][2] * M2.m[2][1] + T.x);
+			M1.m[0][2] * M2.m[2][1] + trans.x);
 		m[1][1] = (M1.m[1][0] * M2.m[0][1] +
 			M1.m[1][1] * M2.m[1][1] +
-			M1.m[1][2] * M2.m[2][1] + T.y);
+			M1.m[1][2] * M2.m[2][1] + trans.y);
 		m[2][1] = (M1.m[2][0] * M2.m[0][1] +
 			M1.m[2][1] * M2.m[1][1] +
-			M1.m[2][2] * M2.m[2][1] + T.z);
+			M1.m[2][2] * M2.m[2][1] + trans.z);
 		m[0][2] = (M1.m[0][0] * M2.m[0][2] +
 			M1.m[0][1] * M2.m[1][2] +
-			M1.m[0][2] * M2.m[2][2] + T.x);
+			M1.m[0][2] * M2.m[2][2] + trans.x);
 		m[1][2] = (M1.m[1][0] * M2.m[0][2] +
 			M1.m[1][1] * M2.m[1][2] +
-			M1.m[1][2] * M2.m[2][2] + T.y);
+			M1.m[1][2] * M2.m[2][2] + trans.y);
 		m[2][2] = (M1.m[2][0] * M2.m[0][2] +
 			M1.m[2][1] * M2.m[1][2] +
-			M1.m[2][2] * M2.m[2][2] + T.z);
+			M1.m[2][2] * M2.m[2][2] + trans.z);
 		return *this;
 	}
 

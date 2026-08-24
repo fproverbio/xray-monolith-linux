@@ -25,10 +25,12 @@
 
 #include "OpenALDeviceList.h"
 
+#ifdef _WIN32
 #pragma warning(push)
 #pragma warning(disable:4995)
 #include <objbase.h>
 #pragma warning(pop)
+#endif // _WIN32
 
 #ifdef _EDITOR
 	log_fn_ptr_type* pLog = NULL;

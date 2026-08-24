@@ -5,3 +5,4 @@
 add_subdirectory(xrCore)
 add_subdirectory(xrCDB)
 add_subdirectory(xrXMLParser)
+add_subdirectory(xrSound)

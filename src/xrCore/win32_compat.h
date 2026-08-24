@@ -36,6 +36,7 @@
 // but 64-bit on Linux/LP64, so unsigned int is the only correct portable
 // choice here, not a straight "looks equivalent" substitution.
 using BYTE = unsigned char;
+using LPBYTE = unsigned char*;
 using WORD = unsigned short;
 using DWORD = unsigned int;
 #define CALLBACK // __stdcall calling-convention marker, no-op on x86-64 (single calling convention)
@@ -61,6 +62,22 @@ using ULONG_PTR = uintptr_t;
 using INT_PTR = intptr_t;
 using PSTR = char*;
 using LPVOID = void*;
+
+// WAVEFORMATEX - standard <mmsystem.h>/<mmreg.h> WAV format header
+// (xrSound stores one per loaded sound as SoundRender_Source::m_wformat).
+// Fixed, well-documented binary layout - not a Windows-behavior shim,
+// just the struct definition itself.
+struct WAVEFORMATEX
+{
+	WORD wFormatTag;
+	WORD nChannels;
+	DWORD nSamplesPerSec;
+	DWORD nAvgBytesPerSec;
+	WORD nBlockAlign;
+	WORD wBitsPerSample;
+	WORD cbSize;
+};
+#define WAVE_FORMAT_PCM 1
 
 #ifndef MAX_PATH
 #define MAX_PATH _MAX_PATH
@@ -309,6 +326,7 @@ inline char* strlwr(char* s)
 }
 inline char* _strlwr(char* s) { return strlwr(s); }
 inline int stricmp(const char* a, const char* b) { return strcasecmp(a, b); }
+inline int _stricmp(const char* a, const char* b) { return strcasecmp(a, b); }
 inline long long _atoi64(const char* s) { return std::atoll(s); }
 inline unsigned long long _strtoui64(const char* s, char** end, int base) { return std::strtoull(s, end, base); }
 inline int _vsnprintf(char* buf, size_t n, const char* fmt, va_list args) { return vsnprintf(buf, n, fmt, args); }
