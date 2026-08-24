@@ -39,6 +39,13 @@ using BYTE = unsigned char;
 using WORD = unsigned short;
 using DWORD = unsigned int;
 #define CALLBACK // __stdcall calling-convention marker, no-op on x86-64 (single calling convention)
+// DllMain() reason-for-call codes. Only ever reach a switch() body that's
+// unreachable dead code on a static (non-DLL) build, but the constants
+// themselves still need to exist for such code to compile at all.
+#define DLL_PROCESS_ATTACH 1
+#define DLL_THREAD_ATTACH 2
+#define DLL_THREAD_DETACH 3
+#define DLL_PROCESS_DETACH 0
 using LONG = long;
 using ULONG = unsigned long;
 using BOOL = int;

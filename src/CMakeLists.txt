@@ -3,3 +3,4 @@
 # renderer tiers, third-party libs) get added incrementally as each one is
 # ported - see playground/xray-monolith-vulkan-port-notes.md.
 add_subdirectory(xrCore)
+add_subdirectory(xrCDB)

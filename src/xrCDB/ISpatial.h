@@ -134,7 +134,12 @@ public:
 class ISpatial_NODE
 {
 public:
-	typedef __w64 unsigned ptrt;
+	// Was "__w64 unsigned" (32-bit even under MSVC/Win64, since it's only
+	// used to OR pointers together for a combined null-check, never
+	// dereferenced as an address). uintptr_t here since a 32-bit truncation
+	// on LP64 Linux could OR down to 0 from a non-null 64-bit pointer whose
+	// low 32 bits happen to be all zero, wrongly reporting _empty() true.
+	typedef uintptr_t ptrt;
 public:
 	ISpatial_NODE* parent; // parent node for "empty-members" optimization
 	ISpatial_NODE* children [8]; // children nodes

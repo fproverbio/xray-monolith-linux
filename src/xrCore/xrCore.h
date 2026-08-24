@@ -134,6 +134,11 @@
 // grammar to GCC). A variadic macro discarding its argument is the
 // standard porting pattern.
 # define __declspec(x)
+// __w64 - MSVC/W64 annotation marking a type as "different size on 64-bit"
+// for its /Wp64 portability warnings; carries no meaning to GCC/Clang and
+// is otherwise a plain syntax error where it prefixes a typedef's base
+// type (e.g. "typedef __w64 unsigned ptrt;" in xrCDB/ISpatial.h).
+# define __w64
 #endif
 #define _inline inline
 #define __inline inline

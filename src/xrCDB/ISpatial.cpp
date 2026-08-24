@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "ispatial.h"
+#include "ISpatial.h"
 #include "../xrengine/render.h"
 
 #ifdef DEBUG
