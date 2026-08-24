@@ -32,6 +32,7 @@ include_directories(
 add_subdirectory(sdk/include/ogg/src)
 add_subdirectory(sdk/include/vorbis/lib)
 add_subdirectory(sdk/include/theora/lib)
+add_subdirectory(sdk/include/giflib)
 add_subdirectory("src/3rd party/OpenAL-new")
 add_subdirectory("src/3rd party/luajit-2")
 add_subdirectory("src/3rd party/Vulkan")
