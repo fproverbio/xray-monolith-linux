@@ -80,6 +80,127 @@ target_sources_grouped(
   obstacles_query.cpp
 )
 
+# Second batch (see playground/xray-monolith-vulkan-port-notes.md, section
+# 28) - candidates found via a real recursive #include-closure script (see
+# scratchpad, not committed - same discipline as batch 1/section 27),
+# ranked by how many files in each candidate's own closure were still
+# genuinely new/unproven vs. already reachable from batch 1's proven set.
+# Unlike batch 1, none of these route through GameObject.h/.cpp at all -
+# an independent near-leaf cluster (utility/debug/physics-scripted files),
+# matching this pass's brief to also look beyond the GameObject hub.
+#
+# Major finding this batch, affecting far more than these files: ~686 of
+# ~1239 top-level xrGame .cpp files have their own first #include line
+# spelled lowercase #include "stdafx.h" instead of the real on-disk
+# "StdAfx.h". On Windows this is a harmless case-insensitive match to this
+# module's own real StdAfx.h; on Linux, quote-include search checks the
+# includer's own directory case-*sensitively* first (fails), then falls
+# through the full flat -I list in link order - and finds a *different*,
+# genuinely-existing file, xrCore/stdafx.h (a real but much smaller header,
+# xrCore's own PCH stub - it exists, so this never becomes a "file not
+# found" error). The result: any of these files that don't happen to need
+# anything from xrGame's real StdAfx.h chain (ENGINE_API, GameFont.h,
+# xr_object.h, IGame_Level.h, xrPhysics.h, smart_cast.h, profiler.h,
+# pch_script.h) will silently compile "successfully" against entirely the
+# wrong precompiled-header content - not a compile error, just quietly
+# wrong, and easy to mistake for "this file has no real dependencies" when
+# ranking candidates. Confirmed via this batch's own first attempt: 12 of
+# 17 zero-new-dependency-ranked candidates initially built "clean" this
+# way; the other 5 (ParticlesPlayer.cpp, ai_sounds.cpp, danger_location.cpp,
+# level_graph.cpp, plus several from the one-new-dependency tier) hard-
+# errored with cascading "incomplete type"/"not declared" errors through
+# xrEngine's own already-proven headers (PS_instance.h/ISheduled.h/
+# IRenderable.h/Render.h/etc.) the moment their own content actually needed
+# something from the real chain. Every file in this batch that had the
+# lowercase spelling was fixed in place (one-line #include correction, not
+# listed individually below - see git diff). Worth re-checking for every
+# future batch pulled from the remaining ~1225: grep the first #include
+# line of any new candidate .cpp before trusting a "0 new files" ranking.
+#
+# Second finding worth flagging for future batches: the real xrGame.vcxproj
+# marks 3 top-level .cpp files <ExcludedFromBuild>true</ExcludedFromBuild>
+# on Windows too - debug_make_final_test.cpp, static_cast_checked_test.cpp
+# (both deliberate "won't compile" negative tests exercising a
+# private-inheritance/friend "final class" trick, see their own comments -
+# genuinely meant to fail, not a port bug), and DynamicHeightMap.cpp (not
+# otherwise touched this batch). A candidate list built from the raw
+# <ClCompile> tag list (as both batches' scripts did) won't see this flag -
+# worth checking explicitly, not just closure-ranking, before trusting a
+# candidate.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game2"
+  FILES
+  Actor_Sleep.cpp
+  ai_debug_variables.cpp
+  CameraEffector.cpp
+  date_time.cpp
+  game_sv_base_console_vars.cpp
+  level_map_locations.cpp
+  player_name_modifyer.cpp
+  StdAfx.cpp
+  ai_sounds.cpp
+  poses_blending.cpp
+  magic_box3.cpp
+  danger_location.cpp
+  level_graph.cpp
+  ParticlesPlayer.cpp
+  animation_movement_controller.cpp
+  DamagableItem.cpp
+  DelayedActionFuse.cpp
+  game_sv_event_queue.cpp
+  PhysicsGamePars.cpp
+  random32.cpp
+  secure_messaging.cpp
+  stalker_animation_names.cpp
+  animation_utils.cpp
+  visual_memory_params.cpp
+  fs_registrator_script.cpp
+  script_render_device_script.cpp
+  physics_element_scripted.cpp
+  physics_shell_animated.cpp
+  interactive_motion.cpp
+)
+
+# atlas_stalkercoppc_v1.c: EXCLUDED - its own single #include,
+# atlas_stalkercoppc_v1.h, genuinely does not exist anywhere in this
+# checkout (confirmed via `find` across the whole repo) despite being
+# listed in xrGame.vcxproj's own <ClInclude> list - a real gap in this
+# source tree, not a case-sensitivity issue. Reconstructing ~400 missing
+# KEY_* enum constants from this file's own usage is possible but not a
+# mechanical fix; deferred.
+#
+# script_engine_help.cpp: EXCLUDED - a lua-console debug-dump helper (lists
+# every registered class/free-function) that uses several luabind
+# reflection APIs genuinely absent from this vendored deboostified fork,
+# confirmed by grep against the real headers, not assumption:
+# luabind::detail::free_functions (namespace doesn't exist at all - the
+# only hit anywhere under src/3rd party/luabind is a stale comment),
+# luabind::internal_string, object::pushvalue()/object::set(),
+# class_registry::iterate_classes() (real API is get_classes(), returning
+# a map with different iteration semantics, not a drop-in rename like the
+# get_globals -> globals case in notes section 25c/27d). A real rewrite
+# against the actual vendored API, not a mechanical port; deferred.
+#
+# RegistryFuncs.cpp: EXCLUDED - a genuine Win32 Registry API wrapper
+# (HKEY/RegOpenKeyEx/RegQueryValueEx/RegCloseKey, storing STALKER-Anomaly
+# settings under HKEY_LOCAL_MACHINE) with no Linux equivalent - same
+# "real platform gap, not a mechanical port" treatment as DirectPlay8/the
+# Win32 GDI dedicated-server console (notes section 12/13/18/19/27).
+# Deferred to whichever future pass redesigns config storage.
+#
+# debug_make_final_test.cpp / static_cast_checked_test.cpp: EXCLUDED -
+# confirmed via xrGame.vcxproj itself (grep for ExcludedFromBuild, not
+# assumed): both are deliberate negative compile-tests, excluded from the
+# real Windows build too. debug_make_final_test.cpp's own comment says
+# "the next 2 lines won't compile" - and they don't, by design (a
+# private-inheritance "make this class un-derivable outside its friends"
+# trick; GCC's "use of deleted function C::C()" on the deliberately-illegal
+# derived class C is the test passing, not a port bug). Not added here;
+# static_cast_checked.hpp itself (their shared header, not test-only - genuinely used by
+# Actor_Movement.cpp/Weapon.cpp/Inventory.cpp/player_hud.cpp and others)
+# still got real fixes below since future batches will need it working.
+
 # xrCore/xrCDB/xrSound/xrEngine/xrPhysics: real header dependencies, verified
 # via #include grep (not just carried over from the .vcxproj's
 # <ProjectReference> list - see notes section 21a's established

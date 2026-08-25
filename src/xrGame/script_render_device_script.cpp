@@ -49,6 +49,16 @@ u32 time_continual(const CRenderDevice* self)
 }
 
 #pragma optimize("s",on)
+// CScriptRenderDevice is a typedef for class_exporter<CRenderDevice>
+// (script_export_space.h's template). Defining one of its members out of
+// line for this one specific T is an explicit specialization, which the
+// standard requires a leading `template<>` for - MSVC accepts this without
+// it (permissively auto-specializing through the typedef), GCC doesn't.
+// Same "MSVC permissive, GCC standard-strict" first-instantiation template
+// bug class already hit repeatedly in this port (notes section 16/17a/17d/
+// 21c/26b/27d) - likely recurs in many more not-yet-ported *_script.cpp
+// files that follow this same class_exporter<T>::script_register pattern.
+template<>
 void CScriptRenderDevice::script_register(lua_State* L)
 {
 	module(L)

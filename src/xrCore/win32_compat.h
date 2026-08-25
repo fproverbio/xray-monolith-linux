@@ -430,6 +430,14 @@ inline unsigned long timeGetTime()
 	return static_cast<unsigned long>(ts.tv_sec) * 1000UL + static_cast<unsigned long>(ts.tv_nsec) / 1000000UL;
 }
 
+// GetTickCount() - <windows.h>'s millisecond tick counter (game_sv_event_queue.cpp
+// wants "milliseconds since some fixed point, monotonic" for its own
+// stale-event pruning - it only ever diffs against a stored prior reading,
+// same usage shape as timeGetTime() above). Functionally identical Win32
+// API, different header (<windows.h> vs <mmsystem.h>) - just forwards to
+// the same CLOCK_MONOTONIC-backed implementation rather than duplicating it.
+inline unsigned long GetTickCount() { return timeGetTime(); }
+
 #define _alloca alloca
 
 // _msize: real glibc equivalent exists (usable allocated size of a heap

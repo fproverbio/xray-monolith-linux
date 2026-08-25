@@ -31,19 +31,27 @@ struct value {
 
 };
 
+// A primary member template plus a nested `template <> ... check<false>`
+// explicit specialization here is illegal: explicit specialization of a
+// member template is only legal once the enclosing class template
+// (helper<source_type, destination_type>) is no longer dependent, and here
+// it still is. MSVC accepts this as a non-conforming extension (same as it
+// does everywhere else this port has hit the pattern); GCC's
+// -Wtemplate-body rejects it. Same bug class as object_comparer.h's
+// CHelper/CHelper4 (notes section 27d) - rewritten with `if constexpr`
+// (C++17, already the project's standard) instead of a nested
+// specialization; identical compile-time branch, standard-legal.
 template <typename source_type, typename destination_type>
 struct helper {
-	template <bool is_polymrphic>
+	template <bool is_polymorphic>
 	inline static void check		(source_type source)
 	{
-		value<
-			destination_type
-		>::check	(source);
-	}
-
-	template <>
-	inline static void check<false>	(source_type source)
-	{
+		if constexpr (is_polymorphic)
+		{
+			value<
+				destination_type
+			>::check	(source);
+		}
 	}
 };
 
@@ -51,16 +59,24 @@ struct helper {
 } // namespace detail
 } // namespace debug
 
+// Both overloads below needed two established first-instantiation-template
+// fixes (notes section 16/17a/17d/21c/26b/27d): `typename` before the two
+// dependent typedefs (object_type_traits::remove_pointer<source_type>::type
+// et al depend on this function template's own parameter), and a
+// `.template` disambiguator on `helper<...>::check<...>` - `check` is a
+// template member of a type still dependent on this function's own
+// template parameters, so unqualified `<` after `::check` parses as
+// less-than without it.
 template <typename destination_type, typename source_type>
 inline destination_type static_cast_checked	(source_type const & source)
 {
-	typedef object_type_traits::remove_pointer<source_type>::type			pointerless_type;
-	typedef object_type_traits::remove_reference<pointerless_type>::type	pure_source_type;
+	typedef typename object_type_traits::remove_pointer<source_type>::type			pointerless_type;
+	typedef typename object_type_traits::remove_reference<pointerless_type>::type	pure_source_type;
 
 	debug::detail::static_cast_checked::helper<
 		source_type const &,
 		destination_type
-	>::check<
+	>::template check<
 		is_polymorphic<
 			pure_source_type
 		>::result
@@ -72,13 +88,13 @@ inline destination_type static_cast_checked	(source_type const & source)
 template <typename destination_type, typename source_type>
 inline destination_type static_cast_checked	(source_type & source)
 {
-	typedef object_type_traits::remove_pointer<source_type>::type			pointerless_type;
-	typedef object_type_traits::remove_reference<pointerless_type>::type	pure_source_type;
+	typedef typename object_type_traits::remove_pointer<source_type>::type			pointerless_type;
+	typedef typename object_type_traits::remove_reference<pointerless_type>::type	pure_source_type;
 
 	debug::detail::static_cast_checked::helper<
 		source_type &,
 		destination_type
-	>::check<
+	>::template check<
 		is_polymorphic<
 			pure_source_type
 		>::result

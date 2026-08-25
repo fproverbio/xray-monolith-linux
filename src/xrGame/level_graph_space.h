@@ -8,6 +8,22 @@
 
 #pragma once
 
+// Forward declaration needed before the `friend class ::CLevelGraph;` below
+// (see its own comment) - a qualified elaborated-type-specifier can only
+// befriend an *already-declared* entity, it can't implicitly declare one
+// the way an unqualified `friend class X;` can. Whichever TU happens to
+// #include this header pulls in level_graph.h (this header's only real
+// includer), which itself #includes this file *before* its own `class
+// CLevelGraph { ... }` definition further down - so without this forward
+// declaration, the friend statement below depends on some unrelated header
+// elsewhere in the TU's chain (ai_space.h/patrol_point.h/etc., which each
+// carry their own leaf `class CLevelGraph;` forward decl for unrelated
+// reasons) having already run first purely by include-order coincidence.
+// Real bug, not cosmetic: level_graph.cpp itself has no such earlier
+// includer, and failed with "'CLevelGraph' in namespace '::' does not name
+// a type" until this was added.
+class CLevelGraph;
+
 namespace LevelGraph
 {
 	class CHeader : private hdrNODES
