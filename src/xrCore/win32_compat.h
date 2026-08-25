@@ -104,6 +104,8 @@ struct WAVEFORMATEX
 using D3DCOLOR = unsigned long;
 #define D3DCOLOR_RGBA(r, g, b, a) \
 	((D3DCOLOR)((((a)&0xff) << 24) | (((r)&0xff) << 16) | (((g)&0xff) << 8) | ((b)&0xff)))
+// D3DCOLOR_XRGB - same d3d9types.h family, alpha forced to opaque (0xff).
+#define D3DCOLOR_XRGB(r, g, b) D3DCOLOR_RGBA(r, g, b, 255)
 
 // RGB - real wingdi.h macro (0x00bbggrr packing), used here purely as a
 // color-packing helper for default-argument values (e.g.

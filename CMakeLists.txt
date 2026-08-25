@@ -37,6 +37,7 @@ add_subdirectory(sdk/include/imgui)
 add_subdirectory("src/3rd party/OpenAL-new")
 add_subdirectory("src/3rd party/luajit-2")
 add_subdirectory("src/3rd party/Vulkan")
+add_subdirectory("src/3rd party/ode")
 
 # glslang (Khronos reference GLSL/HLSL -> SPIR-V compiler), pinned to the
 # same vulkan-sdk-1.4.321.0 tag as src/3rd party/Vulkan above to keep the

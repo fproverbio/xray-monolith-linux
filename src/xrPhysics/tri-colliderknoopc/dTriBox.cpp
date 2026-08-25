@@ -548,10 +548,16 @@ depth##ox=sidePr-dFabs(dist##ox);\
 		dReal* pdepth;
 		dContactGeom *prc, *c = CONTACT(contact, ret*skip);
 		prc = c;
+// The original `spoint##[0]`-style token-pasting here was never valid
+// standard C++ (`##` must produce a single valid preprocessing token,
+// and pasting e.g. `pos` with `[` doesn't) - MSVC's preprocessor
+// tolerated it as a no-op, GCC correctly rejects it. Plain juxtaposition
+// (`spoint[0]`) is what was actually intended - no real token-pasting
+// was ever needed here, `spoint` is already a full expression.
 #define FOO(j,op,spoint) \
-	c->pos[0] = spoint##[0] op 2.f*hside[j] * R[0+j]; \
-	c->pos[1] = spoint##[1] op 2.f*hside[j] * R[4+j]; \
-	c->pos[2] = spoint##[2] op 2.f*hside[j] * R[8+j];
+	c->pos[0] = spoint[0] op 2.f*hside[j] * R[0+j]; \
+	c->pos[1] = spoint[1] op 2.f*hside[j] * R[4+j]; \
+	c->pos[2] = spoint[2] op 2.f*hside[j] * R[8+j];
 #define BAR(side,sideinc,spos,sdepth) \
   {\
   pdepth=&(c->depth);\

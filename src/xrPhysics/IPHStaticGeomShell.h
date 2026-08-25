@@ -1,15 +1,18 @@
 #pragma once
-#include "physicsexternalcommon.h"
+#include "PhysicsExternalCommon.h"
 
 class IPHStaticGeomShell
 {
 protected:
-	virtual ~IPHStaticGeomShell() =0
-	{
-	}
+	virtual ~IPHStaticGeomShell() = 0;
 
-	//	virtual void						set_ObjectContactCallback	(ObjectContactCallbackFun* callback);											
+	//	virtual void						set_ObjectContactCallback	(ObjectContactCallbackFun* callback);
 };
+
+// GCC rejects a pure-specifier combined with a function-body in one
+// member-declarator (MSVC accepts it as an extension) - split into a bare
+// declaration above plus this out-of-class inline definition.
+inline IPHStaticGeomShell::~IPHStaticGeomShell() {}
 
 class IPhysicsShellHolder;
 class IClimableObject;

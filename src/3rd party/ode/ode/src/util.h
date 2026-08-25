@@ -25,6 +25,7 @@
 
 #include "objects.h"
 #include "float.h"
+#include <cmath> // std::fpclassify - see dValid() below
 
 void dInternalHandleAutoDisabling (dxWorld *world, dReal stepsize);
 extern "C"
@@ -40,15 +41,25 @@ void dxProcessIslands (dxWorld *world, dReal stepsize, dstepper_fn_t stepper);
 inline bool		dValid	(const float x)
 {
 	// check for: Signaling NaN, Quiet NaN, Negative infinity ( –INF), Positive infinity (+INF), Negative denormalized, Positive denormalized
-	int			cls			= _fpclass		(double(x));
-	if (cls&(_FPCLASS_SNAN+_FPCLASS_QNAN+_FPCLASS_NINF+_FPCLASS_PINF+_FPCLASS_ND+_FPCLASS_PD))	
-		return	false;	
+	//
+	// MSVC's _fpclass()/_FPCLASS_* (a Windows-CRT-only API, not standard
+	// C/C++) replaced with the portable ISO C99/C++11 equivalent,
+	// std::fpclassify() from <cmath> - FP_NAN covers both signaling and
+	// quiet NaN (indistinguishable through this portable API, same as
+	// every other engine subsystem in this port that doesn't need to
+	// tell them apart), FP_INFINITE covers +-INF, FP_SUBNORMAL covers
+	// +-denormalized. Same three-way false condition as the original,
+	// same true fallthrough for FP_ZERO/FP_NORMAL (the four cases the
+	// original's comment below called out as "other").
+	const int	cls			= std::fpclassify(double(x));
+	if (cls == FP_NAN || cls == FP_INFINITE || cls == FP_SUBNORMAL)
+		return	false;
 
 	/*	*****other cases are*****
-	_FPCLASS_NN Negative normalized non-zero 
-	_FPCLASS_NZ Negative zero ( – 0) 
-	_FPCLASS_PZ Positive 0 (+0) 
-	_FPCLASS_PN Positive normalized non-zero 
+	Negative normalized non-zero
+	Negative zero ( – 0)
+	Positive 0 (+0)
+	Positive normalized non-zero
 	*/
 	return		true;
 }

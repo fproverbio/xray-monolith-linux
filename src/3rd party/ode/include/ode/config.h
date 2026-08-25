@@ -47,6 +47,13 @@ extern "C" {
 
 #include <math.h>
 
+// uintptr_t (used a few lines down for `intP`) isn't pulled in
+// transitively by any of the above on GCC/glibc the way it happens to be
+// on MSVC's own <malloc.h>/<math.h> - stdint.h is a plain C header (this
+// file is included from both .c and .cpp translation units, see the
+// __cplusplus extern "C" guard above), portable everywhere.
+#include <stdint.h>
+
 #if defined(WIN32) && (defined(MSVC) || defined(MINGW))
 
 static union { unsigned char __c[4]; float __f; } __ode_huge_valf =

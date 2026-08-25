@@ -4,10 +4,11 @@
 #endif
 #include "PHObject.h"
 #include "PHInterpolation.h"
-#include "../xrserverentities/PHSynchronize.h"
+#include "../xrServerEntities/PHSynchronize.h"
 #include "PHDisabling.h"
 
-#include "../xrEngine/iphysicsshell.h"
+#include "../xrEngine/IPhysicsShell.h"
+#include "../xrServerEntities/alife_space.h"
 
 
 class IPhysicsShellHolder;
@@ -18,12 +19,15 @@ class CElevatorState;
 class CPHActorCharacter;
 class CPHAICharacter;
 
-namespace ALife
-{
-	enum EHitType;
-};
+// `namespace ALife { enum EHitType; }` (the original forward declaration)
+// is illegal in standard C++: an unscoped enum forward declaration needs
+// an explicit fixed underlying type, which the real definition (below,
+// via alife_space.h) doesn't specify either - MSVC accepts the bare
+// forward declaration as an extension, GCC doesn't. alife_space.h is
+// self-contained (no further real #includes), so just including the real
+// definition is simpler and safer than guessing a matching underlying type.
 
-static enum EEnvironment
+enum EEnvironment
 {
 	peOnGround,
 	peAtWall,

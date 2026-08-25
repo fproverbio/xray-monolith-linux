@@ -4,12 +4,11 @@
 #include "MathUtils.h"
 #include "ElevatorState.h"
 #include "IColisiondamageInfo.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/GameMtlLib.h"
 
-namespace ALife
-{
-	enum EHitType;
-};
+// (the original `namespace ALife { enum EHitType; }` forward declaration
+// here was both illegal C++ - see PHCharacter.h's comment - and redundant,
+// since PHCharacter.h above already pulls in the real definition)
 #ifdef DEBUG
 #include "debug_output.h"
 #endif

@@ -40,7 +40,10 @@ public:
 	virtual IPhysicsShellHolder* cast_IPhysicsShellHolder() =0;
 
 protected:
-	virtual ~IClimableObject() =0
-	{
-	}
+	virtual ~IClimableObject() = 0;
 };
+
+// GCC rejects a pure-specifier combined with a function-body in one
+// member-declarator (MSVC accepts it as an extension) - split into a bare
+// declaration above plus this out-of-class inline definition.
+inline IClimableObject::~IClimableObject() {}

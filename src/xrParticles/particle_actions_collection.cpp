@@ -4,8 +4,17 @@
 #include "particle_actions_collection.h"
 #include "particle_effect.h"
 
+// Real Intel TBB (headers only vendored at ../3rd party/tbb/, no buildable
+// runtime source anywhere in this tree - just a prebuilt Windows
+// tbb.dll under sdk/binaries/) - genuinely unused in this file: neither
+// tbb::parallel_for nor tbb::blocked_range is referenced anywhere below,
+// grep-verified. Guarded under _WIN32 like every other real-but-dead
+// Windows-only include found so far in this port (xrEngine/stdafx.h's
+// <d3d9.h>, fmesh.cpp's <d3dx9.h> - notes section 22a/24c).
+#ifdef _WIN32
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
+#endif
 
 using namespace PAPI;
 

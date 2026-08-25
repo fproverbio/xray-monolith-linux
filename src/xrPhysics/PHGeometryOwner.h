@@ -1,7 +1,7 @@
 #ifndef PH_GEOMETRY_OWNER_H
 #define PH_GEOMETRY_OWNER_H
 #include "Geometry.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/GameMtlLib.h"
 
 DEFINE_VECTOR(CODEGeom*, GEOM_STORAGE, GEOM_I)
 typedef xr_vector<CODEGeom*>::const_iterator GEOM_CI;
@@ -114,7 +114,7 @@ void t_get_extensions(const xr_vector<geometry_type*>& geoms, const Fvector& axi
 {
 	lo_ext = dInfinity;
 	hi_ext = -dInfinity;
-	xr_vector<geometry_type*>::const_iterator i = geoms.begin(), e = geoms.end();
+	typename xr_vector<geometry_type*>::const_iterator i = geoms.begin(), e = geoms.end();
 	for (; i != e; ++i)
 	{
 		float temp_lo_ext, temp_hi_ext;

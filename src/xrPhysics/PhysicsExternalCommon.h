@@ -1,6 +1,17 @@
 #ifndef	_PHYSICS_EXTERNAL_COMMON_
 #define _PHYSICS_EXTERNAL_COMMON_
 #pragma once
+// t_get_box() below calls cast_fv() on a plain `const float*` - not a
+// dependent name (no template parameter involved in that particular
+// call), so it must be declared before this template is even parsed,
+// not just before it's instantiated. This header used to rely on
+// whichever consumer happened to #include "MathUtils.h" first - MSVC's
+// permissive two-phase-lookup deferred the check far enough that it
+// never mattered there; GCC correctly rejects it. Same "first real
+// instantiation reveals a latent MSVC-permissive header-ordering bug"
+// shape already catalogued elsewhere in this port (Feel_Vision.cpp,
+// notes section 24c) - include the real dependency directly instead.
+#include "MathUtils.h"
 struct dContactGeom;
 struct dContact;
 struct SGameMtl;
