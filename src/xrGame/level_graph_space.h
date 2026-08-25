@@ -40,7 +40,20 @@ namespace LevelGraph
 		ICF bool operator<(const LevelGraph::CVertex& vertex) const;
 		ICF bool operator>(const LevelGraph::CVertex& vertex) const;
 		ICF bool operator==(const LevelGraph::CVertex& vertex) const;
-		friend class CLevelGraph;
+		// Qualified (::CLevelGraph) - an unqualified `friend class CLevelGraph;`
+		// here, inside `namespace LevelGraph`, does NOT bind to the real
+		// global ::CLevelGraph (defined later in level_graph.h): standard
+		// friend-name lookup only searches the innermost enclosing scope
+		// (here, namespace LevelGraph) for a prior matching declaration, and
+		// since none exists there, it silently declares a brand new, always-
+		// incomplete LevelGraph::CLevelGraph instead - a distinct, phantom
+		// class that never grants the real CLevelGraph any access. MSVC is
+		// permissive here and resolves it to the real global class anyway;
+		// GCC correctly enforces the narrower standard rule, surfacing as
+		// "NodeCompressed::p is inaccessible" from CLevelGraph::contour()
+		// (level_graph_vertex_inline.h) - confirmed via a minimal repro
+		// before landing this fix, not just theory.
+		friend class ::CLevelGraph;
 	};
 
 	struct SSegment

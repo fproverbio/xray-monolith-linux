@@ -11,19 +11,27 @@
 template <typename P>
 struct CComparer
 {
+	// Was a primary template (a=false case) plus an explicit specialization
+	// `template <> compare<true>(...)` nested inside CHelper<T> (itself
+	// still dependent on the enclosing CComparer<P>'s own template
+	// parameter). Explicit specialization of a member template of a class
+	// template is only legal once the enclosing class template is no
+	// longer dependent - MSVC accepts this as a non-conforming extension
+	// (silently doing what `if constexpr` does below), GCC's
+	// -Wtemplate-body flags it and hard-errors at the first real
+	// instantiation ("instantiating erroneous template"). Rewritten with
+	// `if constexpr` (available: C++17) - same compile-time branch,
+	// standard-legal.
 	template <typename T>
 	struct CHelper
 	{
 		template <bool a>
 		IC static bool compare(const T& _1, const T& _2, const P& p)
 		{
-			return (p(_1, _2));
-		}
-
-		template <>
-		IC static bool compare<true>(const T& _1, const T& _2, const P& p)
-		{
-			return (CComparer::compare(*_1, *_2, p));
+			if constexpr (a)
+				return (CComparer::compare(*_1, *_2, p));
+			else
+				return (p(_1, _2));
 		}
 	};
 
@@ -58,8 +66,8 @@ struct CComparer
 		if (_1.size() != _2.size())
 			return (p());
 
-		svector<T, size>::const_iterator I = _1.begin(), J = _2.begin();
-		svector<T, size>::const_iterator E = _1.end();
+		typename svector<T, size>::const_iterator I = _1.begin(), J = _2.begin();
+		typename svector<T, size>::const_iterator E = _1.end();
 		for (; I != E; ++I, ++J)
 			if (!compare(*I, *J, p))
 				return (false);
@@ -132,8 +140,8 @@ struct CComparer
 			if (_1.size() != _2.size())
 				return (p());
 
-			T::const_iterator I = _1.begin(), J = _2.begin();
-			T::const_iterator E = _1.end();
+			typename T::const_iterator I = _1.begin(), J = _2.begin();
+			typename T::const_iterator E = _1.end();
 			for (; I != E; ++I, ++J)
 				if (!CComparer::compare(*I, *J, p))
 					return (false);
@@ -141,26 +149,25 @@ struct CComparer
 		}
 	};
 
+	// Same illegal-nested-explicit-specialization pattern as CHelper above,
+	// same if constexpr fix.
 	template <typename T>
 	struct CHelper4
 	{
 		template <bool a>
 		IC static bool compare(const T& _1, const T& _2, const P& p)
 		{
-			return (CHelper<T>::compare < object_type_traits::is_pointer<T>::value > (_1, _2, p));
-		}
-
-		template <>
-		IC static bool compare<true>(const T& _1, const T& _2, const P& p)
-		{
-			return (CHelper3::compare(_1, _2, p));
+			if constexpr (a)
+				return (CHelper3::compare(_1, _2, p));
+			else
+				return (CHelper<T>::template compare < object_type_traits::is_pointer<T>::value > (_1, _2, p));
 		}
 	};
 
 	template <typename T>
 	IC static bool compare(const T& _1, const T& _2, const P& p)
 	{
-		return (CHelper4<T>::compare < object_type_traits::is_stl_container<T>::value > (_1, _2, p));
+		return (CHelper4<T>::template compare < object_type_traits::is_stl_container<T>::value > (_1, _2, p));
 	}
 };
 

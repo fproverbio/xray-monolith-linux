@@ -19,9 +19,18 @@ private:
 	typedef _compare_predicate_type inherited;
 
 public:
-	typedef _key_type _key_type;
-	typedef _data_type _data_type;
-	typedef _compare_predicate_type _compare_predicate_type;
+	// Was `typedef _key_type _key_type;` etc. - a self-referential typedef
+	// re-using the exact same identifier as the template parameter it
+	// names. Legal C++ (name-shadowing a template parameter with an
+	// identically-named member typedef is permitted) and never used
+	// qualified anywhere in this codebase (grep-verified - nothing
+	// references `associative_vector_compare_predicate<...>::_key_type`),
+	// but GCC's -Wtemplate-body diagnostic flags the shadowing and then
+	// treats the template as permanently poisoned at the first real
+	// instantiation ("instantiating erroneous template"), regardless of
+	// -fpermissive. Since these three typedefs were genuinely dead (no
+	// real caller), the cleanest fix is removing them rather than
+	// reaching for a diagnostic-suppression pragma.
 
 public:
 	typedef std::pair<_key_type, _data_type> value_type;

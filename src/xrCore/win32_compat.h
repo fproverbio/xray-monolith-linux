@@ -41,6 +41,12 @@ using LPBYTE = unsigned char*;
 using WORD = unsigned short;
 using DWORD = unsigned int;
 #define CALLBACK // __stdcall calling-convention marker, no-op on x86-64 (single calling convention)
+// `interface` - MSVC/COM's `#define interface struct` (from <unknwn.h>,
+// pulled in transitively by <windows.h>), used in this codebase as a
+// convention for pure-abstract-base classes (first hit: xrGame's
+// ph_shell_interface.h). Never previously needed since no earlier module
+// used the convention.
+#define interface struct
 // DllMain() reason-for-call codes. Only ever reach a switch() body that's
 // unreachable dead code on a static (non-DLL) build, but the constants
 // themselves still need to exist for such code to compile at all.

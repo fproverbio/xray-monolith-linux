@@ -13,6 +13,14 @@
 #include "script_binder.h"
 #include "Hit.h"
 #include "game_object_space.h"
+// DPNSEND_GUARANTEED (used below as a default-parameter value) is a real,
+// already-ported portable define (xrNetServer's own DirectPlay8-removal
+// work, notes file section 12/13/18/19) - in the original MSVC codebase it
+// arrived transitively through PCH context (this header is never the first
+// thing a .cpp includes), which the header itself never had to declare.
+// Spelled out explicitly here since GameObject.h must be self-sufficient
+// for the CMake target boundary.
+#include "../xrNetServer/NET_Shared.h"
 
 class CPhysicsShell;
 class CSE_Abstract;

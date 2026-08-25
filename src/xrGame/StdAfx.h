@@ -11,7 +11,12 @@
 #pragma warning(push)
 #pragma warning(disable:4995)
 #include "../xrEngine/stdafx.h"
-#include "DPlay/dplay8.h"
+// DPlay/dplay8.h (real DirectPlay8 header) dropped - same multiplayer-
+// removal treatment as xrNetServer's own stdafx.h (notes file section
+// 12/13/18/19): nothing in the files this port actually compiles calls a
+// real DirectPlay8 API anymore, and the GP_*_LEN defines above are just
+// harmless numeric constants at this point (their real purpose was a
+// DirectPlay8 GUID/profile field-length limit).
 #pragma warning(pop)
 //#pragma warning(default:4995)
 #pragma warning( 4 : 4018 )
@@ -39,10 +44,10 @@
 #	define	THROW3					VERIFY3
 #endif
 
-#include "../xrEngine/gamefont.h"
+#include "../xrEngine/GameFont.h"
 #include "../xrEngine/xr_object.h"
-#include "../xrEngine/igame_level.h"
-#include "../xrphysics/xrphysics.h"
+#include "../xrEngine/IGame_Level.h"
+#include "../xrPhysics/xrPhysics.h"
 #include "smart_cast.h"
 
 #include "../xrCore/profiler.h"

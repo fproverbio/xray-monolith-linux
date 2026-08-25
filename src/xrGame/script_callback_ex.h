@@ -13,19 +13,32 @@
 
 IC bool compare_safe(const luabind::object& o1, const luabind::object& o2)
 {
-    if (o1.type() == LUA_TNIL && o2.type() == LUA_TNIL)
+    // luabind::object::type() doesn't exist in this vendored fork - type()
+    // is a free function (luabind/detail/object.hpp), real API drift from
+    // whatever older luabind version this engine's source was originally
+    // written against (same class of fix as get_globals -> globals, notes
+    // file section 25c).
+    if (luabind::type(o1) == LUA_TNIL && luabind::type(o2) == LUA_TNIL)
         return						(true);
 
     return							(o1 == o2);
 }
 
 #if XRAY_EXCEPTIONS
+// luabind::error (this vendored fork's luabind/error.hpp) has no state()
+// accessor - it takes a lua_State* in its constructor but never exposes it
+// (state() only exists on the unrelated cast_failed exception type). Real
+// API drift from whatever older luabind version this was originally
+// written against (same class as get_globals -> globals, object::type() ->
+// luabind::type(), notes file section 25c). There's no way to recover the
+// original lua_State from a caught luabind::error in this fork, so this
+// unconditionally takes what was previously only the "no state" fallback
+// branch - ai().script_engine().lua() is a real, always-valid lua_State,
+// so print_output still gets a usable one every time, just never the
+// (unrecoverable) originating one.
 #	define process_error \
 		catch(::luabind::error &e) {\
-			if (e.state())\
-				ai().script_engine().print_output(e.state(),"",LUA_ERRRUN);\
-			else\
-				ai().script_engine().print_output(ai().script_engine().lua(),"",LUA_ERRRUN);\
+			ai().script_engine().print_output(ai().script_engine().lua(),"",LUA_ERRRUN);\
 		}
 #else
 #	define process_error

@@ -233,7 +233,12 @@ IC typename _associative_vector::insert_result _associative_vector::insert(const
 	actualize();
 	bool found = true;
 	iterator I = lower_bound(value.first);
-	if (I == end() || operator()(value.first, (*I).first))
+	// this-> needed: operator() is inherited from the dependent base
+	// associative_vector_compare_predicate<...> - unqualified lookup in a
+	// template doesn't search dependent bases (classic two-phase-lookup
+	// gotcha, notes file section 16/17a/etc pattern, this time on an
+	// operator rather than a plain member function).
+	if (I == end() || this->operator()(value.first, (*I).first))
 	{
 		I = inherited::insert(I, value);
 		found = false;
@@ -248,14 +253,17 @@ IC typename _associative_vector::iterator _associative_vector::insert(iterator w
 {
 	if (
 		(where != end()) &&
-		(operator()(*where, value)) &&
+		(this->operator()(*where, value)) &&
 		((where - begin()) == size()) &&
-		(!operator()(value, *(where + 1))) &&
-		(operator()(*(where + 1), value))
+		(!this->operator()(value, *(where + 1))) &&
+		(this->operator()(*(where + 1), value))
 	)
 		return (inherited::insert(where, value));
 
-	return (insert(val).first);
+	// Was `insert(val)` - `val` was never declared (this function's
+	// parameter is `value`), the same pre-existing typo/drift bug class as
+	// the operator<=/operator>/operator>=/operator!= `left` fix above.
+	return (insert(value).first);
 }
 
 TEMPLATE_SPECIALIZATION
@@ -282,7 +290,7 @@ IC typename _associative_vector::iterator _associative_vector::find(const key_ty
 	if (I == end())
 		return (end());
 
-	if (operator()(key, (*I).first))
+	if (this->operator()(key, (*I).first))
 		return (end());
 
 	return (I);
@@ -296,7 +304,7 @@ IC typename _associative_vector::const_iterator _associative_vector::find(const 
 	if (I == end())
 		return (end());
 
-	if (operator()(key, (*I).first))
+	if (this->operator()(key, (*I).first))
 		return (end());
 
 	return (I);
@@ -317,10 +325,10 @@ IC typename _associative_vector::equal_range_result _associative_vector::equal_r
 	if (I == end())
 		return (equal_range_result(end(), end()));
 
-	if (operator()(key, (*I).first))
+	if (this->operator()(key, (*I).first))
 		return (equal_range_result(I, I));
 
-	VERIFY(!operator()(key,(*I).first));
+	VERIFY(!this->operator()(key,(*I).first));
 	return (equal_range_result(I, I + 1));
 }
 
@@ -332,10 +340,10 @@ IC typename _associative_vector::const_equal_range_result _associative_vector::e
 	if (I == end())
 		return (const_equal_range_result(end(), end()));
 
-	if (operator()(key, (*I).first))
+	if (this->operator()(key, (*I).first))
 		return (const_equal_range_result(I, I));
 
-	VERIFY(!operator()(key,(*I).first));
+	VERIFY(!this->operator()(key,(*I).first));
 	return (const_equal_range_result(I, I + 1));
 }
 
@@ -352,22 +360,33 @@ IC bool _associative_vector::operator<(const self_type& right) const
 	return (((const inherited &)(*this)) < right);
 }
 
+// operator<=/operator>/operator>=/operator!= below originally referenced an
+// undeclared `left` (a real, pre-existing bug - not something this port
+// introduced) instead of `*this`, matching the `(const inherited &)(*this)`
+// pattern already used correctly by operator</operator== just above/below.
+// MSVC's lazy template-body instantiation apparently never actually
+// compiled these bodies for any type this codebase instantiates them with;
+// GCC's -Wtemplate-body early syntax check catches it regardless of
+// instantiation, and poisons the whole class template once it does (surfaces
+// as a cascading "instantiating erroneous template" the moment anything -
+// even just declaring a member variable of this type - needs the complete
+// type, e.g. game_graph_space.h's `LEVEL_MAP m_levels;`).
 TEMPLATE_SPECIALIZATION
 IC bool _associative_vector::operator<=(const self_type& right) const
 {
-	return !(right < left);
+	return !(right < ((const inherited &)(*this)));
 }
 
 TEMPLATE_SPECIALIZATION
 IC bool _associative_vector::operator>(const self_type& right) const
 {
-	return (right < left);
+	return (right < ((const inherited &)(*this)));
 }
 
 TEMPLATE_SPECIALIZATION
 IC bool _associative_vector::operator>=(const self_type& right) const
 {
-	return !(left < right);
+	return !(((const inherited &)(*this)) < right);
 }
 
 TEMPLATE_SPECIALIZATION
@@ -379,7 +398,7 @@ IC bool _associative_vector::operator==(const self_type& right) const
 TEMPLATE_SPECIALIZATION
 IC bool _associative_vector::operator!=(const self_type& right) const
 {
-	return !(left == right);
+	return !(((const inherited &)(*this)) == right);
 }
 
 #undef TEMPLATE_SPECIALIZATION
