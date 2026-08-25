@@ -49,10 +49,28 @@ target_include_directories(xrEngine PUBLIC .)
 # GIFResource.h/.cpp: needs giflib vendored first - not landed as of this
 # batch, deferred to the next batch once it is.
 #
-# EngineAPI.cpp, Engine.cpp: bigger, needs the STATIC_RENDERER_R1..4
-# decision (notes section 21a point 3) - defer to a later pass. (Engine.h/
-# EngineAPI.h themselves are lightweight declarations-only headers, kept
-# in scope - they're pulled in transitively by stdafx.h.)
+# EngineAPI.cpp, Engine.cpp: the STATIC_RENDERER_R1..4 decision (notes
+# section 21a point 3 / section 24 Part B) is now made - STATIC_RENDERER_R4
+# defined below as a PRIVATE compile definition on this target. R4 is the
+# DX11 renderer and the modern/default choice: 5 of xrEngine.vcxproj's 13
+# real configs select it (ReleaseR4, ReleaseR4-AVX, ProfiledDX11,
+# VerifiedDX11, and the bare "Verified" config), more than any other
+# renderer number (R1/DX8 and R3/DX10 each get 2, R2/DX9 gets 3 including
+# VerifiedDX9). EngineAPI.cpp/Engine.cpp now reference DllMainXrRenderR4/
+# xrFactory_Create/xrFactory_Destroy/DllMainXrGame/SupportsDX11Rendering/
+# xrBind_PSGP/ttapi_Done - none of which exist anywhere in this tree yet,
+# which is fine and expected at the "compiles into libxrEngine.a" stage
+# (notes section 21a point 1/3) - a final-exe-link concern for a much
+# later milestone, not a blocker here. Two genuinely Windows-only bits
+# guarded under _WIN32 rather than stubbed: EngineAPI.cpp's vTune
+# (vTuneAPI.dll) LoadLibrary/GetProcAddress calls (a real prebuilt
+# native library not vendored anywhere in this checkout, same category
+# as the Discord Game SDK/xrLauncher.dll, matching xrCore/xrDebug.cpp's
+# identical treatment of its own DBGHELP.DLL LoadLibrary) and the
+# SetErrorMode(SEM_FAILCRITICALERRORS) pair around DllMainXrRenderR4's
+# call site (a modal-error-dialog suppression with no Linux/X11
+# equivalent, moot now that the renderer is called directly rather than
+# through a real LoadLibrary that could pop one anyway).
 #
 # mailSlot.cpp: real Windows named-mailslot IPC (CreateMailslot/
 # GetMailslotInfo/GlobalAlloc/WriteFile - a distinct mechanism from POSIX
@@ -139,6 +157,8 @@ target_sources_grouped(
   defines.cpp
   stdafx.cpp
   _scripting.cpp
+  Engine.cpp
+  EngineAPI.cpp
   Device_Misc.cpp
   Device_overdraw.cpp
   CustomHUD.cpp
@@ -227,3 +247,11 @@ target_sources_grouped(
 # volk.h/vulkan.h just to compile against xrEngine's headers.
 target_link_libraries(xrEngine PUBLIC xrCore xrCDB xrSound SDL2::SDL2)
 target_link_libraries(xrEngine PRIVATE volk::volk Vulkan::Headers)
+
+# STATIC_RENDERER_R4 - see EngineAPI.cpp's exclusion-turned-inclusion
+# comment above (notes section 24, Part B) for the full reasoning. PRIVATE:
+# only EngineAPI.cpp/EngineAPI.h's own #ifdef STATIC_RENDERER_R1..4 blocks
+# (and the DLL_MAIN_RENDERER macro they select) ever look at this macro -
+# no other xrEngine header branches on it, so it's not part of this
+# target's public interface.
+target_compile_definitions(xrEngine PRIVATE STATIC_RENDERER_R4)

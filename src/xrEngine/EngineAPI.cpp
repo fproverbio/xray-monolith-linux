@@ -4,7 +4,7 @@
 
 #include "stdafx.h"
 #include "EngineAPI.h"
-#include "../xrcdb/xrXRC.h"
+#include "../xrCDB/xrXRC.h"
 
 //#include "securom_api.h"
 
@@ -261,6 +261,13 @@ void CEngineAPI::Initialize(void)
 	//////////////////////////////////////////////////////////////////////////
 	// vTune
 	tune_enabled = FALSE;
+	// Intel vTune (vTuneAPI.dll) is a real Windows-only prebuilt binary,
+	// same "external native library with no Linux equivalent in this
+	// checkout" category as the Discord Game SDK/xrLauncher.dll -
+	// LoadLibrary/GetProcAddress guarded under _WIN32 rather than
+	// stubbed, matching xrCore/xrDebug.cpp's identical treatment of its
+	// own LoadLibrary("DBGHELP.DLL") minidump helper.
+#ifdef _WIN32
 	if (strstr(Core.Params, "-tune"))
 	{
 		LPCSTR g_name = "vTuneAPI.dll";
@@ -275,6 +282,7 @@ void CEngineAPI::Initialize(void)
 		tune_resume = (VTResume*)GetProcAddress(hTuner, "VTResume");
 		R_ASSERT(tune_resume);
 	}
+#endif // _WIN32
 }
 
 void CEngineAPI::Destroy(void)
@@ -379,12 +387,19 @@ void CEngineAPI::CreateRendererList()
 #ifdef STATIC_RENDERER_R4
 		// try to initialize R4
         Log("Loading DLL:", r4_name);
-        // Hide "d3d10.dll not found" message box for XP
+        // Hide "d3d10.dll not found" message box for XP - genuinely
+        // Windows-only (no modal-dialog-suppression concept to port),
+        // and moot anyway now that DllMainXrRenderR4 is called directly
+        // rather than through a real LoadLibrary that could pop one.
+#ifdef _WIN32
         SetErrorMode(SEM_FAILCRITICALERRORS);
+#endif
         //hRender = LoadLibrary(r4_name);
 		DllMainXrRenderR4(NULL, DLL_PROCESS_ATTACH, NULL);
         // Restore error handling
+#ifdef _WIN32
         SetErrorMode(0);
+#endif
         //if (hRender)
         {
             //SupportsDX11RenderingREF* test_dx11_rendering = (SupportsDX11RenderingREF*)GetProcAddress(hRender, "SupportsDX11Rendering");
