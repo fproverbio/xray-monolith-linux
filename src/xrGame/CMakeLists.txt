@@ -472,6 +472,39 @@ target_sources_grouped(
   weaponBM16.cpp
 )
 
+# ik/ - a small, genuinely self-contained inverse-kinematics solver
+# (University of Pennsylvania IKAN library, vendored directly into this
+# module rather than as a separate 3rd-party target). Real #include-grep
+# confirmed zero cross-module hub dependencies: aint/eqn/eulersolver/
+# jtlimits/limb/math3d/mathTrig/Dof7control only reference each other and
+# StdAfx.h; only IKLimb.cpp/.h reach outside ik/ at all, and everything
+# they reach was already ported (Include/xrRender/Kinematics.h -
+# abstract interface; GameObject.h - header only, not GameObject.cpp;
+# xrPhysics/MathUtils.h + matrix_utils.h - xrPhysics is done;
+# ik_anim_state.h/pose_extrapolation.h/game_object_space.h - all
+# already-ported or self-contained; PHDebug.h - pulls in already-ported
+# xrEngine/StatGraph.h + xrPhysics/debug_output.h). All 9 files compile
+# clean with only mechanical fixes: the systemic lowercase stdafx.h case
+# bug (section 28) on 6 files, 3 more case-sensitivity #include fixes
+# (Dof7control.h, Kinematics.h, GameObject.h, xrPhysics casing), and one
+# missing #include (xrPhysics/MathUtils.h for phInfinity/XRPHYSICS_API in
+# limb.cxx, same "MSVC whole-program name visibility" gap as
+# ini_table_loader.h's object_type_traits, section 29/30).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "IK"
+  FILES
+  ik/aint.cxx
+  ik/eqn.cxx
+  ik/eulersolver.cxx
+  ik/jtlimits.cxx
+  ik/limb.cxx
+  ik/math3d.cpp
+  ik/mathTrig.cpp
+  ik/Dof7control.cpp
+  ik/IKLimb.cpp
+)
+
 # xrCore/xrCDB/xrSound/xrEngine/xrPhysics: real header dependencies, verified
 # via #include grep (not just carried over from the .vcxproj's
 # <ProjectReference> list - see notes section 21a's established

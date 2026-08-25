@@ -33,8 +33,14 @@
 //#include <stdio.h>
 //#include <stdlib.h>
 //#include <string.h>
-#include "stdafx.h"
+#include "../StdAfx.h"
 #include "limb.h"
+// phInfinity/XRPHYSICS_API used below (bounds-checking against physics
+// joint limits) - never #included directly, relying on whatever
+// transitively pulled xrPhysics/MathUtils.h in first under MSVC's whole-
+// program name visibility (same class of gap as ini_table_loader.h's
+// object_type_traits, notes section 29/30).
+#include "../../xrPhysics/MathUtils.h"
 
 //#include "../ode_include.h"
 enum { SolvePosOnly = 1, SolvePosAndOrientation = 2 };
