@@ -46,11 +46,10 @@ target_include_directories(xrEngine PUBLIC .)
 # tntQAVI.h/.cpp: Video-for-Windows AVI playback, needs a real replacement
 # codec, not a mechanical fix - deferred.
 #
-# imgui_base.cpp, imgui_helper.cpp (imgui_base_input.cpp already excluded
-# above for the xrGame reason): all three #include imgui.h. The real
-# Dear ImGui source is present at src/3rd party/imgui/ but has no
-# CMakeLists.txt anywhere in the tree yet - a real vendoring job (new
-# CMake target), not a mechanical per-file fix. Deferred.
+# imgui_base.cpp, imgui_helper.cpp: Dear ImGui now has a real CMake
+# target (sdk/include/imgui, commit a0382f3c) - both compile clean
+# against it with zero further changes. imgui_base_input.cpp stays
+# excluded above (unrelated reason - direct ../xrGame/ includes).
 #
 # EngineAPI.cpp, Engine.cpp: the STATIC_RENDERER_R1..4 decision (notes
 # section 21a point 3 / section 24 Part B) is now made - STATIC_RENDERER_R4
@@ -312,6 +311,16 @@ target_sources_grouped(
   GIFResource.cpp
 )
 
+# Dear ImGui debug UI overlay (imgui landed a0382f3c) - see the file
+# comment above the "Engine" group for the full story.
+target_sources_grouped(
+  TARGET xrEngine
+  NAME "ImGui"
+  FILES
+  imgui_base.cpp
+  imgui_helper.cpp
+)
+
 # xrXMLParser/xrNetServer are NOT linked here - grepped the final file
 # list and neither is #included by anything in this batch (stdafx.h pulls
 # in xrCDB/xrSound directly; xml parsing and the network transport aren't
@@ -337,6 +346,11 @@ target_link_libraries(xrEngine PRIVATE volk::volk Vulkan::Headers)
 # xrEngine header re-exposes their types, so downstream consumers of
 # xrEngine's headers don't need either just to compile against it.
 target_link_libraries(xrEngine PRIVATE theora gif)
+
+# imgui is PRIVATE: imgui_base.h only forward-declares through the
+# already-abstract ../Include/xrRender/ImGuiRender.h interface, no
+# xrEngine header re-exposes real Dear ImGui types.
+target_link_libraries(xrEngine PRIVATE imgui)
 
 # STATIC_RENDERER_R4 - see EngineAPI.cpp's exclusion-turned-inclusion
 # comment above (notes section 24, Part B) for the full reasoning. PRIVATE:

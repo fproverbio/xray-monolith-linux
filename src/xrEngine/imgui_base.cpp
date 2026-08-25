@@ -168,9 +168,12 @@ namespace xr_imgui
 
         if (io.WantSetMousePos)
         {
-            POINT pos = { (int)io.MousePos.x, (int)io.MousePos.y };
-            ClientToScreen(Device.m_hWnd, &pos);
-            SetCursorPos(pos.x, pos.y);
+            // SDL_WarpMouseInWindow takes window-client-space coordinates
+            // directly, same space io.MousePos is already in - no
+            // ClientToScreen-style conversion needed (unlike the original
+            // Win32 ClientToScreen+SetCursorPos, which had to convert to
+            // screen space first since SetCursorPos is screen-space only).
+            SDL_WarpMouseInWindow(Device.m_sdlWnd, (int)io.MousePos.x, (int)io.MousePos.y);
         }
 
         const bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
@@ -268,7 +271,7 @@ namespace xr_imgui
             return nullptr;
 
         char* lowstring = xr_strdup(name);
-        auto& pair = ImFonts.find(xr_strlwr(lowstring));
+        auto pair = ImFonts.find(xr_strlwr(lowstring));
         xr_free(lowstring);
 
         if (pair != ImFonts.end())

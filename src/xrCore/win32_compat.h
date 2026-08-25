@@ -642,6 +642,7 @@ inline double _copysign(double mag, double sgn) { return std::copysign(mag, sgn)
 // (UTF-8<->UTF-16LE, UTF-16LE->CP1251) are implemented, not the full
 // generality of the real Win32 API (arbitrary codepages/flags).
 #define CP_UTF8 65001
+#define CP_ACP 0
 
 inline int MultiByteToWideChar(unsigned codePage, unsigned long /*flags*/, const char* src, int srcLen,
                                 char16_t* dst, int dstCapacity)
