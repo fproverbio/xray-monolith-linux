@@ -3,9 +3,9 @@
 //#include "resourcemanager.h"
 #include "../Include/xrRender/DrawUtils.h"
 //#include "xr_effgamma.h"
-#include "render.h"
+#include "Render.h"
 #include "dedicated_server_only.h"
-#include "../xrcdb/xrxrc.h"
+#include "../xrCDB/xrXRC.h"
 
 //#include "securom_api.h"
 
@@ -42,74 +42,7 @@ void CRenderDevice::_SetupStates()
 	vCameraRight.set(1, 0, 0);
 
 	m_pRender->SetupStates();
-
-	/*
-	HW.Caps.Update ();
-	for (u32 i=0; i<HW.Caps.raster.dwStages; i++) {
-	float fBias = -.5f ;
-	CHK_DX(HW.pDevice->SetSamplerState ( i, D3DSAMP_MAXANISOTROPY, 4 ));
-	CHK_DX(HW.pDevice->SetSamplerState ( i, D3DSAMP_MIPMAPLODBIAS, *((LPDWORD) (&fBias))));
-	CHK_DX(HW.pDevice->SetSamplerState ( i, D3DSAMP_MINFILTER, D3DTEXF_LINEAR ));
-	CHK_DX(HW.pDevice->SetSamplerState ( i, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR ));
-	CHK_DX(HW.pDevice->SetSamplerState ( i, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR ));
-	}
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_DITHERENABLE, TRUE ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_COLORVERTEX, TRUE ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_ZENABLE, TRUE ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_SHADEMODE, D3DSHADE_GOURAUD ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_CULLMODE, D3DCULL_CCW ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_LOCALVIEWER, TRUE ));
-
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_SPECULARMATERIALSOURCE,D3DMCS_MATERIAL ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_EMISSIVEMATERIALSOURCE,D3DMCS_COLOR1 ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_MULTISAMPLEANTIALIAS, FALSE ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_NORMALIZENORMALS, TRUE ));
-
-	if (psDeviceFlags.test(rsWireframe)) { CHK_DX(HW.pDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME )); }
-	else { CHK_DX(HW.pDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID )); }
-
-	// ******************** Fog parameters
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_FOGCOLOR, 0 ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_RANGEFOGENABLE, FALSE ));
-	if (HW.Caps.bTableFog) {
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_FOGTABLEMODE, D3DFOG_LINEAR ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_FOGVERTEXMODE, D3DFOG_NONE ));
-	} else {
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_FOGTABLEMODE, D3DFOG_NONE ));
-	CHK_DX(HW.pDevice->SetRenderState( D3DRS_FOGVERTEXMODE, D3DFOG_LINEAR ));
-	}
-	*/
 }
-
-/*
-void CRenderDevice::_Create (LPCSTR shName)
-{
-Memory.mem_compact ();
-
-// after creation
-b_is_Ready = TRUE;
-_SetupStates ();
-
-// Signal everyone - device created
-RCache.OnDeviceCreate ();
-Gamma.Update ();
-Resources->OnDeviceCreate (shName);
-::Render->create ();
-Statistic->OnDeviceCreate ();
-
-#ifndef DEDICATED_SERVER
-m_WireShader.create ("editor\\wire");
-m_SelectionShader.create ("editor\\selection");
-
-DU.OnDeviceCreate ();
-#endif
-
-dwFrame = 0;
-}
-*/
 
 void CRenderDevice::_Create(LPCSTR shName)
 {
@@ -123,37 +56,6 @@ void CRenderDevice::_Create(LPCSTR shName)
 	m_imgui.OnDeviceCreate();
 	dwFrame = 0;
 }
-
-/*
-void CRenderDevice::Create ()
-{
-if (b_is_Ready) return; // prevent double call
-Statistic = xr_new<CStats>();
-Log ("Starting RENDER device...");
-
-#ifdef _EDITOR
-psCurrentVidMode[0] = dwWidth;
-psCurrentVidMode[1] = dwHeight;
-#endif
-
-HW.CreateDevice (m_hWnd);
-dwWidth = HW.DevPP.BackBufferWidth ;
-dwHeight = HW.DevPP.BackBufferHeight ;
-fWidth_2 = float(dwWidth/2) ;
-fHeight_2 = float(dwHeight/2) ;
-fFOV = 90.f;
-fASPECT = 1.f;
-
-string_path fname;
-FS.update_path (fname,"$game_data$","shaders.xr");
-
-//////////////////////////////////////////////////////////////////////////
-Resources = xr_new<CResourceManager> ();
-_Create (fname);
-
-PreCache (0);
-}
-*/
 
 void CRenderDevice::ConnectToRender()
 {
@@ -181,20 +83,22 @@ PROTECT_API void CRenderDevice::Create()
 		psCurrentVidMode[1] = h;
 	}
 
-	DWORD style;
+	// Replaces SetWindowLongPtr(m_hWnd, GWL_STYLE, style) +
+	// SetWindowPos(..., SWP_FRAMECHANGED): SDL2 tracks "has a title
+	// bar/border" and size/position as three separate, independent calls
+	// rather than one Win32 style bitmask + one geometry call.
 	if (g_screenmode == 0)
 	{
-		style = WS_OVERLAPPEDWINDOW;
+		SDL_SetWindowBordered(m_sdlWnd, SDL_TRUE);
 		w = psCurrentVidMode[0];
 		h = psCurrentVidMode[1];
 	}
 	else
 	{
-		style = WS_POPUP;
+		SDL_SetWindowBordered(m_sdlWnd, SDL_FALSE);
 	}
-
-	SetWindowLongPtr(m_hWnd, GWL_STYLE, style);
-	SetWindowPos(m_hWnd, HWND_TOP, monX, monY, w, h, SWP_FRAMECHANGED);
+	SDL_SetWindowSize(m_sdlWnd, static_cast<int>(w), static_cast<int>(h));
+	SDL_SetWindowPosition(m_sdlWnd, monX, monY);
 
 	Statistic = xr_new<CStats>();
 #ifdef DEBUG
@@ -217,7 +121,7 @@ PROTECT_API void CRenderDevice::Create()
 	fFOV = 90.f;
 	fASPECT = 1.f;
 	m_pRender->Create(
-		m_hWnd,
+		m_sdlWnd,
 		dwWidth,
 		dwHeight,
 		fWidth_2,
@@ -228,15 +132,25 @@ PROTECT_API void CRenderDevice::Create()
 		true
 	);
 
+	// DisableProcessWindowsGhosting(): Win32-only (tells the OS not to
+	// paint a translucent "ghost" of the window while it's not pumping
+	// messages) - X11/SDL2 has no matching "not responding" overlay
+	// concept for this to opt out of.
+#ifdef _WIN32
 	DisableProcessWindowsGhosting();
+#endif
 
-	RECT winRect;
-	GetClientRect(m_hWnd, &winRect);
-	clientWidth = winRect.right;
-	clientHeight = winRect.bottom;
-	MapWindowPoints(m_hWnd, nullptr, reinterpret_cast<LPPOINT>(&winRect), 2);
-	ClipCursor(&winRect);
-	SetActiveWindow(m_hWnd);
+	// Replaces GetClientRect/MapWindowPoints/ClipCursor/SetActiveWindow:
+	// query real client size from SDL2, grab the cursor to the window
+	// (SDL2's whole-window grab is the closest equivalent to an arbitrary
+	// ClipCursor rect - see device.cpp's OnWindowActivate() for the same
+	// substitution), and raise/focus the window.
+	int cw = 0, ch = 0;
+	SDL_GetWindowSize(m_sdlWnd, &cw, &ch);
+	clientWidth = static_cast<u32>(cw);
+	clientHeight = static_cast<u32>(ch);
+	SDL_SetWindowGrab(m_sdlWnd, SDL_TRUE);
+	SDL_RaiseWindow(m_sdlWnd);
 
 	string_path fname;
 	FS.update_path(fname, "$game_data$", "shaders.xr");

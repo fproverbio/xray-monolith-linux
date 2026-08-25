@@ -401,6 +401,20 @@ inline char* _strtime(char* buf)
 }
 inline void _tzset() { tzset(); }
 
+// timeGetTime() - <mmsystem.h>'s millisecond tick counter (device.cpp's
+// CRenderDevice::Run()/mt_Thread timer-delta calibration wants "some
+// monotonic millisecond clock", not wall time - it only ever diffs two
+// consecutive readings). CLOCK_MONOTONIC is the direct portable
+// equivalent, real implementation not a stub. Deliberately implemented
+// here rather than pulled from SDL_GetTicks() - xrCore has no SDL2
+// dependency and shouldn't gain one just for this.
+inline unsigned long timeGetTime()
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return static_cast<unsigned long>(ts.tv_sec) * 1000UL + static_cast<unsigned long>(ts.tv_nsec) / 1000000UL;
+}
+
 #define _alloca alloca
 
 // _msize: real glibc equivalent exists (usable allocated size of a heap
@@ -906,6 +920,16 @@ using LPDIRECTINPUTDEVICE8 = IDirectInputDevice8*;
 #define DIK_RWIN             0xDC
 #define DIK_APPS             0xDD
 #define DIK_UNLABELED        0x97
+
+// DIMOFS_* - real dinput.h DIMOUSESTATE field-byte-offset constants
+// (used by Xr_input.cpp purely as small distinguishing ids passed through
+// IInputReceiver::IR_OnMouseStop(int axis, int)'s first parameter, not as
+// real struct offsets into anything on this port - same "kept numerically
+// accurate in case a future real DirectInput-shaped consumer needs them"
+// reasoning as the DIK_* table above).
+#define DIMOFS_X 0
+#define DIMOFS_Y 4
+#define DIMOFS_Z 8
 
 // Alternate names (dinput.h's own aliases, not this port's invention).
 #define DIK_BACKSPACE        DIK_BACK

@@ -1,13 +1,20 @@
 #ifndef __XR_INPUT__
 #define __XR_INPUT__
 
-// Declarations-only stub pass (see playground/xray-monolith-vulkan-port-
-// notes.md section 21, Part 1 item 3) - real input is a future SDL2 pass
-// (Xr_input.cpp/xr_input_xinput.* stay unported, see notes section 21a
-// point 6); DIDEVCAPS/DIDEVICEINSTANCE/DIDEVICEOBJECTINSTANCE/
-// LPDIRECTINPUT8/LPDIRECTINPUTDEVICE8/DIK_* now live in win32_compat.h
+// This header's own declared shape (CInput's public API, all DIK_*-scancode
+// shaped) is kept unchanged from the original declarations-only stub pass
+// (see playground/xray-monolith-vulkan-port-notes.md section 21, Part 1
+// item 3) - real input now lives behind it: Xr_input.cpp polls SDL2
+// (SDL_GetKeyboardState/SDL_GetMouseState) instead of DirectInput, see its
+// own file comment for the DIK_*<->SDL_Scancode translation this uses.
+// xr_input_xinput.h/.cpp (XInput gamepad) stay as upstream shipped them -
+// their whole body was already commented out before this port touched
+// them, so gamepad support is a documented no-op, not a stub this port
+// added. DIDEVCAPS/DIDEVICEINSTANCE/DIDEVICEOBJECTINSTANCE/
+// LPDIRECTINPUT8/LPDIRECTINPUTDEVICE8/DIK_* still live in win32_compat.h
 // (already in scope via xrCore.h, pulled in earlier by stdafx.h) instead
-// of real <dinput.h>.
+// of real <dinput.h> - kept as opaque/unused members (pDI/pMouse/pKeyboard)
+// on CInput rather than removed, see Xr_input.cpp's constructor comment.
 #ifdef _WIN32
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>

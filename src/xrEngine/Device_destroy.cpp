@@ -1,10 +1,16 @@
 #include "stdafx.h"
 
 #include "../Include/xrRender/DrawUtils.h"
-#include "render.h"
-#include "IGame_Persistent.h"
-#include "xr_IOConsole.h"
+#include "Render.h"
+#include "XR_IOConsole.h"
 #include "MonitorList.h"
+
+// IGame_Persistent.h is not ported yet (see device.cpp's file comment for
+// the full reasoning) - Environment()/bNeed_re_create_env below need its
+// complete type, so those specific lines are deferred with a TODO instead
+// of pulling the header in.
+class IGame_Persistent;
+extern IGame_Persistent* g_pGamePersistent;
 
 void CRenderDevice::_Destroy(BOOL bKeepTextures)
 {
@@ -28,8 +34,9 @@ void CRenderDevice::Destroy(void)
 
 	Log("Destroying Direct3D...");
 
-	ShowCursor(TRUE);
-	ClipCursor(NULL);
+	SDL_ShowCursor(SDL_ENABLE);
+	if (m_sdlWnd)
+		SDL_SetWindowGrab(m_sdlWnd, SDL_FALSE);
 	m_pRender->ValidateHW();
 
 	_Destroy(FALSE);
@@ -55,7 +62,6 @@ void CRenderDevice::Destroy(void)
 	xr_delete(Statistic);
 }
 
-#include "IGame_Level.h"
 #include "CustomHUD.h"
 extern bool use_reshade;
 extern bool init_reshade();
@@ -77,13 +83,14 @@ void CRenderDevice::Reset(bool precache)
 	u32 dwWidth_before = dwWidth;
 	u32 dwHeight_before = dwHeight;
 
-	ShowCursor(TRUE);
+	SDL_ShowCursor(SDL_ENABLE);
 	u32 tm_start = TimerAsync();
 
-	m_pRender->Reset(m_hWnd, dwWidth, dwHeight, fWidth_2, fHeight_2);
+	m_pRender->Reset(m_sdlWnd, dwWidth, dwHeight, fWidth_2, fHeight_2);
 
-	if (g_pGamePersistent)
-		g_pGamePersistent->Environment().bNeed_re_create_env = TRUE;
+	// TODO: g_pGamePersistent->Environment().bNeed_re_create_env needs
+	// IGame_Persistent.h/Environment.h, neither ported yet (see the
+	// class-forward-declaration comment above) - deferred.
 
 	_SetupStates();
 	if (precache)
@@ -107,18 +114,24 @@ void CRenderDevice::Reset(bool precache)
 		int monX, monY;
 		GetMonitorResolution(w, h);
 		GetMonitorPosition(monX, monY);
-		SetWindowLongPtr(Device.m_hWnd, GWL_STYLE, WS_VISIBLE | WS_POPUP);
-		SetWindowPos(Device.m_hWnd, HWND_TOP, monX, monY, w, h, SWP_FRAMECHANGED);
+		// Replaces SetWindowLongPtr(..., WS_VISIBLE | WS_POPUP) +
+		// SetWindowPos(..., SWP_FRAMECHANGED) - same
+		// borderless-fill-the-monitor shape as Device_create.cpp's
+		// g_screenmode==0 branch, just also explicitly (re)shown.
+		SDL_SetWindowBordered(Device.m_sdlWnd, SDL_FALSE);
+		SDL_SetWindowSize(Device.m_sdlWnd, static_cast<int>(w), static_cast<int>(h));
+		SDL_SetWindowPosition(Device.m_sdlWnd, monX, monY);
+		SDL_ShowWindow(Device.m_sdlWnd);
 	}
 
 #ifndef DEDICATED_SERVER
-	ShowCursor(FALSE);
-	RECT winRect;
-	GetClientRect(m_hWnd, &winRect);
-	clientWidth = winRect.right;
-	clientHeight = winRect.bottom;
-	MapWindowPoints(m_hWnd, nullptr, reinterpret_cast<LPPOINT>(&winRect), 2);
-	ClipCursor(&winRect);
+	SDL_ShowCursor(SDL_DISABLE);
+	int cw = 0, ch = 0;
+	SDL_GetWindowSize(m_sdlWnd, &cw, &ch);
+	clientWidth = static_cast<u32>(cw);
+	clientHeight = static_cast<u32>(ch);
+	if (m_sdlWnd)
+		SDL_SetWindowGrab(m_sdlWnd, SDL_TRUE);
 #endif
 
 	m_imgui.OnDeviceResetEnd();
@@ -132,7 +145,7 @@ bool CRenderDevice::ChangeOutputMonitor(HMONITOR hTargetMon)
 		return false;
 	if (s_swap_in_progress)
 		return false;
-	if (IsIconic(m_hWnd))
+	if (m_sdlWnd && (SDL_GetWindowFlags(m_sdlWnd) & SDL_WINDOW_MINIMIZED))
 	{
 		Msg("* vid_monitor: window is minimised, deferring monitor switch to restart");
 		return false;
@@ -156,27 +169,28 @@ bool CRenderDevice::ChangeOutputMonitor(HMONITOR hTargetMon)
 	use_reshade = false;
 
 	m_imgui.OnDeviceResetBegin();
-	ShowCursor(TRUE);
+	SDL_ShowCursor(SDL_ENABLE);
 
 	u32 dwWidth_before  = dwWidth;
 	u32 dwHeight_before = dwHeight;
 
-	bool switched = m_pRender->SwitchOutputMonitor(hTargetMon, m_hWnd,
+	bool switched = m_pRender->SwitchOutputMonitor(hTargetMon, m_sdlWnd,
 	                                               g_screenmode,
 	                                               psCurrentVidMode[0], psCurrentVidMode[1]);
 
 	if (!switched)
 	{
 		m_imgui.OnDeviceResetEnd();
-		ShowCursor(FALSE);
+		SDL_ShowCursor(SDL_DISABLE);
 		use_reshade = init_reshade();
 		return false;
 	}
 
-	m_pRender->Reset(m_hWnd, dwWidth, dwHeight, fWidth_2, fHeight_2);
+	m_pRender->Reset(m_sdlWnd, dwWidth, dwHeight, fWidth_2, fHeight_2);
 
-	if (g_pGamePersistent)
-		g_pGamePersistent->Environment().bNeed_re_create_env = TRUE;
+	// TODO: g_pGamePersistent->Environment().bNeed_re_create_env needs
+	// IGame_Persistent.h/Environment.h, neither ported yet (see the
+	// class-forward-declaration comment above) - deferred.
 
 	_SetupStates();
 	PreCache(20, true, false);
@@ -187,13 +201,13 @@ bool CRenderDevice::ChangeOutputMonitor(HMONITOR hTargetMon)
 		seqResolutionChanged.Process(rp_ScreenResolutionChanged);
 
 #ifndef DEDICATED_SERVER
-	ShowCursor(FALSE);
-	RECT winRect;
-	GetClientRect(m_hWnd, &winRect);
-	clientWidth  = winRect.right;
-	clientHeight = winRect.bottom;
-	MapWindowPoints(m_hWnd, nullptr, reinterpret_cast<LPPOINT>(&winRect), 2);
-	ClipCursor(&winRect);
+	SDL_ShowCursor(SDL_DISABLE);
+	int cw = 0, ch = 0;
+	SDL_GetWindowSize(m_sdlWnd, &cw, &ch);
+	clientWidth  = static_cast<u32>(cw);
+	clientHeight = static_cast<u32>(ch);
+	if (m_sdlWnd)
+		SDL_SetWindowGrab(m_sdlWnd, SDL_TRUE);
 #endif
 
 	m_imgui.OnDeviceResetEnd();

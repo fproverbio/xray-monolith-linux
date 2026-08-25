@@ -1,6 +1,11 @@
 #pragma once
 
+// DIK_* constants come from win32_compat.h's portable stand-ins on Linux
+// (already in scope via xrCore.h/stdafx.h) - <dinput.h> only exists on
+// real Win32 (see xr_input.h's identical guard).
+#ifdef _WIN32
 #include <dinput.h>
+#endif
 #include <imgui.h>
 
 namespace xr_imgui

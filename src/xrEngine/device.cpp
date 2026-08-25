@@ -1,24 +1,18 @@
 #include "stdafx.h"
-#include "../xrCDB/frustum.h"
-#include "xr_ioconsole.h"
+#include "../xrCDB/Frustum.h"
+#include "XR_IOConsole.h"
 #include "xr_input.h"
 #include "../xrCore/profiler.h"
 
-#pragma warning(disable:4995)
-// mmsystem.h
-#define MMNOSOUND
-#define MMNOMIDI
-#define MMNOAUX
-#define MMNOMIXER
-#define MMNOJOY
-#include <mmsystem.h>
-// d3dx9.h
-#include <d3dx9.h>
-#pragma warning(default:4995)
-
 #include "x_ray.h"
+// Discord Game SDK only ships a Windows binary in this tree (sdk/libraries/
+// x64/discord_game_sdk.lib, no Linux .so anywhere in the checkout) - see
+// x_ray.cpp's file comment for the full reasoning. Guarded out here the
+// same way, not deleted.
+#ifdef _WIN32
 #include "discord\discord.h"
-#include "render.h"
+#endif
+#include "Render.h"
 #include <chrono>
 
 // must be defined before include of FS_impl.h
@@ -30,10 +24,21 @@
 # include "engine_impl.hpp"
 #endif // #ifdef INGAME_EDITOR
 
-#include "xrSash.h"
-#include "igame_persistent.h"
+#include "xrSASH.h"
 
-#pragma comment( lib, "d3dx9.lib" )
+// IGame_Level.h/IGame_Persistent.h are not ported yet - both need real
+// object-graph/environment infrastructure (Environment.h, CameraManager.h,
+// bone.h, xrCDB/xr_area.h's excluded .cpp) well outside this window/
+// device-bootstrap pass's scope, same exclusion already applied to
+// Rain.cpp/Environment_misc.cpp/xr_efflensflare.cpp/etc in this batch's
+// CMakeLists.txt (see playground/xray-monolith-vulkan-port-notes.md).
+// Every use of g_pGameLevel/g_pGamePersistent below is either a bare
+// pointer (fine with just a forward declaration - no member access) or
+// explicitly deferred/stubbed with a TODO pointing back to this comment.
+class IGame_Level;
+extern IGame_Level* g_pGameLevel;
+class IGame_Persistent;
+extern IGame_Persistent* g_pGamePersistent;
 
 ENGINE_API CRenderDevice Device;
 ENGINE_API CLoadScreenRenderer load_screen_renderer;
@@ -48,10 +53,10 @@ BOOL psLua_ParallelGC = TRUE;
 BOOL psLua_ParallelGC_debug = FALSE;
 int psLua_ParallelGC_CallAmount = 25;
 
+#ifdef _WIN32
 extern discord::Core* discord_core;
 extern bool use_discord;
-
-extern Fvector4 ps_ssfx_grass_interactive;
+#endif
 
 #ifdef ECO_RENDER
 std::chrono::high_resolution_clock::time_point tlastf = std::chrono::high_resolution_clock::now(), tcurrentf = std::
@@ -144,13 +149,19 @@ void CRenderDevice::End(void)
 
 			CheckPrivilegySlowdown();
 
+			// TODO: g_pGamePersistent->GameType() needs IGame_Persistent.h,
+			// not ported yet (see the class-forward-declaration comment
+			// above) - conservatively skip this "pause if the window lost
+			// focus during precache" hack entirely rather than guess at
+			// its singleplayer-only ("GameType()==1") intent.
+#if 0
 			if (g_pGamePersistent->GameType() == 1) //haCk
 			{
-				WINDOWINFO wi;
-				GetWindowInfo(m_hWnd, &wi);
-				if (wi.dwWindowStatus != WS_ACTIVECAPTION)
+				const bool focused = (SDL_GetWindowFlags(m_sdlWnd) & SDL_WINDOW_INPUT_FOCUS) != 0;
+				if (!focused)
 					Pause(TRUE, TRUE, TRUE, "application start");
 			}
+#endif
 		}
 	}
 
@@ -235,8 +246,6 @@ void mt_Thread(void* ptr)
 	}
 }
 
-#include "igame_level.h"
-
 void CRenderDevice::PreCache(u32 amount, bool b_draw_loadscreen, bool b_wait_user_input)
 {
 #ifdef DEDICATED_SERVER
@@ -269,7 +278,12 @@ ENGINE_API xr_list<LOADING_EVENT> g_loading_events;
 
 extern bool IsMainMenuActive(); //ECO_RENDER add
 
-static HMONITOR g_StartupMonitor = NULL;
+// Monitor query/selection - ported from Win32 EnumDisplayMonitors/
+// GetMonitorInfoA/MonitorFromPoint to SDL2's display-query API (see
+// MonitorList.cpp's file comment for the full HMONITOR-encoding
+// rationale; xr_MonitorFromDisplayIndex()/xr_DisplayIndexFromMonitor()
+// live in MonitorList.h so both files share the identical convention).
+static HMONITOR g_StartupMonitor = nullptr;
 
 #include "MonitorList.h"
 
@@ -281,24 +295,37 @@ static void InitMonitor()
 	HMONITOR chosen = ResolveSelectedMonitor();
 	if (chosen)
 	{
-		MONITORINFO mi;
-		mi.cbSize = sizeof(mi);
-		if (GetMonitorInfoA(chosen, &mi))
-		{
-			g_StartupMonitor = chosen;
-			return;
-		}
-		Msg("! vid_monitor: resolved handle is invalid, using Auto");
+		g_StartupMonitor = chosen;
+		return;
 	}
 
-	POINT cursorPos;
-	GetCursorPos(&cursorPos);
-	g_StartupMonitor = MonitorFromPoint(cursorPos, MONITOR_DEFAULTTOPRIMARY);
+	// "Auto": whichever display currently contains the mouse cursor -
+	// closest SDL2 equivalent of Win32's
+	// MonitorFromPoint(cursor, MONITOR_DEFAULTTOPRIMARY). Falls back to
+	// display 0 if nothing matches (e.g. no real display server - this
+	// port's documented headless-test-environment limitation).
+	int x = 0, y = 0;
+	SDL_GetGlobalMouseState(&x, &y);
+
+	int display = 0;
+	const int numDisplays = SDL_GetNumVideoDisplays();
+	for (int i = 0; i < numDisplays; ++i)
+	{
+		SDL_Rect bounds;
+		if (SDL_GetDisplayBounds(i, &bounds) == 0 &&
+			x >= bounds.x && x < bounds.x + bounds.w &&
+			y >= bounds.y && y < bounds.y + bounds.h)
+		{
+			display = i;
+			break;
+		}
+	}
+	g_StartupMonitor = xr_MonitorFromDisplayIndex(display);
 }
 
 ENGINE_API void ResetStartupMonitor()
 {
-	g_StartupMonitor = NULL;
+	g_StartupMonitor = nullptr;
 }
 
 ENGINE_API void SetStartupMonitor(HMONITOR h)
@@ -316,20 +343,19 @@ void GetMonitorResolution(u32& horizontal, u32& vertical)
 {
 	InitMonitor();
 
-	MONITORINFO mi;
-	mi.cbSize = sizeof(mi);
-	if (GetMonitorInfoA(g_StartupMonitor, &mi))
+	SDL_Rect bounds;
+	const int display = xr_DisplayIndexFromMonitor(g_StartupMonitor);
+	if (display >= 0 && SDL_GetDisplayBounds(display, &bounds) == 0)
 	{
-		horizontal = mi.rcMonitor.right - mi.rcMonitor.left;
-		vertical = mi.rcMonitor.bottom - mi.rcMonitor.top;
+		horizontal = static_cast<u32>(bounds.w);
+		vertical = static_cast<u32>(bounds.h);
 	}
 	else
 	{
-		RECT desktop;
-		const HWND hDesktop = GetDesktopWindow();
-		GetWindowRect(hDesktop, &desktop);
-		horizontal = desktop.right - desktop.left;
-		vertical = desktop.bottom - desktop.top;
+		// No real display server available (see this port's documented
+		// headless-test-environment limitation) - a sane desktop default.
+		horizontal = 1024;
+		vertical = 768;
 	}
 }
 
@@ -337,12 +363,12 @@ void GetMonitorPosition(int& x, int& y)
 {
 	InitMonitor();
 
-	MONITORINFO mi;
-	mi.cbSize = sizeof(mi);
-	if (GetMonitorInfoA(g_StartupMonitor, &mi))
+	SDL_Rect bounds;
+	const int display = xr_DisplayIndexFromMonitor(g_StartupMonitor);
+	if (display >= 0 && SDL_GetDisplayBounds(display, &bounds) == 0)
 	{
-		x = mi.rcMonitor.left;
-		y = mi.rcMonitor.top;
+		x = bounds.x;
+		y = bounds.y;
 	}
 	else
 	{
@@ -353,17 +379,14 @@ void GetMonitorPosition(int& x, int& y)
 
 float GetMonitorRefresh()
 {
-	DEVMODE lpDevMode;
-	memset(&lpDevMode, 0, sizeof(DEVMODE));
-	lpDevMode.dmSize = sizeof(DEVMODE);
-	lpDevMode.dmDriverExtra = 0;
+	InitMonitor();
 
-	if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &lpDevMode) == 0)
-	{
-		return 1.f / 60.f;
-	}
-	else
-		return 1.f / lpDevMode.dmDisplayFrequency;
+	SDL_DisplayMode mode;
+	const int display = xr_DisplayIndexFromMonitor(g_StartupMonitor);
+	if (display >= 0 && SDL_GetCurrentDisplayMode(display, &mode) == 0 && mode.refresh_rate > 0)
+		return 1.f / static_cast<float>(mode.refresh_rate);
+
+	return 1.f / 60.f;
 }
 
 extern int ps_framelimiter;
@@ -457,13 +480,18 @@ void CRenderDevice::on_idle()
 	mFullTransformHud.mul(mProjectHud, mView);
 	m_pRender->SetCacheXform(mView, mProject);
 
-	// Previous frame data -- 
+	// Previous frame data --
 	mView_prev = mView_saved;
 	mProject_prev = mProject_saved;
 	//mFullTransform_prev = mFullTransform_saved; // Unused?
 
 	m_pRender->SetCacheXform_prev(mView_prev, mProject_prev);
 
+	// TODO: grass-bender/wind-anim data sync below needs
+	// IGame_Persistent::grass_shader_data + Environment() (Environment.h,
+	// itself excluded from this batch - see the class-forward-declaration
+	// comment near the top of this file). Deferred along with those.
+#if 0
 	// Save previous frame grass benders data
 	IGame_Persistent::grass_data& GData = g_pGamePersistent->grass_shader_data;
 
@@ -479,10 +507,15 @@ void CRenderDevice::on_idle()
 	// Save wind animation position
 	wind_anim_prev = wind_anim_saved;
 	wind_anim_saved = g_pGamePersistent->Environment().wind_anim;
+#endif
 
-	//RCache.set_xform_view ( mView );
-	//RCache.set_xform_project ( mProject );
-	D3DXMatrixInverse((D3DXMATRIX*)&mInvFullTransform, 0, (D3DXMATRIX*)&mFullTransform);
+	// Real, general 4x4 inverse (replaces D3DXMatrixInverse, which has no
+	// portable equivalent - see xrCore/_matrix.h's invert_44() for the
+	// full rationale; mFullTransform = mProject*mView is a genuine
+	// projective matrix, not just rotation+translation, so the existing
+	// invert()/invert_b() 4x3-only methods would silently give wrong
+	// results here).
+	mInvFullTransform.invert_44(mFullTransform);
 
 	vCameraPosition_saved = vCameraPosition;
 	mFullTransform_saved = mFullTransform;
@@ -609,20 +642,32 @@ void CRenderDevice::message_loop()
         return;
     }
 #endif
-	MSG msg;
-	PeekMessage(&msg, NULL, 0U, 0U, PM_NOREMOVE);
-	while (msg.message != WM_QUIT)
+	// Replaces the old Win32 PeekMessage/TranslateMessage/DispatchMessage
+	// pump: drain every pending SDL event through ProcessEvent()
+	// (Device_wndproc.cpp), then run one on_idle() - same overall shape
+	// (dispatch pending input, then idle-render), except every pending
+	// event is drained per iteration instead of one message at a time,
+	// which is both simpler and avoids event-floods starving on_idle().
+	SDL_Event event;
+	for (;;)
 	{
-		if (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
+		bool quit = false;
+		while (SDL_PollEvent(&event))
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-			continue;
+			if (event.type == SDL_QUIT)
+			{
+				quit = true;
+				continue;
+			}
+			ProcessEvent(event);
 		}
+		if (quit)
+			break;
 		on_idle();
 	}
 }
 
+#ifdef _WIN32
 void mt_DiscordThread(void*)
 {
 	while (true)
@@ -648,6 +693,7 @@ void mt_DiscordThread(void*)
 		}
 	}
 }
+#endif // #ifdef _WIN32
 
 void CRenderDevice::Run()
 {
@@ -672,11 +718,16 @@ void CRenderDevice::Run()
 	mt_bMustExit = FALSE;
 	thread_spawn(mt_FreezeThread, "Freeze detecting thread", 0, 0);
 	thread_spawn(mt_Thread, "X-RAY Secondary thread", 0, this);
+#ifdef _WIN32
 	thread_spawn(mt_DiscordThread, "X-RAY Discord thread", 0, 0);
+#endif
 	// Message cycle
 	seqAppStart.Process(rp_AppStart);
 	m_pRender->ClearTarget();
-	SetForegroundWindow(m_hWnd);
+	// Real window, created hidden in Device_Initialize.cpp - show + raise
+	// it now (replaces SetForegroundWindow(m_hWnd)).
+	SDL_ShowWindow(m_sdlWnd);
+	SDL_RaiseWindow(m_sdlWnd);
 	message_loop();
 	seqAppEnd.Process(rp_AppEnd);
 	// Stop Balance-Thread
@@ -751,7 +802,6 @@ void CRenderDevice::FrameMove()
 }
 
 ENGINE_API BOOL bShowPauseString = TRUE;
-#include "IGame_Persistent.h"
 
 void CRenderDevice::Pause(BOOL bOn, BOOL bTimer, BOOL bSound, LPCSTR reason)
 {
@@ -774,7 +824,13 @@ void CRenderDevice::Pause(BOOL bOn, BOOL bTimer, BOOL bSound, LPCSTR reason)
 #endif // DEBUG
 				TRUE;
 
-		if (bTimer && (!g_pGamePersistent || g_pGamePersistent->CanBePaused()))
+		// TODO: g_pGamePersistent->CanBePaused() needs IGame_Persistent.h,
+		// not ported yet (see the class-forward-declaration comment near
+		// the top of this file) - pausing the timer unconditionally here
+		// is the safe default until that's ported (matches this
+		// function's own "if bTimer" gate, just without the extra
+		// game-specific opt-out).
+		if (bTimer)
 		{
 			g_pauseMngr().Pause(true);
 #ifdef DEBUG
@@ -825,11 +881,9 @@ bool CRenderDevice::Paused()
 	return g_pauseMngr().Paused();
 }
 
-void CRenderDevice::OnWM_Activate(WPARAM wParam, LPARAM lParam)
+void CRenderDevice::OnWindowActivate(bool activated, bool minimized)
 {
-	u16 fActive = LOWORD(wParam);
-	BOOL fMinimized = (BOOL)HIWORD(wParam);
-	BOOL bActive = ((fActive != WA_INACTIVE) && (!fMinimized)) ? TRUE : FALSE;
+	BOOL bActive = (activated && !minimized) ? TRUE : FALSE;
 
 	if (psDeviceFlags2.test(rsAlwaysActive) && g_screenmode != 2)
 	{
@@ -841,20 +895,20 @@ void CRenderDevice::OnWM_Activate(WPARAM wParam, LPARAM lParam)
 
 			if (Device.b_hide_cursor)
 			{
-				ShowCursor(FALSE);
-				if (m_hWnd)
-				{
-					RECT winRect;
-					GetClientRect(m_hWnd, &winRect);
-					MapWindowPoints(m_hWnd, nullptr, reinterpret_cast<LPPOINT>(&winRect), 2);
-					ClipCursor(&winRect);
-				}
+				SDL_ShowCursor(SDL_DISABLE);
+				// Confine the cursor to the window - closest SDL2
+				// equivalent of GetClientRect+MapWindowPoints+ClipCursor
+				// (SDL2 has no arbitrary-rect cursor clip, only a
+				// whole-window grab).
+				if (m_sdlWnd)
+					SDL_SetWindowGrab(m_sdlWnd, SDL_TRUE);
 				pInput->OnAppActivate();
 			}
 			else
 			{
-				ShowCursor(TRUE);
-				ClipCursor(NULL);
+				SDL_ShowCursor(SDL_ENABLE);
+				if (m_sdlWnd)
+					SDL_SetWindowGrab(m_sdlWnd, SDL_FALSE);
 				pInput->OnAppDeactivate();
 			}
 		}
@@ -872,25 +926,18 @@ void CRenderDevice::OnWM_Activate(WPARAM wParam, LPARAM lParam)
 			app_inactive_time += TimerMM.GetElapsed_ms() - app_inactive_time_start;
 
 #ifndef DEDICATED_SERVER
-# ifdef INGAME_EDITOR
-            if (!editor())
-# endif // #ifdef INGAME_EDITOR
-			ShowCursor(FALSE);
-			if (m_hWnd)
-			{
-				RECT winRect;
-				GetClientRect(m_hWnd, &winRect);
-				MapWindowPoints(m_hWnd, nullptr, reinterpret_cast<LPPOINT>(&winRect), 2);
-				ClipCursor(&winRect);
-			}
+			SDL_ShowCursor(SDL_DISABLE);
+			if (m_sdlWnd)
+				SDL_SetWindowGrab(m_sdlWnd, SDL_TRUE);
 #endif // #ifndef DEDICATED_SERVER
 		}
 		else
 		{
 			app_inactive_time_start = TimerMM.GetElapsed_ms();
 			Device.seqAppDeactivate.Process(rp_AppDeactivate);
-			ShowCursor(TRUE);
-			ClipCursor(NULL);
+			SDL_ShowCursor(SDL_ENABLE);
+			if (m_sdlWnd)
+				SDL_SetWindowGrab(m_sdlWnd, SDL_FALSE);
 		}
 	}
 }
@@ -949,8 +996,9 @@ void CLoadScreenRenderer::OnRender()
 void CRenderDevice::CSecondVPParams::SetSVPActive(bool bState) //--#SM+#-- +SecondVP+
 {
 	isActive = bState;
-	if (g_pGamePersistent != NULL)
-		g_pGamePersistent->m_pGShaderConstants->m_blender_mode.z = (isActive ? 1.0f : 0.0f);
+	// TODO: g_pGamePersistent->m_pGShaderConstants sync needs
+	// IGame_Persistent.h, not ported yet (see the class-forward-
+	// declaration comment near the top of this file) - deferred.
 }
 
 bool CRenderDevice::CSecondVPParams::IsSVPFrame() //--#SM+#-- +SecondVP+

@@ -45,12 +45,151 @@ static void on_error_dialog(bool before)
 	pInput->acquire(true);
 }
 
+// --- DIK_* <-> SDL_Scancode mapping ---------------------------------------
+//
+// Real input now goes through SDL2's polling API (SDL_GetKeyboardState/
+// SDL_GetMouseState/SDL_GetRelativeMouseState - see KeyUpdate()/
+// MouseUpdate() below), replacing DirectInput device polling. xr_input.h's
+// public API (CInput::iGetAsyncKeyState(), IInputReceiver::IR_OnKeyboard*,
+// imgui_helper.h's whole DIK_*->ImGuiKey_* table) is left exactly as-is -
+// still DIK_*-scancode-shaped - since nothing about that shape is actually
+// DirectInput-specific (it's just a numbering scheme) and every existing
+// consumer of CInput already expects it (same "preserve the declared
+// shape, adapt only the implementation underneath" principle already
+// established for xrNetServer's DirectPlay8 removal - see
+// playground/xray-monolith-vulkan-port-notes.md). So: SDL2 does the real
+// polling, this table translates SDL_Scancode -> DIK_* once per key, and
+// every call site above KeyUpdate()/MouseUpdate() keeps talking in DIK_*
+// exactly as before.
+static SDL_Scancode DikToScancode(int dik)
+{
+	switch (dik)
+	{
+	case DIK_ESCAPE: return SDL_SCANCODE_ESCAPE;
+	case DIK_1: return SDL_SCANCODE_1;
+	case DIK_2: return SDL_SCANCODE_2;
+	case DIK_3: return SDL_SCANCODE_3;
+	case DIK_4: return SDL_SCANCODE_4;
+	case DIK_5: return SDL_SCANCODE_5;
+	case DIK_6: return SDL_SCANCODE_6;
+	case DIK_7: return SDL_SCANCODE_7;
+	case DIK_8: return SDL_SCANCODE_8;
+	case DIK_9: return SDL_SCANCODE_9;
+	case DIK_0: return SDL_SCANCODE_0;
+	case DIK_MINUS: return SDL_SCANCODE_MINUS;
+	case DIK_EQUALS: return SDL_SCANCODE_EQUALS;
+	case DIK_BACK: return SDL_SCANCODE_BACKSPACE;
+	case DIK_TAB: return SDL_SCANCODE_TAB;
+	case DIK_Q: return SDL_SCANCODE_Q;
+	case DIK_W: return SDL_SCANCODE_W;
+	case DIK_E: return SDL_SCANCODE_E;
+	case DIK_R: return SDL_SCANCODE_R;
+	case DIK_T: return SDL_SCANCODE_T;
+	case DIK_Y: return SDL_SCANCODE_Y;
+	case DIK_U: return SDL_SCANCODE_U;
+	case DIK_I: return SDL_SCANCODE_I;
+	case DIK_O: return SDL_SCANCODE_O;
+	case DIK_P: return SDL_SCANCODE_P;
+	case DIK_LBRACKET: return SDL_SCANCODE_LEFTBRACKET;
+	case DIK_RBRACKET: return SDL_SCANCODE_RIGHTBRACKET;
+	case DIK_RETURN: return SDL_SCANCODE_RETURN;
+	case DIK_LCONTROL: return SDL_SCANCODE_LCTRL;
+	case DIK_A: return SDL_SCANCODE_A;
+	case DIK_S: return SDL_SCANCODE_S;
+	case DIK_D: return SDL_SCANCODE_D;
+	case DIK_F: return SDL_SCANCODE_F;
+	case DIK_G: return SDL_SCANCODE_G;
+	case DIK_H: return SDL_SCANCODE_H;
+	case DIK_J: return SDL_SCANCODE_J;
+	case DIK_K: return SDL_SCANCODE_K;
+	case DIK_L: return SDL_SCANCODE_L;
+	case DIK_SEMICOLON: return SDL_SCANCODE_SEMICOLON;
+	case DIK_APOSTROPHE: return SDL_SCANCODE_APOSTROPHE;
+	case DIK_GRAVE: return SDL_SCANCODE_GRAVE;
+	case DIK_LSHIFT: return SDL_SCANCODE_LSHIFT;
+	case DIK_BACKSLASH: return SDL_SCANCODE_BACKSLASH;
+	case DIK_Z: return SDL_SCANCODE_Z;
+	case DIK_X: return SDL_SCANCODE_X;
+	case DIK_C: return SDL_SCANCODE_C;
+	case DIK_V: return SDL_SCANCODE_V;
+	case DIK_B: return SDL_SCANCODE_B;
+	case DIK_N: return SDL_SCANCODE_N;
+	case DIK_M: return SDL_SCANCODE_M;
+	case DIK_COMMA: return SDL_SCANCODE_COMMA;
+	case DIK_PERIOD: return SDL_SCANCODE_PERIOD;
+	case DIK_SLASH: return SDL_SCANCODE_SLASH;
+	case DIK_RSHIFT: return SDL_SCANCODE_RSHIFT;
+	case DIK_MULTIPLY: return SDL_SCANCODE_KP_MULTIPLY;
+	case DIK_LMENU: return SDL_SCANCODE_LALT;
+	case DIK_SPACE: return SDL_SCANCODE_SPACE;
+	case DIK_CAPITAL: return SDL_SCANCODE_CAPSLOCK;
+	case DIK_F1: return SDL_SCANCODE_F1;
+	case DIK_F2: return SDL_SCANCODE_F2;
+	case DIK_F3: return SDL_SCANCODE_F3;
+	case DIK_F4: return SDL_SCANCODE_F4;
+	case DIK_F5: return SDL_SCANCODE_F5;
+	case DIK_F6: return SDL_SCANCODE_F6;
+	case DIK_F7: return SDL_SCANCODE_F7;
+	case DIK_F8: return SDL_SCANCODE_F8;
+	case DIK_F9: return SDL_SCANCODE_F9;
+	case DIK_F10: return SDL_SCANCODE_F10;
+	case DIK_NUMLOCK: return SDL_SCANCODE_NUMLOCKCLEAR;
+	case DIK_SCROLL: return SDL_SCANCODE_SCROLLLOCK;
+	case DIK_NUMPAD7: return SDL_SCANCODE_KP_7;
+	case DIK_NUMPAD8: return SDL_SCANCODE_KP_8;
+	case DIK_NUMPAD9: return SDL_SCANCODE_KP_9;
+	case DIK_SUBTRACT: return SDL_SCANCODE_KP_MINUS;
+	case DIK_NUMPAD4: return SDL_SCANCODE_KP_4;
+	case DIK_NUMPAD5: return SDL_SCANCODE_KP_5;
+	case DIK_NUMPAD6: return SDL_SCANCODE_KP_6;
+	case DIK_ADD: return SDL_SCANCODE_KP_PLUS;
+	case DIK_NUMPAD1: return SDL_SCANCODE_KP_1;
+	case DIK_NUMPAD2: return SDL_SCANCODE_KP_2;
+	case DIK_NUMPAD3: return SDL_SCANCODE_KP_3;
+	case DIK_NUMPAD0: return SDL_SCANCODE_KP_0;
+	case DIK_DECIMAL: return SDL_SCANCODE_KP_PERIOD;
+	case DIK_OEM_102: return SDL_SCANCODE_NONUSBACKSLASH;
+	case DIK_F11: return SDL_SCANCODE_F11;
+	case DIK_F12: return SDL_SCANCODE_F12;
+	case DIK_NUMPADEQUALS: return SDL_SCANCODE_KP_EQUALS;
+	case DIK_NUMPADENTER: return SDL_SCANCODE_KP_ENTER;
+	case DIK_RCONTROL: return SDL_SCANCODE_RCTRL;
+	case DIK_NUMPADCOMMA: return SDL_SCANCODE_KP_COMMA;
+	case DIK_DIVIDE: return SDL_SCANCODE_KP_DIVIDE;
+	case DIK_SYSRQ: return SDL_SCANCODE_PRINTSCREEN;
+	case DIK_RMENU: return SDL_SCANCODE_RALT;
+	case DIK_PAUSE: return SDL_SCANCODE_PAUSE;
+	case DIK_HOME: return SDL_SCANCODE_HOME;
+	case DIK_UP: return SDL_SCANCODE_UP;
+	case DIK_PRIOR: return SDL_SCANCODE_PAGEUP;
+	case DIK_LEFT: return SDL_SCANCODE_LEFT;
+	case DIK_RIGHT: return SDL_SCANCODE_RIGHT;
+	case DIK_END: return SDL_SCANCODE_END;
+	case DIK_DOWN: return SDL_SCANCODE_DOWN;
+	case DIK_NEXT: return SDL_SCANCODE_PAGEDOWN;
+	case DIK_INSERT: return SDL_SCANCODE_INSERT;
+	case DIK_DELETE: return SDL_SCANCODE_DELETE;
+	case DIK_LWIN: return SDL_SCANCODE_LGUI;
+	case DIK_RWIN: return SDL_SCANCODE_RGUI;
+	case DIK_APPS: return SDL_SCANCODE_APPLICATION;
+	default: return SDL_SCANCODE_UNKNOWN;
+	}
+}
+
 CInput::CInput(BOOL bExclusive, int deviceForInit)
 {
 	g_exclusive = !!bExclusive;
 
 	Log("Starting INPUT device...");
 
+	// pDI/pMouse/pKeyboard (real DirectInput COM interfaces on Windows)
+	// have no SDL2 equivalent to hold - SDL2 keyboard/mouse state is
+	// queried directly (SDL_GetKeyboardState/SDL_GetMouseState), there is
+	// no separate "device object" to create/acquire/release. Left null
+	// and unused rather than removed from xr_input.h - they're private,
+	// nothing outside this class touches them, and keeping the header
+	// unchanged here means one less thing to re-verify (see notes file's
+	// "preserve the declared shape" principle).
 	pDI = NULL;
 	pMouse = NULL;
 	pKeyboard = NULL;
@@ -67,28 +206,12 @@ CInput::CInput(BOOL bExclusive, int deviceForInit)
 	//===================== Dummy pack
 	iCapture(&dummyController);
 
-	if (!pDI)
-		CHK_DX(DirectInput8Create(GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pDI, NULL));
-
-	//. u32 kb_input_flags = ((bExclusive)?DISCL_EXCLUSIVE:DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND;
-	u32 kb_input_flags = ((bExclusive) ? DISCL_EXCLUSIVE : DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND;
-
-	//. u32 mouse_input_flags = ((bExclusive)?DISCL_EXCLUSIVE:DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND | DISCL_NOWINKEY,
-	u32 mouse_input_flags = ((bExclusive) ? DISCL_EXCLUSIVE : DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND | DISCL_NOWINKEY;
-
-	// KEYBOARD
-	if (deviceForInit & keyboard_device_key)
-		CHK_DX(CreateInputDevice(
-		&pKeyboard, GUID_SysKeyboard, &c_dfDIKeyboard,
-		kb_input_flags,
-		KEYBOARDBUFFERSIZE));
-
-	// MOUSE
-	if (deviceForInit & mouse_device_key)
-		CHK_DX(CreateInputDevice(
-		&pMouse, GUID_SysMouse, &c_dfDIMouse2,
-		mouse_input_flags,
-		MOUSEBUFFERSIZE));
+	// deviceForInit (mouse_device_key/keyboard_device_key) no longer picks
+	// which DirectInput device object to create - SDL2 keyboard/mouse
+	// state is always available once SDL_INIT_VIDEO succeeds, there is no
+	// per-device init step left to conditionally skip. Parameter kept for
+	// API compatibility (existing call sites still pass it).
+	(void)deviceForInit;
 
 	Debug.set_on_dialog(&on_error_dialog);
 
@@ -107,81 +230,32 @@ CInput::~CInput(void)
 	Device.seqAppActivate.Remove(this);
 #endif
 	//_______________________
-
-	// Unacquire and release the device's interfaces
-	if (pMouse)
-	{
-		pMouse->Unacquire();
-		_RELEASE(pMouse);
-	}
-
-	if (pKeyboard)
-	{
-		pKeyboard->Unacquire();
-		_RELEASE(pKeyboard);
-	}
-
-	_SHOW_REF("Input: ", pDI);
-	_RELEASE(pDI);
+	// No DirectInput device interfaces to unacquire/release under SDL2 -
+	// see the constructor's comment on pDI/pMouse/pKeyboard.
 }
-
-//-----------------------------------------------------------------------------
-// Name: CreateInputDevice()
-// Desc: Create a DirectInput device.
-//-----------------------------------------------------------------------------
-HRESULT CInput::CreateInputDevice(LPDIRECTINPUTDEVICE8* device, GUID guidDevice, const DIDATAFORMAT* pdidDataFormat,
-                                  u32 dwFlags, u32 buf_size)
-{
-	// Obtain an interface to the input device
-	//. CHK_DX( pDI->CreateDeviceEx( guidDevice, IID_IDirectInputDevice8, (void**)device, NULL ) );
-	CHK_DX(pDI->CreateDevice(guidDevice, /*IID_IDirectInputDevice8,*/ device, NULL));
-
-	// Set the device data format. Note: a data format specifies which
-	// controls on a device we are interested in, and how they should be
-	// reported.
-	CHK_DX((*device)->SetDataFormat(pdidDataFormat));
-
-	// Set the cooperativity level to let DirectInput know how this device
-	// should interact with the system and with other DirectInput applications.
-#ifdef INGAME_EDITOR
-    if (!Device.editor())
-#endif // #ifdef INGAME_EDITOR
-	{
-		HRESULT _hr = (*device)->SetCooperativeLevel(RDEVICE.m_hWnd, dwFlags);
-		if (FAILED(_hr) && (_hr == E_NOTIMPL)) Msg("! INPUT: Can't set coop level. Emulation???");
-		else
-			R_CHK(_hr);
-	}
-
-	// setup the buffer size for the keyboard data
-	DIPROPDWORD dipdw;
-	dipdw.diph.dwSize = sizeof(DIPROPDWORD);
-	dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
-	dipdw.diph.dwObj = 0;
-	dipdw.diph.dwHow = DIPH_DEVICE;
-	dipdw.dwData = buf_size;
-
-	CHK_DX((*device)->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph));
-
-	return S_OK;
-}
-
-//-----------------------------------------------------------------------
 
 void CInput::SetAllAcquire(BOOL bAcquire)
 {
-	if (pMouse) bAcquire ? pMouse->Acquire() : pMouse->Unacquire();
-	if (pKeyboard) bAcquire ? pKeyboard->Acquire() : pKeyboard->Unacquire();
+	SetKBDAcquire(bAcquire);
+	SetMouseAcquire(bAcquire);
 }
 
 void CInput::SetMouseAcquire(BOOL bAcquire)
 {
-	if (pMouse) bAcquire ? pMouse->Acquire() : pMouse->Unacquire();
+	// Closest SDL2 equivalent of DirectInput's exclusive mouse
+	// acquire/unacquire: relative mode both hides the cursor and reports
+	// deltas unbounded by screen edges, which is what "acquired" mouse
+	// input meant here in practice (see MouseUpdate()/GrabInput-style
+	// call sites elsewhere in this port).
+	SDL_SetRelativeMouseMode(bAcquire ? SDL_TRUE : SDL_FALSE);
 }
 
 void CInput::SetKBDAcquire(BOOL bAcquire)
 {
-	if (pKeyboard) bAcquire ? pKeyboard->Acquire() : pKeyboard->Unacquire();
+	// SDL2 keyboard polling has no separate "acquire" step to mirror -
+	// SDL_GetKeyboardState() always reflects real keyboard state once the
+	// window has focus. No-op kept for API compatibility.
+	(void)bAcquire;
 }
 
 //-----------------------------------------------------------------------
@@ -191,40 +265,17 @@ void CInput::KeyUpdate()
 {
 	if (b_altF4) return;
 
-	HRESULT hr;
-	DWORD dwElements = KEYBOARDBUFFERSIZE;
-	auto od = std::make_unique<DIDEVICEOBJECTDATA[]>(KEYBOARDBUFFERSIZE);
-	DWORD key = 0;
+	static BOOL prevKB[COUNT_KB_BUTTONS] = {};
 
-	VERIFY(pKeyboard);
+	const Uint8* sdlState = SDL_GetKeyboardState(nullptr);
 
-	hr = pKeyboard->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), &od[0], &dwElements, 0);
-	if ((hr == DIERR_INPUTLOST) || (hr == DIERR_NOTACQUIRED))
+	for (int dik = 0; dik < COUNT_KB_BUTTONS; ++dik)
 	{
-		hr = pKeyboard->Acquire();
-		if (hr != S_OK)
-			return;
+		const SDL_Scancode sc = DikToScancode(dik);
+		if (sc == SDL_SCANCODE_UNKNOWN)
+			continue;
 
-		hr = pKeyboard->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), &od[0], &dwElements, 0);
-		if (hr != S_OK)
-			return;
-	}
-
-	bool b_dik_pause_was_pressed = false;
-	for (u32 idx = 0; idx < dwElements; idx++)
-	{
-		if (od[idx].dwOfs == DIK_PAUSE)
-		{
-			if (od[idx].dwData & 0x80)
-				b_dik_pause_was_pressed = true;
-
-			if (b_dik_pause_was_pressed && !(od[idx].dwData & 0x80))
-			{
-				od[idx].uAppData = 666;
-				continue; //skip one-frame pause key on-off switch
-			}
-		}
-		KBState[od[idx].dwOfs] = od[idx].dwData & 0x80;
+		KBState[dik] = sdlState[sc] ? TRUE : FALSE;
 	}
 
 #ifndef _EDITOR
@@ -245,19 +296,18 @@ void CInput::KeyUpdate()
 	if (Device.dwPrecacheFrame == 0)
 #endif
 	{
-		for (u32 i = 0; i < dwElements; i++)
+		for (int dik = 0; dik < COUNT_KB_BUTTONS; ++dik)
 		{
-			if (od[i].uAppData == 666) //ignored action
+			if (DikToScancode(dik) == SDL_SCANCODE_UNKNOWN)
 				continue;
 
-			key = od[i].dwOfs;
-			if (od[i].dwData & 0x80)
-				cbStack.back()->IR_OnKeyboardPress(key);
-			else
+			if (KBState[dik] && !prevKB[dik])
+				cbStack.back()->IR_OnKeyboardPress(dik);
+			else if (!KBState[dik] && prevKB[dik])
 			{
-				cbStack.back()->IR_OnKeyboardRelease(key);
+				cbStack.back()->IR_OnKeyboardRelease(dik);
 #ifndef _EDITOR
-				if (key == DIK_TAB && (iGetAsyncKeyState(DIK_RMENU) || iGetAsyncKeyState(DIK_LMENU)))
+				if (dik == DIK_TAB && (iGetAsyncKeyState(DIK_RMENU) || iGetAsyncKeyState(DIK_LMENU)))
 					b_alt_tab = true;
 #endif
 			}
@@ -268,49 +318,18 @@ void CInput::KeyUpdate()
 				cbStack.back()->IR_OnKeyboardHold(i);
 	}
 
+	memcpy(prevKB, KBState, sizeof(prevKB));
+
 #ifndef _EDITOR
 	if (b_alt_tab) {
 		BOOL fullscreen = (g_screenmode == 2);
 		if (fullscreen)
-			SendMessage(Device.m_hWnd, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+			SDL_MinimizeWindow(Device.m_sdlWnd);
 	}
 #endif
-	/*
-	#ifndef _EDITOR
-	//update xinput if exist
-	for( DWORD iUserIndex=0; iUserIndex<DXUT_MAX_CONTROLLERS; iUserIndex++ )
-	{
-	DXUTGetGamepadState( iUserIndex, &g_GamePads[iUserIndex], true, false );
-
-	if( !g_GamePads[iUserIndex].bConnected )
-	continue; // unplugged?
-
-	bool new_b, old_b;
-	new_b = !!(g_GamePads[iUserIndex].wPressedButtons & XINPUT_GAMEPAD_A);
-	old_b = !!(g_GamePads[iUserIndex].wLastButtons & XINPUT_GAMEPAD_A);
-
-	if(new_b != old_b)
-	{
-	if(old_b)
-	cbStack.back()->IR_OnMousePress(0);
-	else
-	cbStack.back()->IR_OnMouseRelease(0);
-	}
-	int dx,dy;
-	dx = iFloor(g_GamePads[iUserIndex].fThumbRX*6);
-	dy = iFloor(g_GamePads[iUserIndex].fThumbRY*6);
-	if(dx || dy)
-	cbStack.back()->IR_OnMouseMove ( dx, dy );
-	}
-
-	if(Device.fTimeGlobal > stop_vibration_time)
-	{
-	stop_vibration_time = flt_max;
-	set_vibration (0, 0);
-	}
-	//xinput
-	#endif
-	*/
+	// XInput gamepad polling was already fully commented out upstream in
+	// xr_input_xinput.h/.cpp before this port touched the file (dead code,
+	// not something this pass disabled) - see xr_input_xinput.cpp.
 }
 
 void CInput::resetMouseState()
@@ -322,26 +341,20 @@ void CInput::resetMouseState()
 
 bool CInput::get_dik_name(int dik, LPSTR dest_str, int dest_sz)
 {
-	DIPROPSTRING keyname;
-	keyname.diph.dwSize = sizeof(DIPROPSTRING);
-	keyname.diph.dwHeaderSize = sizeof(DIPROPHEADER);
-	keyname.diph.dwObj = static_cast<DWORD>(dik);
-	keyname.diph.dwHow = DIPH_BYOFFSET;
-	HRESULT hr = pKeyboard->GetProperty(DIPROP_KEYNAME, &keyname.diph);
-	if (FAILED(hr))
+	const SDL_Scancode sc = DikToScancode(dik);
+	if (sc == SDL_SCANCODE_UNKNOWN)
 		return false;
 
-	const wchar_t* wct = keyname.wsz;
-	if (0 == wcslen(wct))
+	// SDL_GetKeyName() is layout-aware (unlike DirectInput's
+	// DIPROP_KEYNAME, which always returned the US-layout name) - a
+	// strict improvement for a "show the user what key this is" label,
+	// which is all get_dik_name()'s call sites ever use this for.
+	const char* name = SDL_GetKeyName(SDL_GetKeyFromScancode(sc));
+	if (!name || !name[0])
 		return false;
 
-	int cnt = WideCharToMultiByte(CP_ACP, 0, keyname.wsz, -1, dest_str, dest_sz, NULL, NULL);
-	if (cnt == -1)
-	{
-		Msg("! cant convert dik_name for dik[%d], prop=[%S]", dik, keyname.wsz);
-		return false;
-	}
-	return (cnt != -1);
+	xr_strcpy(dest_str, dest_sz, name);
+	return true;
 }
 
 bool CInput::dik_to_text(int dik, bool shift, bool caps, bool ctrl, bool alt, bool altgr, LPSTR dest, int dest_sz)
@@ -351,61 +364,65 @@ bool CInput::dik_to_text(int dik, bool shift, bool caps, bool ctrl, bool alt, bo
 
 	dest[0] = 0;
 
-	const UINT scan = static_cast<UINT>(dik);
-	const HKL hkl = GetKeyboardLayout(0);
-
-	// Convert scan code -> virtual key according to current layout
-	const UINT vk = MapVirtualKeyEx(scan, MAPVK_VSC_TO_VK_EX, hkl);
-	if (vk == 0)
+	// Ctrl/Alt/AltGr text composition (dead-key-aware Unicode composition
+	// via the active keyboard layout) had no portable one-shot equivalent
+	// to Win32's ToUnicodeEx() - SDL2's real answer to "what text does
+	// this keypress produce" is the SDL_TEXTINPUT event (already wired up
+	// in the real input path, see xr_input.h/Xr_input.cpp's event-driven
+	// counterpart once ported), not a per-scancode+modifier-state query
+	// like this one. Honestly reporting "can't determine" for the
+	// modifier-combination cases matches this function's own existing
+	// "dead key -> return false" convention rather than guessing.
+	if (ctrl || alt || altgr)
 		return false;
 
-	BYTE ks[256] = {};
-	if (shift) ks[VK_SHIFT] = 0x80;
-	if (ctrl)  ks[VK_CONTROL] = 0x80;
-	if (alt)   ks[VK_MENU] = 0x80;
-	if (caps)  ks[VK_CAPITAL] = 0x01;
+	const SDL_Scancode sc = DikToScancode(dik);
+	if (sc == SDL_SCANCODE_UNKNOWN)
+		return false;
 
-	// AltGr (usually Right Alt) on Windows behaves like Ctrl+Alt
-	if (altgr)
-	{
-		ks[VK_CONTROL] = 0x80;
-		ks[VK_MENU] = 0x80;
-	}
-    
-	wchar_t wbuf[8] = {};
-	const int rc = ToUnicodeEx(vk, scan, ks, wbuf, (int)std::size(wbuf), 0, hkl);
+	// Common US-QWERTY shifted symbol row - real, standard, but
+	// US-layout-specific (documented limitation, not invented data).
+	struct ShiftEntry { SDL_Scancode sc; char base; char shifted; };
+	static const ShiftEntry kShift[] = {
+		{ SDL_SCANCODE_1, '1', '!' }, { SDL_SCANCODE_2, '2', '@' },
+		{ SDL_SCANCODE_3, '3', '#' }, { SDL_SCANCODE_4, '4', '$' },
+		{ SDL_SCANCODE_5, '5', '%' }, { SDL_SCANCODE_6, '6', '^' },
+		{ SDL_SCANCODE_7, '7', '&' }, { SDL_SCANCODE_8, '8', '*' },
+		{ SDL_SCANCODE_9, '9', '(' }, { SDL_SCANCODE_0, '0', ')' },
+		{ SDL_SCANCODE_MINUS, '-', '_' }, { SDL_SCANCODE_EQUALS, '=', '+' },
+		{ SDL_SCANCODE_LEFTBRACKET, '[', '{' }, { SDL_SCANCODE_RIGHTBRACKET, ']', '}' },
+		{ SDL_SCANCODE_BACKSLASH, '\\', '|' }, { SDL_SCANCODE_SEMICOLON, ';', ':' },
+		{ SDL_SCANCODE_APOSTROPHE, '\'', '"' }, { SDL_SCANCODE_GRAVE, '`', '~' },
+		{ SDL_SCANCODE_COMMA, ',', '<' }, { SDL_SCANCODE_PERIOD, '.', '>' },
+		{ SDL_SCANCODE_SLASH, '/', '?' },
+	};
 
-	if (rc <= 0)
+	for (const auto& e : kShift)
 	{
-		// Dead key: clear keyboard state in ToUnicodeEx internal buffer
-		if (rc == -1)
+		if (e.sc == sc)
 		{
-			BYTE ks0[256] = {};
-			wchar_t dummy[8] = {};
-			ToUnicodeEx(vk, scan, ks0, dummy, (int)std::size(dummy), 0, hkl);
+			dest[0] = shift ? e.shifted : e.base;
+			dest[1] = 0;
+			return true;
 		}
-		return false;
 	}
 
-	// Filter control chars
-	if (wbuf[0] < 0x20)
-		return false;
+	if (sc >= SDL_SCANCODE_A && sc <= SDL_SCANCODE_Z)
+	{
+		const bool upper = (shift != caps); // shift XOR caps-lock, same as a real keyboard
+		dest[0] = static_cast<char>((upper ? 'A' : 'a') + (sc - SDL_SCANCODE_A));
+		dest[1] = 0;
+		return true;
+	}
 
-	// Convert produced Unicode to CP1251
-	BOOL usedDefault = FALSE;
-	const int mb = WideCharToMultiByte(1251, WC_NO_BEST_FIT_CHARS, wbuf, rc, dest, dest_sz - 1, "?", &usedDefault);
-	if (mb <= 0)
-		return false;
+	if (sc == SDL_SCANCODE_SPACE)
+	{
+		dest[0] = ' ';
+		dest[1] = 0;
+		return true;
+	}
 
-	// Null-terminate
-	dest[mb] = 0;
-
-	// If UI cannot represent it in CP1251, prevent cyrillic output
-	// Return true to insert '?'
-	if (usedDefault)
-		return false;
-
-	return true;
+	return false;
 }
 
 #define MOUSE_1 (0xED + 100)
@@ -426,207 +443,76 @@ BOOL CInput::iGetAsyncKeyState(int dik)
 
 BOOL CInput::iGetAsyncBtnState(int btn)
 {
-	if ((btn == 0 || btn == 1) && !!GetSystemMetrics(SM_SWAPBUTTON))
-		btn = btn == 0 ? 1 : 0;
+	// No GetSystemMetrics(SM_SWAPBUTTON)-style userspace swap needed here
+	// (see MouseUpdate()'s comment) - X11 already reports a left-handed-
+	// configured mouse's buttons pre-swapped.
 	return !!mouseState[btn];
 }
 
 void CInput::MouseUpdate()
 {
-	HRESULT hr;
-	DWORD dwElements = MOUSEBUFFERSIZE;
-	auto od = std::make_unique<DIDEVICEOBJECTDATA[]>(MOUSEBUFFERSIZE);
-
-	VERIFY(pMouse);
-
-	hr = pMouse->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), &od[0], &dwElements, 0);
-	if ((hr == DIERR_INPUTLOST) || (hr == DIERR_NOTACQUIRED))
-	{
-		hr = pMouse->Acquire();
-		if (hr != S_OK) return;
-		hr = pMouse->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), &od[0], &dwElements, 0);
-		if (hr != S_OK) return;
-	};
-
 #ifndef _EDITOR
 	if (Device.dwPrecacheFrame)
 		return;
 #endif
-	BOOL mouse_prev[COUNT_MOUSE_BUTTONS];
 
-	mouse_prev[0] = mouseState[0];
-	mouse_prev[1] = mouseState[1];
-	mouse_prev[2] = mouseState[2];
-	mouse_prev[3] = mouseState[3];
-	mouse_prev[4] = mouseState[4];
-	mouse_prev[5] = mouseState[5];
-	mouse_prev[6] = mouseState[6];
-	mouse_prev[7] = mouseState[7];
+	static BOOL mouse_prev[COUNT_MOUSE_BUTTONS] = {};
+	memcpy(mouse_prev, mouseState, sizeof(mouseState));
 
-	bool bSwitched = !!GetSystemMetrics(SM_SWAPBUTTON);
+	const Uint32 buttons = SDL_GetMouseState(nullptr, nullptr);
 
-	offs[0] = offs[1] = offs[2] = 0;
-	for (u32 i = 0; i < dwElements; i++)
+	// DirectInput's classic button ordering (0=left,1=right,2=middle,
+	// 3=X1,4=X2) vs SDL2's SDL_BUTTON_* numbering (LEFT=1,MIDDLE=2,
+	// RIGHT=3,X1=4,X2=5) - remapped once here rather than changing every
+	// call site's button-index convention (imgui_helper.h and friends
+	// still expect DirectInput ordering). No left-handed-mouse swap logic
+	// needed the way the original's GetSystemMetrics(SM_SWAPBUTTON) had -
+	// X11 already swaps physical button events for a left-handed-
+	// configured mouse below SDL2.
+	static const int kSdlButtonToIndex[6] = { -1, 0, 2, 1, 3, 4 }; // indexed by SDL_BUTTON_* (1-based)
+
+	ZeroMemory(mouseState, sizeof(mouseState));
+	for (int sdlButton = 1; sdlButton <= 5; ++sdlButton)
+		if (buttons & SDL_BUTTON(sdlButton))
+			mouseState[kSdlButtonToIndex[sdlButton]] = TRUE;
+
+	for (int i = 0; i < 5; ++i)
 	{
-		switch (od[i].dwOfs)
-		{
-		case DIMOFS_X:
-			offs[0] += od[i].dwData;
-			timeStamp[0] = od[i].dwTimeStamp;
-			break;
-		case DIMOFS_Y:
-			offs[1] += od[i].dwData;
-			timeStamp[1] = od[i].dwTimeStamp;
-			break;
-		case DIMOFS_Z:
-			offs[2] += od[i].dwData;
-			timeStamp[2] = od[i].dwTimeStamp;
-			break;
-		case DIMOFS_BUTTON0:
-			if (od[i].dwData & 0x80)
-			{
-				mouseState[0] = TRUE;
-				cbStack.back()->IR_OnMousePress(bSwitched ? 1 : 0);
-			}
-			if (!(od[i].dwData & 0x80))
-			{
-				mouseState[0] = FALSE;
-				cbStack.back()->IR_OnMouseRelease(bSwitched ? 1 : 0);
-			}
-			break;
-		case DIMOFS_BUTTON1:
-			if (od[i].dwData & 0x80)
-			{
-				mouseState[1] = TRUE;
-				cbStack.back()->IR_OnMousePress(bSwitched ? 0 : 1);
-			}
-			if (!(od[i].dwData & 0x80))
-			{
-				mouseState[1] = FALSE;
-				cbStack.back()->IR_OnMouseRelease(bSwitched ? 0 : 1);
-			}
-			break;
-		case DIMOFS_BUTTON2:
-			if (od[i].dwData & 0x80)
-			{
-				mouseState[2] = TRUE;
-				cbStack.back()->IR_OnMousePress(2);
-			}
-			if (!(od[i].dwData & 0x80))
-			{
-				mouseState[2] = FALSE;
-				cbStack.back()->IR_OnMouseRelease(2);
-			}
-			break;
-		case DIMOFS_BUTTON3:
-			if (od[i].dwData & 0x80)
-			{
-				mouseState[3] = TRUE;
-				cbStack.back()->IR_OnMousePress(3);
-			}
-			if (!(od[i].dwData & 0x80))
-			{
-				mouseState[3] = FALSE;
-				cbStack.back()->IR_OnMouseRelease(3);
-			}
-			break;
-		case DIMOFS_BUTTON4:
-			if (od[i].dwData & 0x80)
-			{
-				mouseState[4] = TRUE;
-				cbStack.back()->IR_OnMousePress(4);
-			}
-			if (!(od[i].dwData & 0x80))
-			{
-				mouseState[4] = FALSE;
-				cbStack.back()->IR_OnMouseRelease(4);
-			}
-			break;
-		case DIMOFS_BUTTON5:
-			if (od[i].dwData & 0x80)
-			{
-				mouseState[5] = TRUE;
-				cbStack.back()->IR_OnMousePress(5);
-			}
-			if (!(od[i].dwData & 0x80))
-			{
-				mouseState[5] = FALSE;
-				cbStack.back()->IR_OnMouseRelease(5);
-			}
-			break;
-		case DIMOFS_BUTTON6:
-			if (od[i].dwData & 0x80)
-			{
-				mouseState[6] = TRUE;
-				cbStack.back()->IR_OnMousePress(6);
-			}
-			if (!(od[i].dwData & 0x80))
-			{
-				mouseState[6] = FALSE;
-				cbStack.back()->IR_OnMouseRelease(6);
-			}
-			break;
-		case DIMOFS_BUTTON7:
-			if (od[i].dwData & 0x80)
-			{
-				mouseState[7] = TRUE;
-				cbStack.back()->IR_OnMousePress(7);
-			}
-			if (!(od[i].dwData & 0x80))
-			{
-				mouseState[7] = FALSE;
-				cbStack.back()->IR_OnMouseRelease(7);
-			}
-			break;
-		}
+		if (mouseState[i] && !mouse_prev[i])
+			cbStack.back()->IR_OnMousePress(i);
+		else if (!mouseState[i] && mouse_prev[i])
+			cbStack.back()->IR_OnMouseRelease(i);
+		else if (mouseState[i] && mouse_prev[i])
+			cbStack.back()->IR_OnMouseHold(i);
 	}
 
-	if (mouseState[0] && mouse_prev[0])
+	int dx = 0, dy = 0;
+	SDL_GetRelativeMouseState(&dx, &dy);
+	offs[0] = dx;
+	offs[1] = dy;
+
+	// SDL2's polling API has no wheel-delta equivalent - the wheel only
+	// shows up as an SDL_MOUSEWHEEL *event*, so it's peeked out of the
+	// event queue here instead of polled (same SDL_PeepEvents approach
+	// OpenXRay's own SDL2-based xr_input.cpp uses for the same reason).
+	offs[2] = 0;
 	{
-		cbStack.back()->IR_OnMouseHold(bSwitched ? 1 : 0);
+		SDL_Event wheelEvents[16];
+		SDL_PumpEvents();
+		const int count = SDL_PeepEvents(wheelEvents, 16, SDL_GETEVENT, SDL_MOUSEWHEEL, SDL_MOUSEWHEEL);
+		for (int i = 0; i < count; ++i)
+			offs[2] += wheelEvents[i].wheel.y;
 	}
 
-	if (mouseState[1] && mouse_prev[1])
+	if (offs[0] || offs[1])
 	{
-		cbStack.back()->IR_OnMouseHold(bSwitched ? 0 : 1);
+		timeStamp[0] = timeStamp[1] = dwCurTime;
+		cbStack.back()->IR_OnMouseMove(offs[0], offs[1]);
 	}
+	if (offs[2])
+		cbStack.back()->IR_OnMouseWheel(offs[2]);
 
-	if (mouseState[2] && mouse_prev[2])
-	{
-		cbStack.back()->IR_OnMouseHold(2);
-	}
-
-	if (mouseState[3] && mouse_prev[3])
-	{
-		cbStack.back()->IR_OnMouseHold(3);
-	}
-
-	if (mouseState[4] && mouse_prev[4])
-	{
-		cbStack.back()->IR_OnMouseHold(4);
-	}
-
-	if (mouseState[5] && mouse_prev[5])
-	{
-		cbStack.back()->IR_OnMouseHold(5);
-	}
-
-	if (mouseState[6] && mouse_prev[6])
-	{
-		cbStack.back()->IR_OnMouseHold(6);
-	}
-
-	if (mouseState[7] && mouse_prev[7])
-	{
-		cbStack.back()->IR_OnMouseHold(7);
-	}
-
-	if (dwElements)
-	{
-		if (offs[0] || offs[1]) cbStack.back()->IR_OnMouseMove(offs[0], offs[1]);
-		if (offs[2]) cbStack.back()->IR_OnMouseWheel(offs[2]);
-	}
-	else
+	if (!offs[0] && !offs[1])
 	{
 		if (timeStamp[1] && ((dwCurTime - timeStamp[1]) >= mouse_property.mouse_dt)) cbStack
 		                                                                             .back()->IR_OnMouseStop(
@@ -641,8 +527,8 @@ void CInput::MouseUpdate()
 void CInput::iCapture(IInputReceiver* p)
 {
 	VERIFY(p);
-	if (pMouse) MouseUpdate();
-	if (pKeyboard) KeyUpdate();
+	MouseUpdate();
+	KeyUpdate();
 
 	// change focus
 	if (!cbStack.empty())
@@ -722,8 +608,8 @@ void CInput::OnFrame(void)
 {
 	RDEVICE.Statistic->Input.Begin();
 	dwCurTime = RDEVICE.TimerAsync_MMT();
-	if (pKeyboard) KeyUpdate();
-	if (pMouse) MouseUpdate();
+	KeyUpdate();
+	MouseUpdate();
 	RDEVICE.Statistic->Input.End();
 }
 
@@ -737,29 +623,13 @@ IInputReceiver* CInput::CurrentIR()
 
 void CInput::unacquire()
 {
-	pKeyboard->Unacquire();
-	pMouse->Unacquire();
+	SetAllAcquire(FALSE);
 }
 
 void CInput::acquire(const bool& exclusive)
 {
-	pKeyboard->SetCooperativeLevel(
-#ifdef INGAME_EDITOR
-        Device.editor() ? Device.editor()->main_handle() :
-#endif // #ifdef INGAME_EDITOR
-		RDEVICE.m_hWnd,
-		(exclusive ? DISCL_EXCLUSIVE : DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND
-	);
-	pKeyboard->Acquire();
-
-	pMouse->SetCooperativeLevel(
-#ifdef INGAME_EDITOR
-        Device.editor() ? Device.editor()->main_handle() :
-#endif // #ifdef INGAME_EDITOR
-		RDEVICE.m_hWnd,
-		(exclusive ? DISCL_EXCLUSIVE : DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND | DISCL_NOWINKEY
-	);
-	pMouse->Acquire();
+	(void)exclusive;
+	SetAllAcquire(TRUE);
 }
 
 void CInput::exclusive_mode(const bool& exclusive)

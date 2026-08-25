@@ -30,6 +30,23 @@
 #include "../Include/xrRender/RenderDeviceRender.h"
 #include "imgui_base.h"
 
+// Real window/event-loop bootstrap (see playground/xray-monolith-vulkan-
+// port-notes.md, the SDL2/Vulkan window+device bootstrap pass): the main
+// window is a real SDL2 window from here on, not a Win32 HWND.
+#include <SDL.h>
+
+// Forward-declare the two Vulkan handle types this header needs
+// (m_vkInstance/m_vkSurface below) without pulling the whole Vulkan
+// headers/volk dependency into every one of the ~185 xrEngine files that
+// include device.h transitively via stdafx.h. This matches vulkan_core.h's
+// own VK_DEFINE_HANDLE/VK_DEFINE_NON_DISPATCHABLE_HANDLE expansion on a
+// 64-bit target exactly (both are "pointer to an incomplete tagged
+// struct"), so it's a redundant-but-identical redeclaration, not a
+// diverging fake type, once a real <volk.h>/<vulkan/vulkan.h> is also
+// included by a .cpp that needs the full API (Device_Initialize.cpp).
+typedef struct VkInstance_T* VkInstance;
+typedef struct VkSurfaceKHR_T* VkSurfaceKHR;
+
 #ifdef INGAME_EDITOR
 # include "../Include/editor/interfaces.hpp"
 #endif // #ifdef INGAME_EDITOR
@@ -117,7 +134,17 @@ public:
 	CRegistrator<pureFrame> seqFrame;
 	CRegistrator<pureScreenResolutionChanged> seqResolutionChanged;
 
-	HWND m_hWnd;
+	// Main window - real SDL2 window (replaces the Win32 HWND stand-in
+	// from the earlier declarations-only stub pass, see notes file).
+	SDL_Window* m_sdlWnd = nullptr;
+
+	// Vulkan instance + window surface, created in Device_Initialize.cpp
+	// right after the SDL window itself. Deliberately just instance+
+	// surface here - physical device selection, logical device and
+	// swapchain creation are the future xrRenderVK backend's job, not
+	// this window/device-bootstrap pass (see notes file).
+	VkInstance m_vkInstance = nullptr;
+	VkSurfaceKHR m_vkSurface = nullptr;
 	// CStats* Statistic;
 };
 
@@ -155,8 +182,10 @@ public:
 	};	
 	
 private:
-	// Main objects used for creating and rendering the 3D scene
-	u32 m_dwWindowStyle;
+	// Main objects used for creating and rendering the 3D scene.
+	// Real window geometry (SDL2 doesn't need a Win32-style tracked
+	// window-style bitmask - SDL_SetWindowBordered/SDL_SetWindowSize own
+	// that now, see Device_create.cpp/Device_Initialize.cpp).
 	RECT m_rcWindowBounds;
 	RECT m_rcWindowClient;
 
@@ -169,9 +198,6 @@ private:
 	void _Destroy(BOOL bKeepTextures);
 	void _SetupStates();
 public:
-	// HWND m_hWnd;
-	LRESULT MsgProc(HWND, UINT, WPARAM, LPARAM);
-
 	// u32 dwFrame;
 	// u32 dwPrecacheFrame;
 	u32 dwPrecacheTotal;
@@ -180,7 +206,11 @@ public:
 	float fWidth_2, fHeight_2;
 	// BOOL b_is_Ready;
 	// BOOL b_is_Active;
-	void OnWM_Activate(WPARAM wParam, LPARAM lParam);
+	// Replaces the old WM_ACTIVATE(wParam, lParam)-based handler - SDL2
+	// reports focus/minimize as separate SDL_WINDOWEVENT_* cases (see
+	// ProcessEvent in Device_wndproc.cpp), already decoded to plain bools
+	// by the time this is called.
+	void OnWindowActivate(bool activated, bool minimized);
 public:
 	//ref_shader m_WireShader;
 	//ref_shader m_SelectionShader;
@@ -275,7 +305,9 @@ public:
         ,mt_csLeave(MUTEX_PROFILE_ID(CRenderDevice::mt_csLeave))
 #endif // #ifdef PROFILE_CRITICAL_SECTIONS
 	{
-		m_hWnd = NULL;
+		// m_sdlWnd/m_vkInstance/m_vkSurface default-initialize themselves
+		// (see CRenderDeviceData) - real values only exist once
+		// Device_Initialize.cpp/Device_Initialize's Vulkan bootstrap runs.
 		b_is_Active = FALSE;
 		b_is_Ready = FALSE;
 		b_hide_cursor = FALSE;
@@ -471,7 +503,13 @@ public:
 
 public:
 	void xr_stdcall on_idle();
-	bool xr_stdcall on_message(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& result);
+
+	// Replaces the old Win32 on_message(hWnd, uMsg, wParam, lParam, result)
+	// WndProc-style dispatch - one SDL_Event in, true if it was fully
+	// handled (matching on_message's old bool-return "did we handle this,
+	// don't fall through to a default handler" contract). Implemented in
+	// Device_wndproc.cpp.
+	bool ProcessEvent(const SDL_Event& event);
 
 private:
 	void message_loop();

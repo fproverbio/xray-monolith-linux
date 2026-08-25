@@ -264,6 +264,79 @@ public:
 		return *this;
 	}
 
+	// General 4x4 inverse (cofactor/adjugate method) - unlike invert()/
+	// invert_b() above (both explicitly "4x3 invert, not the 4x4 one",
+	// i.e. only valid for an affine rotation+translation matrix), this is
+	// valid for any invertible 4x4 matrix, including a real projective
+	// matrix such as mProject*mView with non-trivial perspective terms in
+	// its last row/column.
+	//
+	// Added to replace <d3dx9.h>'s D3DXMatrixInverse, which has no
+	// portable equivalent and no Linux/Vulkan analog - see
+	// playground/xray-monolith-vulkan-port-notes.md, the SDL2/Vulkan
+	// window+device bootstrap pass (xrEngine/device.cpp's
+	// on_idle()/FrameMove() inverts mFullTransform = mProject*mView this
+	// way, feeding CRenderDevice::hud_to_world()/world_to_hud()). The
+	// exact same D3DXMatrixInverse-on-a-full-transform pattern recurs at
+	// ~20 more call sites across the not-yet-ported renderer layers
+	// (Layers/xrRenderPC_R2/R3/R4's r2_R_sun.cpp/r*_R_rain.cpp,
+	// Layers/xrRender/R_Backend_Runtime.cpp, dx103DFluidRenderer.cpp) -
+	// this same invert_44() is the intended replacement there too, not a
+	// one-off inlined into device.cpp.
+	//
+	// Self-aliasing safe: every read of `a` happens before any write to
+	// `*this`, so invert_44(*this) (in place) works correctly, same as
+	// invert()/invert_b()'s existing convention.
+	//
+	// Returns false (leaving *this unmodified) for a singular matrix,
+	// mirroring invert_b()'s existing bool-return convention rather than
+	// invert()'s VERIFY-and-divide-by-zero one, since a genuinely singular
+	// full transform is a real (if rare) runtime possibility, not always a
+	// programming error.
+	IC bool invert_44(const Self& a)
+	{
+		T s0 = a._11 * a._22 - a._21 * a._12;
+		T s1 = a._11 * a._23 - a._21 * a._13;
+		T s2 = a._11 * a._24 - a._21 * a._14;
+		T s3 = a._12 * a._23 - a._22 * a._13;
+		T s4 = a._12 * a._24 - a._22 * a._14;
+		T s5 = a._13 * a._24 - a._23 * a._14;
+
+		T c5 = a._33 * a._44 - a._43 * a._34;
+		T c4 = a._32 * a._44 - a._42 * a._34;
+		T c3 = a._32 * a._43 - a._42 * a._33;
+		T c2 = a._31 * a._44 - a._41 * a._34;
+		T c1 = a._31 * a._43 - a._41 * a._33;
+		T c0 = a._31 * a._42 - a._41 * a._32;
+
+		T det = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
+		if (_abs(det) <= flt_zero)
+			return false;
+		T invdet = T(1.0) / det;
+
+		_11 = (a._22 * c5 - a._23 * c4 + a._24 * c3) * invdet;
+		_12 = (-a._12 * c5 + a._13 * c4 - a._14 * c3) * invdet;
+		_13 = (a._42 * s5 - a._43 * s4 + a._44 * s3) * invdet;
+		_14 = (-a._32 * s5 + a._33 * s4 - a._34 * s3) * invdet;
+
+		_21 = (-a._21 * c5 + a._23 * c2 - a._24 * c1) * invdet;
+		_22 = (a._11 * c5 - a._13 * c2 + a._14 * c1) * invdet;
+		_23 = (-a._41 * s5 + a._43 * s2 - a._44 * s1) * invdet;
+		_24 = (a._31 * s5 - a._33 * s2 + a._34 * s1) * invdet;
+
+		_31 = (a._21 * c4 - a._22 * c2 + a._24 * c0) * invdet;
+		_32 = (-a._11 * c4 + a._12 * c2 - a._14 * c0) * invdet;
+		_33 = (a._41 * s4 - a._42 * s2 + a._44 * s0) * invdet;
+		_34 = (-a._31 * s4 + a._32 * s2 - a._34 * s0) * invdet;
+
+		_41 = (-a._21 * c3 + a._22 * c1 - a._23 * c0) * invdet;
+		_42 = (a._11 * c3 - a._12 * c1 + a._13 * c0) * invdet;
+		_43 = (-a._41 * s3 + a._42 * s1 - a._43 * s0) * invdet;
+		_44 = (a._31 * s3 - a._32 * s1 + a._33 * s0) * invdet;
+
+		return true;
+	}
+
 	IC SelfRef transpose(const Self& matSource) // faster version of transpose
 	{
 		_11 = matSource._11;

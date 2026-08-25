@@ -2,7 +2,7 @@
 #pragma hdrstop
 
 #include "xr_input.h"
-#include "iinputreceiver.h"
+#include "IInputReceiver.h"
 
 void IInputReceiver::IR_Capture()
 {
@@ -54,18 +54,37 @@ BOOL IInputReceiver::IR_GetBtnState(int btn)
 
 void IInputReceiver::IR_GetMousePosScreen(Ivector2& p)
 {
-	GetCursorPos((LPPOINT)&p);
+	// Real screen-space cursor position - direct SDL2 equivalent of
+	// GetCursorPos(). SDL_GetGlobalMouseState() is available on every
+	// desktop platform (X11 included) - the "not available everywhere"
+	// caveat OpenXRay's own xr_input.h guards for
+	// (SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE, false on Emscripten/Android/
+	// iOS/AmigaOS) doesn't apply to this Linux/X11 port.
+	SDL_GetGlobalMouseState(&p.x, &p.y);
 }
 
 void IInputReceiver::IR_GetMousePosReal(HWND hwnd, Ivector2& p)
 {
 	IR_GetMousePosScreen(p);
-	if (hwnd) ScreenToClient(hwnd, (LPPOINT)&p);
+	// Replaces ScreenToClient(hwnd, ...): SDL2 has no direct
+	// screen->window-local conversion call, so subtract the window's own
+	// screen position by hand (hwnd here is really an SDL_Window*, see
+	// device.h - HWND is just this codebase's long-standing opaque
+	// "platform window handle" typedef, kept as the parameter type so
+	// this signature didn't need to change).
+	if (hwnd)
+	{
+		SDL_Window* window = static_cast<SDL_Window*>(hwnd);
+		int wx = 0, wy = 0;
+		SDL_GetWindowPosition(window, &wx, &wy);
+		p.x -= wx;
+		p.y -= wy;
+	}
 }
 
 void IInputReceiver::IR_GetMousePosReal(Ivector2& p)
 {
-	IR_GetMousePosReal(RDEVICE.m_hWnd, p);
+	IR_GetMousePosReal(RDEVICE.m_sdlWnd, p);
 }
 
 void IInputReceiver::IR_GetMousePosIndependent(Fvector2& f)

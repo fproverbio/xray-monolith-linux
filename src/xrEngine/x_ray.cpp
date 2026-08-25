@@ -6,32 +6,75 @@
 // AlexMX - Alexander Maksimchuk
 //-----------------------------------------------------------------------------
 #include "stdafx.h"
-#include "igame_level.h"
-#include "igame_persistent.h"
 
 #include "dedicated_server_only.h"
 #include "no_single.h"
 #include "../xrNetServer/NET_AuthCheck.h"
 
 #include "xr_input.h"
-#include "xr_ioconsole.h"
+#include "XR_IOConsole.h"
 #include "x_ray.h"
 #include "std_classes.h"
 #include "GameFont.h"
-#include "resource.h"
 #include "LightAnimLibrary.h"
-#include "../xrcdb/ispatial.h"
+#include "../xrCDB/ISpatial.h"
 #include "Text_Console.h"
-#include <process.h>
 #include <locale.h>
 
-#include <unicode\unistr.h>
-#include <unicode\ucnv.h>
-#include <discord\discord.h>
 #include "../xrCore/profiler.h"
 
-#include "xrSash.h"
+#include "xrSASH.h"
 #include "MonitorList.h"
+
+// IGame_Level.h/IGame_Persistent.h are not ported yet (see device.cpp's
+// file comment for the full reasoning - same exclusion already applied to
+// this batch's Rain.cpp/Environment_misc.cpp/etc, see
+// playground/xray-monolith-vulkan-port-notes.md). Unlike device.cpp/
+// Device_destroy.cpp, this file's own CApplication::OnEvent() calls real
+// methods on g_pGameLevel/g_pGamePersistent (net_Start/net_Stop/PreStart/
+// Start/Disconnect/OpenDemoFile) - a forward declaration is not enough to
+// make those compile, so this file stays out of xrEngine's CMakeLists.txt
+// source list until IGame_Level.h/IGame_Persistent.h are real (see that
+// file's exclusion comment). Kept here anyway, alongside the two forward
+// declarations below, purely so the rest of this file's real fixes in this
+// pass (SDL2/Vulkan-adjacent #include cleanup) can be reviewed/diffed
+// against a file that still parses on its own merits.
+class IGame_Level;
+extern IGame_Level* g_pGameLevel;
+class IGame_Persistent;
+extern IGame_Persistent* g_pGamePersistent;
+
+// resource.h (IDD_STARTUP/IDC_STATIC_LOGO dialog resource ids) and
+// <process.h> are only needed by the Win32 splash-dialog/DPI-awareness
+// code further down, both guarded under _WIN32 - see the "Real window
+// creation" comment near WinMain_impl below.
+#ifdef _WIN32
+#include "resource.h"
+#include <process.h>
+#endif
+
+// Discord Game SDK only ships a Windows binary in this tree (sdk/
+// libraries/x64/discord_game_sdk.lib / sdk/binaries/discord_game_sdk.dll -
+// no Linux .so anywhere in the checkout, unlike e.g. OpenAL-Soft/ogg/
+// vorbis which are all built from real vendored source in this port).
+// Not a mechanical fix - a real prebuilt native library that simply
+// doesn't exist for this platform, same category of gap as xrNetServer's
+// DirectPlay8 removal or xrSound's WASAPI-hotplug removal (see notes
+// file). Guarded out, matching OpenXRay's own identical
+// USE_DISCORD_INTEGRATION-only-on-Windows choice for the same reason.
+// ICU (src/3rd party/icu/include/unicode/*.h) is vendored as headers only
+// - no CMake target/built library exists for it in this port (out of
+// scope for this pass - only SDL2/Vulkan-Headers/volk are being wired in
+// here, see the task notes). xr_ToUTF8() below (ICU-based CP1251->UTF-8
+// conversion, only ever used to feed Discord Rich Presence strings) is
+// guarded the same way and degrades to a passthrough on Linux, since its
+// one caller (Discord) is unavailable there anyway.
+#ifdef _WIN32
+#include <unicode/unistr.h>
+#include <unicode/ucnv.h>
+#include <discord/discord.h>
+#define USE_DISCORD_INTEGRATION
+#endif
 
 extern "C" void XR_EARLY_INIT();
 

@@ -128,6 +128,13 @@
 # define __stdcall
 # define __cdecl
 # define _cdecl // older alternate spelling MSVC also recognizes
+// WINAPI/APIENTRY/PASCAL - <windef.h>'s own names for __stdcall (used by
+// x_ray.cpp's WinMain/WinMain_impl signatures and one dead legacy AVI-intro
+// declaration) - same empty-macro treatment, just windows.h's usual
+// spellings rather than the raw MSVC keyword.
+# define WINAPI
+# define APIENTRY
+# define PASCAL
 # define __fastcall // same family, used by pure.h's RP_FUNC typedef
 // __declspec(novtable)/__declspec(align(N))/etc - raw MSVC attribute
 // syntax GCC doesn't parse at all (not just an unknown identifier, an
@@ -135,6 +142,12 @@
 // grammar to GCC). A variadic macro discarding its argument is the
 // standard porting pattern.
 # define __declspec(x)
+// _declspec - MSVC's older single-underscore spelling of __declspec (still
+// accepted by MSVC itself for backwards compatibility) - x_ray.cpp's
+// NvOptimusEnablement/AmdPowerXpressRequestHighPerformance GPU-selection
+// exports use this exact spelling. Same empty-macro treatment as
+// __declspec above, just the other spelling.
+# define _declspec(x)
 // __w64 - MSVC/W64 annotation marking a type as "different size on 64-bit"
 // for its /Wp64 portability warnings; carries no meaning to GCC/Clang and
 // is otherwise a plain syntax error where it prefixes a typedef's base
