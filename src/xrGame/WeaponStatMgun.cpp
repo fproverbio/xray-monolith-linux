@@ -1,16 +1,16 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "WeaponStatMgun.h"
 #include "../Include/xrRender/Kinematics.h"
-#include "../xrphysics/PhysicsShell.h"
-#include "weaponAmmo.h"
+#include "PhysicsShell.h"
+#include "WeaponAmmo.h"
 #include "object_broker.h"
 #include "ai_sounds.h"
-#include "actor.h"
-#include "actorEffector.h"
-#include "camerafirsteye.h"
+#include "Actor.h"
+#include "ActorEffector.h"
+#include "CameraFirstEye.h"
 #include "xr_level_controller.h"
 #include "game_object_space.h"
-#include "level.h"
+#include "Level.h"
 
 #ifdef STATIONARYMGUN_NEW
 #include "xrServer_Objects_ALife.h"
@@ -23,7 +23,7 @@
 #include "stalker_animation_manager.h"
 #include "stalker_movement_manager_smart_cover.h"
 #include "ai/stalker/ai_stalker.h"
-#include "../xrEngine/gamemtllib.h"
+#include "GameMtlLib.h"
 #include "cameralook.h"
 #include "HUDManager.h"
 #endif
@@ -908,10 +908,19 @@ void CWeaponStatMgun::SetParam(int id, Fvector val)
 	switch (id)
 	{
 	case eWpnDesiredPos:
+	{
+		// Real "jump bypasses variable initialization" bug: an
+		// unbraced case body's local variable is in scope for the
+		// following case labels too, so a switch landing directly on
+		// eWpnDesiredDir/eWpnDesiredAng would jump over `vec`'s
+		// initializer - illegal standard C++ (MSVC tolerated it; GCC
+		// doesn't - "jump to case label"). Braced to scope `vec` to
+		// just this case, same behavior otherwise.
 		Fvector vec = Fmatrix().mul_43(XFORM(), Visual()->dcast_PKinematics()->LL_GetTransform(m_rotate_y_bone)).c;
 		m_destEnemyDir.sub(val, vec).normalize_safe();
 		m_desire_angle_enable = false;
 		break;
+	}
 	case eWpnDesiredDir:
 		m_destEnemyDir.set(val).normalize_safe();
 		m_desire_angle_enable = false;

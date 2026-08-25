@@ -12,10 +12,11 @@
 #include "alife_surge_manager.h"
 #include "alife_storage_manager.h"
 
-namespace RestrictionSpace
-{
-	enum ERestrictorTypes;
-}
+// Real ERestrictorTypes definition (see restricted_object.h's comment for
+// why the bare "enum ERestrictorTypes;" opaque forward declaration this
+// used to have isn't legal standard C++) - already a reachable xrGame
+// include dir.
+#include "restriction_space.h"
 
 class CALifeUpdateManager :
 	public CALifeSwitchManager,

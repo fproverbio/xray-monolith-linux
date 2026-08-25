@@ -49,23 +49,38 @@ private:
 
 	//перобразование из LPCSTR в T_ITEM
 
+	// Same nested-explicit-specialization-inside-a-still-dependent-class-
+	// template bug class as ini_id_loader.h/object_loader.h/object_saver.h
+	// in this same batch (`template <> convert<int>`/`<float>` nested
+	// inside CIni_Table<T_ITEM,...>, itself still dependent) - MSVC
+	// accepts it as an extension, GCC hard-errors. Rewritten with
+	// if constexpr on the actual type, standard-legal.
 	template <typename T_CONVERT_ITEM>
-	T_ITEM convert(LPCSTR)
+	T_ITEM convert(LPCSTR str)
 	{
-		STATIC_CHECK(false, Specialization_for_convert_in_CIni_Table_not_found);
-		NODEFAULT;
-	}
-
-	template <>
-	T_ITEM convert<int>(LPCSTR str)
-	{
-		return atoi(str);
-	}
-
-	template <>
-	T_ITEM convert<float>(LPCSTR str)
-	{
-		return (float)atof(str);
+		if constexpr (object_type_traits::is_same<T_CONVERT_ITEM, int>::value)
+		{
+			return atoi(str);
+		}
+		else if constexpr (object_type_traits::is_same<T_CONVERT_ITEM, float>::value)
+		{
+			return (float)atof(str);
+		}
+		else
+		{
+			// STATIC_CHECK(false, ...) here (a plain non-dependent `false`)
+			// is a real `if constexpr` trap: discarding an `if constexpr`
+			// branch only defers *dependent* constructs past parse time -
+			// a hard-coded `false` still gets checked (and fails) when the
+			// template is first parsed, regardless of which branch would
+			// "logically" run for a given T_CONVERT_ITEM, breaking the
+			// int/float branches above too. Made dependent on
+			// T_CONVERT_ITEM (always false, but no longer resolvable until
+			// actual instantiation) so it only fires for a real
+			// unsupported type, matching the original intent.
+			STATIC_CHECK((!object_type_traits::is_same<T_CONVERT_ITEM, T_CONVERT_ITEM>::value), Specialization_for_convert_in_CIni_Table_not_found);
+			NODEFAULT;
+		}
 	}
 };
 
@@ -117,15 +132,15 @@ typename CSIni_Table::ITEM_TABLE& CSIni_Table::table()
 
 	for (CInifile::SectCIt i = table_ini.Data.begin(); table_ini.Data.end() != i; ++i)
 	{
-		T_INI_LOADER::index_type cur_index = T_INI_LOADER::IdToIndex((*i).first, type_max(T_INI_LOADER::index_type));
+		typename T_INI_LOADER::index_type cur_index = T_INI_LOADER::IdToIndex((*i).first, type_max(typename T_INI_LOADER::index_type));
 
-		if (type_max(T_INI_LOADER::index_type) == cur_index)
+		if (type_max(typename T_INI_LOADER::index_type) == cur_index)
 			Debug.fatal(DEBUG_INFO, "wrong community %s in section [%s]", (*i).first, table_sect);
 
 		(*m_pTable)[cur_index].resize(cur_table_width);
 		for (std::size_t j = 0; j < cur_table_width; j++)
 		{
-			(*m_pTable)[cur_index][j] = convert<typename T_ITEM>(_GetItem(*(*i).second, (int)j, buffer));
+			(*m_pTable)[cur_index][j] = convert<T_ITEM>(_GetItem(*(*i).second, (int)j, buffer));
 		}
 	}
 

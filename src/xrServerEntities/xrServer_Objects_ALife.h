@@ -15,7 +15,7 @@
 #ifdef XRGAME_EXPORTS
 #include "alife_smart_terrain_task.h"
 #endif //#ifdef XRGAME_EXPORTS
-#include "../../build_config_defines.h"
+#include "../build_config_defines.h"
 
 #pragma warning(push)
 #pragma warning(disable:4005)

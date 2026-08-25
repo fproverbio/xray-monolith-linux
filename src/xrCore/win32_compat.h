@@ -112,6 +112,19 @@ using D3DCOLOR = unsigned long;
 	((D3DCOLOR)((((a)&0xff) << 24) | (((r)&0xff) << 16) | (((g)&0xff) << 8) | ((b)&0xff)))
 // D3DCOLOR_XRGB - same d3d9types.h family, alpha forced to opaque (0xff).
 #define D3DCOLOR_XRGB(r, g, b) D3DCOLOR_RGBA(r, g, b, 255)
+// D3DCOLOR_ARGB - same d3d9types.h family, same byte packing as
+// D3DCOLOR_RGBA just with the argument order swapped (alpha first, matching
+// real d3d9types.h) - first real call site: xrGame/imotion_position.cpp's
+// debug-draw color literals.
+#define D3DCOLOR_ARGB(a, r, g, b) D3DCOLOR_RGBA(r, g, b, a)
+
+// __min/__max - real MSVC CRT macros (<stdlib.h>, non-standard) forwarding
+// to the project's own portable _min<T>/_max<T> templates
+// (_std_extensions.h, always in scope by the time these are actually used -
+// macros expand at use site, not definition site). First real call site:
+// xrGame/CarDrone.cpp.
+#define __min(a, b) _min(a, b)
+#define __max(a, b) _max(a, b)
 
 // RGB - real wingdi.h macro (0x00bbggrr packing), used here purely as a
 // color-packing helper for default-argument values (e.g.
@@ -296,6 +309,18 @@ inline errno_t strncpy_s(char* dest, size_t destsz, const char* src, size_t coun
 	dest[n] = '\0';
 	return 0;
 }
+// MSVC's real <string.h> also declares a 3-argument array-deducing template
+// overload (under _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES, always active for
+// this codebase) that infers destsz from a fixed-size char array destination -
+// used pervasively wherever the destination is a string32/string256/string512-
+// style typedef (first real call site: xrGame/ui/Restrictions.cpp). Same
+// array-deducing-overload pattern this header already uses for vsprintf_s
+// below.
+template <size_t N>
+inline errno_t strncpy_s(char (&dest)[N], const char* src, size_t count)
+{
+	return strncpy_s(dest, N, src, count);
+}
 
 inline void _splitpath(const char* path, char* drive, char* dir, char* fname, char* ext)
 {
@@ -415,6 +440,15 @@ inline char* _strtime(char* buf)
 	return buf;
 }
 inline void _tzset() { tzset(); }
+
+// _time64/_localtime64 - MSVC CRT's explicitly-64-bit time functions
+// (from an era when plain time_t/time()/localtime() could still be
+// 32-bit on some MSVC targets). glibc's time_t is already 64-bit on
+// this platform, so the portable equivalents are just time()/localtime()
+// - a real semantic match, not a stub. xr_dsa_signer.cpp is the first
+// file in this port to need it.
+inline std::time_t _time64(std::time_t* dest) { return std::time(dest); }
+inline std::tm* _localtime64(const std::time_t* t) { return std::localtime(t); }
 
 // timeGetTime() - <mmsystem.h>'s millisecond tick counter (device.cpp's
 // CRenderDevice::Run()/mt_Thread timer-delta calibration wants "some
@@ -969,6 +1003,23 @@ using LPDIRECTINPUTDEVICE8 = IDirectInputDevice8*;
 #define DIK_RWIN             0xDC
 #define DIK_APPS             0xDD
 #define DIK_UNLABELED        0x97
+// Real, well-documented dinput.h scancode values (Japanese-keyboard/
+// extra-key codes, same DIK_* family as the rest of this block) - first
+// real caller: xrGame/xr_level_controller.cpp's DIK-name lookup table.
+#define DIK_KANA             0x70
+#define DIK_CONVERT          0x79
+#define DIK_NOCONVERT        0x7B
+#define DIK_YEN              0x7D
+#define DIK_CIRCUMFLEX       0x90
+#define DIK_AT               0x91
+#define DIK_COLON            0x92
+#define DIK_UNDERLINE        0x93
+#define DIK_KANJI            0x94
+#define DIK_STOP             0x95
+#define DIK_AX               0x96
+#define DIK_F13              0x64
+#define DIK_F14              0x65
+#define DIK_F15              0x66
 
 // DIMOFS_* - real dinput.h DIMOUSESTATE field-byte-offset constants
 // (used by Xr_input.cpp purely as small distinguishing ids passed through

@@ -41,6 +41,10 @@ namespace AStar
 	};
 }
 
+// Same nested template-template-parameter shadowing bug class/fix as
+// dijkstra.h/data_storage_constructor.h/
+// manager_builder_allocator_constructor.h in this same batch - every
+// nesting level renamed to its own unique placeholder names.
 template <
 	typename _dist_type,
 	typename _priority_queue,
@@ -48,45 +52,45 @@ template <
 	typename _vertex_allocator,
 	bool euclidian_heuristics = true,
 	typename _data_storage_base = CVertexPath<euclidian_heuristics>,
-	template <typename _T> class _vertex = CEmptyClassTemplate,
+	template <typename _as_vT> class _vertex = CEmptyClassTemplate,
 	template <
-		typename _1,
-		typename _2
+		typename _as_bac1,
+		typename _as_bac2
 	>
 	class _builder_allocator_constructor = CBuilderAllocatorConstructor,
 	template <
-		typename _1,
-		typename _2,
-		typename _3,
+		typename _as_mbac1,
+		typename _as_mbac2,
+		typename _as_mbac3,
 		template <
-			typename _1,
-			typename _2
+			typename _as_mbac4a,
+			typename _as_mbac4b
 		>
-		class _4
+		class _as_mbac4
 	>
 	class _manager_builder_allocator_constructor = CManagerBuilderAllocatorConstructor,
 	template <
-		typename _algorithm,
-		typename _manager,
-		typename _builder,
-		typename _allocator,
-		template <typename _T> class _vertex,
+		typename _as_dsc_algorithm,
+		typename _as_dsc_manager,
+		typename _as_dsc_builder,
+		typename _as_dsc_allocator,
+		template <typename _as_dsc_vT> class _as_dsc_vertex,
 		template <
-			typename _1,
-			typename _2
+			typename _as_dsc_bac1,
+			typename _as_dsc_bac2
 		>
-		class _builder_allocator_constructor = CBuilderAllocatorConstructor,
+		class _as_dsc_builder_allocator_constructor = CBuilderAllocatorConstructor,
 		template <
-			typename _1,
-			typename _2,
-			typename _3,
+			typename _as_dsc_mbac1,
+			typename _as_dsc_mbac2,
+			typename _as_dsc_mbac3,
 			template <
-				typename _1,
-				typename _2
+				typename _as_dsc_mbac4a,
+				typename _as_dsc_mbac4b
 			>
-			class _4
+			class _as_dsc_mbac4
 		>
-		class _manager_builder_allocator_constructor = CManagerBuilderAllocatorConstructor
+		class _as_dsc_manager_builder_allocator_constructor = CManagerBuilderAllocatorConstructor
 	>
 	class _data_storage_constructor = CDataStorageConstructor,
 	typename _iteration_type = u32

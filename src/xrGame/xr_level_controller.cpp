@@ -1,6 +1,11 @@
-#include "stdafx.h"
+#include "StdAfx.h"
+// DIK_* constants come from win32_compat.h's portable stand-ins on Linux
+// (already in scope via xrCore.h/StdAfx.h) - <dinput.h> only exists on
+// real Win32 (matches xrEngine/xr_input.h's identical guard).
+#ifdef _WIN32
 #include <dinput.h>
-#include "../xrEngine/xr_ioconsole.h"
+#endif
+#include "../xrEngine/XR_IOConsole.h"
 #include "../xrEngine/xr_input.h"
 #include "../xrEngine/xr_ioc_cmd.h"
 #include "xr_level_controller.h"

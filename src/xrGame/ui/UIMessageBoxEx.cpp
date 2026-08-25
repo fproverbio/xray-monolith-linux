@@ -1,9 +1,14 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include "UIMessageBox.h"
 #include "UIMessageBoxEx.h"
 #include "../UIDialogHolder.h"
+// DIK_* constants come from win32_compat.h's portable stand-ins on Linux
+// (already in scope via xrCore.h/StdAfx.h) - <dinput.h> only exists on
+// real Win32 (matches xrEngine/xr_input.h's identical guard).
+#ifdef _WIN32
 #include <dinput.h>
+#endif
 
 CUIMessageBoxEx::CUIMessageBoxEx()
 {

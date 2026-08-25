@@ -34,9 +34,9 @@ CHudItem::CHudItem()
 	RenderHud(TRUE);
 	EnableHudInertion(TRUE);
 	AllowHudInertion(TRUE);
-	m_bStopAtEndAnimIsRunning = false;
-	m_current_motion_def = NULL;
-	m_started_rnd_anim_idx = u8(-1);
+	m_motion.m_bStopAtEndAnimIsRunning = false;
+	m_motion.m_current_motion_def = NULL;
+	m_motion.m_started_rnd_anim_idx = u8(-1);
 
 	m_fLR_CameraFactor = 0.f;
 	m_fLR_MovingFactor = 0.f;
@@ -191,7 +191,7 @@ void CHudItem::OnStateSwitch(u32 S, u32 oldState)
 			if (IsAttachedToHUD())
 			{
 				Fvector P = HudItemData()->m_item_transform.c;
-				m_sounds.PlaySound("sndBore", P, object().H_Root(), !!GetHUDmode(), false, m_started_rnd_anim_idx);
+				m_sounds.PlaySound("sndBore", P, object().H_Root(), !!GetHUDmode(), false, m_motion.m_started_rnd_anim_idx);
 			}
 		}
 		else
@@ -218,7 +218,7 @@ void CHudItem::OnAnimationEnd(u32 state)
 	CActor* A = smart_cast<CActor*>(object().H_Parent());
 	if (A)
 		A->callback(GameObject::eActorHudAnimationEnd)(smart_cast<CGameObject*>(this)->lua_game_object(),
-		                                               this->hud_sect.c_str(), this->m_current_motion.c_str(), state,
+		                                               this->hud_sect.c_str(), this->m_motion.m_current_motion.c_str(), state,
 		                                               this->animation_slot());
 
 	switch (state)
@@ -549,27 +549,27 @@ void CHudItem::UpdateNearWall()
 
 void CHudItem::UpdateCL()
 {
-	if (m_current_motion_def)
+	if (m_motion.m_current_motion_def)
 	{
-		if (m_bStopAtEndAnimIsRunning)
+		if (m_motion.m_bStopAtEndAnimIsRunning)
 		{
-			const xr_vector<motion_marks>& marks = m_current_motion_def->marks;
+			const xr_vector<motion_marks>& marks = m_motion.m_current_motion_def->marks;
 			if (!marks.empty())
 			{
-				float motion_prev_time = ((float)m_dwMotionCurrTm - (float)m_dwMotionStartTm) / 1000.0f;
-				float motion_curr_time = ((float)Device.dwTimeGlobal - (float)m_dwMotionStartTm) / 1000.0f;
+				float motion_prev_time = ((float)m_motion.m_dwMotionCurrTm - (float)m_motion.m_dwMotionStartTm) / 1000.0f;
+				float motion_curr_time = ((float)Device.dwTimeGlobal - (float)m_motion.m_dwMotionStartTm) / 1000.0f;
 
                 // verdatim, edits so motion marks shift their timings based on speed
                 if (scale_hud_motion_marks_by_speed) {
                     CMotionDef def;
-                    u16 s = m_current_motion_def->speed;
+                    u16 s = m_motion.m_current_motion_def->speed;
                     float speed = def.Dequantize(s);
 
                     // get the final_anim_speed after the ltx speed changes / script changes from actor_on_hud_animation_play and scale the marks accordingly to the two timings
                     float final_anim_speed = HudItemData()->final_anim_speed;
 
-                    motion_prev_time = (((float)m_dwMotionCurrTm - (float)m_dwMotionStartTm) / 1000.0f) * speed * final_anim_speed;
-                    motion_curr_time = (((float)Device.dwTimeGlobal - (float)m_dwMotionStartTm) / 1000.0f) * speed * final_anim_speed;
+                    motion_prev_time = (((float)m_motion.m_dwMotionCurrTm - (float)m_motion.m_dwMotionStartTm) / 1000.0f) * speed * final_anim_speed;
+                    motion_curr_time = (((float)Device.dwTimeGlobal - (float)m_motion.m_dwMotionStartTm) / 1000.0f) * speed * final_anim_speed;
                     
                 }
 
@@ -585,20 +585,20 @@ void CHudItem::UpdateCL()
 					const motion_marks::interval* Icurr = M.pick_mark(motion_curr_time);
 					if (Iprev == NULL && Icurr != NULL /* || M.is_mark_between(motion_prev_time, motion_curr_time)*/)
 					{
-						OnMotionMark(m_startedMotionState, M);
+						OnMotionMark(m_motion.m_startedMotionState, M);
 					}
 				}
 			}
 
-			m_dwMotionCurrTm = Device.dwTimeGlobal;
-			if (m_dwMotionCurrTm > m_dwMotionEndTm)
+			m_motion.m_dwMotionCurrTm = Device.dwTimeGlobal;
+			if (m_motion.m_dwMotionCurrTm > m_motion.m_dwMotionEndTm)
 			{
-				m_current_motion_def = NULL;
-				m_dwMotionStartTm = 0;
-				m_dwMotionEndTm = 0;
-				m_dwMotionCurrTm = 0;
-				m_bStopAtEndAnimIsRunning = false;
-				OnAnimationEnd(m_startedMotionState);
+				m_motion.m_current_motion_def = NULL;
+				m_motion.m_dwMotionStartTm = 0;
+				m_motion.m_dwMotionEndTm = 0;
+				m_motion.m_dwMotionCurrTm = 0;
+				m_motion.m_bStopAtEndAnimIsRunning = false;
+				OnAnimationEnd(m_motion.m_startedMotionState);
 			}
 		}
 	}
@@ -658,8 +658,8 @@ void CHudItem::on_b_hud_detach()
 
 void CHudItem::on_outfit_changed()
 {
-	if (m_current_motion_def)
-		PlayHUDMotion_noCB(m_current_motion, FALSE);
+	if (m_motion.m_current_motion_def)
+		PlayHUDMotion_noCB(m_motion.m_current_motion, FALSE);
 }
 
 void CHudItem::on_a_hud_attach()
@@ -758,11 +758,11 @@ u32 CHudItem::PlayHUDMotion(shared_str M, BOOL bMixIn, CHudItem* W, u32 state, f
 	u32 anim_time = PlayHUDMotion_noCB(M, bMixIn, speed, bMixIn2);
 	if (anim_time > 0)
 	{
-		m_bStopAtEndAnimIsRunning = true;
-		m_dwMotionStartTm = Device.dwTimeGlobal;
-		m_dwMotionCurrTm = m_dwMotionStartTm;
-		m_dwMotionEndTm = m_dwMotionStartTm + anim_time;
-		m_startedMotionState = state;
+		m_motion.m_bStopAtEndAnimIsRunning = true;
+		m_motion.m_dwMotionStartTm = Device.dwTimeGlobal;
+		m_motion.m_dwMotionCurrTm = m_motion.m_dwMotionStartTm;
+		m_motion.m_dwMotionEndTm = m_motion.m_dwMotionStartTm + anim_time;
+		m_motion.m_startedMotionState = state;
 
 		float end_modifier = 0.f;
 
@@ -778,17 +778,17 @@ u32 CHudItem::PlayHUDMotion(shared_str M, BOOL bMixIn, CHudItem* W, u32 state, f
 		if (g_end_modif != 0.f)
 			end_modifier = g_end_modif;
 
-		m_dwMotionEndTm -= end_modifier * 1000;
+		m_motion.m_dwMotionEndTm -= end_modifier * 1000;
 	}
 	else
-		m_bStopAtEndAnimIsRunning = false;
+		m_motion.m_bStopAtEndAnimIsRunning = false;
 
 	return anim_time;
 }
 
 u32 CHudItem::PlayHUDMotion_noCB(const shared_str& motion_name, BOOL bMixIn, float speed, bool bMixIn2)
 {
-	m_current_motion = motion_name;
+	m_motion.m_current_motion = motion_name;
 
 	if (bDebug && item().m_pInventory)
 	{
@@ -801,22 +801,22 @@ u32 CHudItem::PlayHUDMotion_noCB(const shared_str& motion_name, BOOL bMixIn, flo
 	}
 	if (IsAttachedToHUD())
 	{
-		return HudItemData()->anim_play(motion_name, bMixIn, m_current_motion_def, m_started_rnd_anim_idx, speed, bMixIn2);
+		return HudItemData()->anim_play(motion_name, bMixIn, m_motion.m_current_motion_def, m_motion.m_started_rnd_anim_idx, speed, bMixIn2);
 	}
 	else
 	{
-		m_started_rnd_anim_idx = 0;
-		return g_player_hud->motion_length(motion_name, HudSection(), m_current_motion_def);
+		m_motion.m_started_rnd_anim_idx = 0;
+		return g_player_hud->motion_length(motion_name, HudSection(), m_motion.m_current_motion_def);
 	}
 }
 
 void CHudItem::StopCurrentAnimWithoutCallback()
 {
-	m_dwMotionStartTm = 0;
-	m_dwMotionEndTm = 0;
-	m_dwMotionCurrTm = 0;
-	m_bStopAtEndAnimIsRunning = false;
-	m_current_motion_def = NULL;
+	m_motion.m_dwMotionStartTm = 0;
+	m_motion.m_dwMotionEndTm = 0;
+	m_motion.m_dwMotionCurrTm = 0;
+	m_motion.m_bStopAtEndAnimIsRunning = false;
+	m_motion.m_current_motion_def = NULL;
 }
 
 BOOL CHudItem::GetHUDmode()
@@ -899,7 +899,7 @@ bool CHudItem::HudAnimationExist(LPCSTR anim_name)
 	}
 	else // Third person
 	{
-		if (g_player_hud->motion_length(anim_name, HudSection(), m_current_motion_def) > 100)
+		if (g_player_hud->motion_length(anim_name, HudSection(), m_motion.m_current_motion_def) > 100)
 			return true;
 	}
 #ifdef DEBUG
@@ -944,7 +944,7 @@ void CHudItem::PlayAnimIdleSprint()
 
 void CHudItem::OnMovementChanged(ACTOR_DEFS::EMoveCommand cmd)
 {
-	if (GetState() == eIdle && !m_bStopAtEndAnimIsRunning)
+	if (GetState() == eIdle && !m_motion.m_bStopAtEndAnimIsRunning)
 	{
 		if ((cmd == ACTOR_DEFS::mcSprint) || (cmd == ACTOR_DEFS::mcAnyMove) || (cmd == ACTOR_DEFS::mcCrouch) || (cmd == ACTOR_DEFS::mcAccel))
 		{

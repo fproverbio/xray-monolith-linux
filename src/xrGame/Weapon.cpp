@@ -3,37 +3,37 @@
 //	Last updated: 13/08/2015
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Weapon.h"
 #include "ParticlesObject.h"
 #include "entity_alive.h"
 #include "inventory_item_impl.h"
-#include "inventory.h"
-#include "xrserver_objects_alife_items.h"
-#include "actor.h"
-#include "actoreffector.h"
-#include "level.h"
+#include "Inventory.h"
+#include "xrServer_Objects_ALife_Items.h"
+#include "Actor.h"
+#include "ActorEffector.h"
+#include "Level.h"
 #include "xr_level_controller.h"
 #include "game_cl_base.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "ai_object_location.h"
-#include "../xrphysics/mathutils.h"
+#include "MathUtils.h"
 #include "object_broker.h"
 #include "player_hud.h"
-#include "gamepersistent.h"
-#include "effectorFall.h"
+#include "GamePersistent.h"
+#include "EffectorFall.h"
 #include "debug_renderer.h"
 #include "static_cast_checked.hpp"
 #include "clsid_game.h"
-#include "weaponBinocularsVision.h"
+#include "WeaponBinocularsVision.h"
 #include "ui/UIWindow.h"
 #include "ui/UIXmlInit.h"
 #include "Torch.h"
-#include "../xrCore/vector.h"
+#include "vector.h"
 #include "ActorNightVision.h"
 #include "HUDManager.h"
 #include "WeaponMagazinedWGrenade.h"
-#include "../xrEngine/GameMtlLib.h"
+#include "GameMtlLib.h"
 #include "../Layers/xrRender/xrRender_console.h"
 #include "pch_script.h"
 #include "script_game_object.h"
@@ -1472,7 +1472,7 @@ bool CWeapon::Action(u16 cmd, u32 flags)
 			if (bMisfire)
 			{
 				OnEmptyClick();
-				if (!m_current_motion_def || !m_playFullShotAnim)
+				if (!m_motion.m_current_motion_def || !m_playFullShotAnim)
 					SwitchState(eIdle);
 			}
 			
@@ -3128,13 +3128,13 @@ void CWeapon::debug_draw_firedeps()
         CDebugRenderer			&render = Level().debug_renderer();
 
         if(hud_adj_mode==5)
-            render.draw_aabb(get_LastFP(),	0.005f,0.005f,0.005f,D3DCOLOR_XRGB(255,0,0));
+            render.draw_aabb(get_LastFP(),	0.005f,0.005f,0.005f,D3DCOLOR_XRGB(255,0,0),true);
 
         if(hud_adj_mode==6)
-            render.draw_aabb(get_LastFP2(),	0.005f,0.005f,0.005f,D3DCOLOR_XRGB(0,0,255));
+            render.draw_aabb(get_LastFP2(),	0.005f,0.005f,0.005f,D3DCOLOR_XRGB(0,0,255),true);
 
         if(hud_adj_mode==7)
-            render.draw_aabb(get_LastSP(),		0.005f,0.005f,0.005f,D3DCOLOR_XRGB(0,255,0));
+            render.draw_aabb(get_LastSP(),		0.005f,0.005f,0.005f,D3DCOLOR_XRGB(0,255,0),true);
     }
 #endif // DEBUG
 }

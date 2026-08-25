@@ -3,7 +3,12 @@
 #include "interactive_motion.h"
 #include "../Include/xrRender/Kinematics.h"
 class imotion_position;
-enum motion_history_state;
+// enum motion_history_state; (opaque forward declaration, no fixed
+// underlying type) is illegal standard C++ - same bug class as
+// restricted_object.h's ERestrictorTypes/PHMovementControl.h's EHitType in
+// this same batch. The real definition lives in xrPhysics/PhysicsShell.h
+// (already a reachable xrGame include dir).
+#include "../xrPhysics/PhysicsShell.h"
 
 class imotion_position :
 	public interactive_motion

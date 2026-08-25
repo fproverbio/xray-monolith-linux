@@ -2,9 +2,17 @@
 // 
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
+// <dinput.h> only exists on Windows; DIK_*/DirectInput-shaped types this
+// codebase actually references (none, in this particular file - grep-
+// confirmed no DIK_*/LPDIRECTINPUT* symbols below) come from win32_compat.h
+// instead, already in scope via StdAfx.h - same guard already established
+// for this exact same unguarded-<dinput.h> pattern in xrEngine/imgui_helper.h
+// and xrEngine/xr_input.h (see notes section 21a).
+#ifdef _WIN32
 #include <dinput.h>
-#include "uieditbox.h"
+#endif
+#include "UIEditBox.h"
 #include "UIFrameLineWnd.h"
 
 

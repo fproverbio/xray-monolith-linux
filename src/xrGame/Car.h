@@ -2,19 +2,19 @@
 
 //#if 0
 
-#include "entity.h"
+#include "Entity.h"
 //#include "../xrphysics/PHDynamicData.h"
-#include "../xrphysics/PhysicsShell.h"
-#include "../xrphysics/phupdateobject.h"
+#include "PhysicsShell.h"
+#include "PHUpdateObject.h"
 #include "script_entity.h"
 #include "CarLights.h"
 //#include "phobject.h"
 #include "holder_custom.h"
 #include "PHSkeleton.h"
 #include "DamagableItem.h"
-#include "phcollisiondamagereceiver.h"
+#include "PHCollisionDamageReceiver.h"
 #include "CarDamageParticles.h"
-#include "xrserver_objects_alife.h"
+#include "xrServer_Objects_ALife.h"
 #include "CarDamageParticles.h"
 #include "hit_immunity.h"
 #include "Explosive.h"
@@ -31,7 +31,7 @@ struct dSurfaceParameters;
 // defs
 
 #ifdef DEBUG
-	#include "../xrEngine/StatGraph.h"
+	#include "StatGraph.h"
 	#include "PHDebug.h"
 #endif
 
@@ -63,7 +63,7 @@ private:
 	CFunctionGraph 					m_dbg_torque_rpm		;
 	CStatGraph	   					*m_dbg_dynamic_plot		;
 	bool							b_plots					;
-	float _stdcall			TorqueRpmFun		(float rpm)		{return Parabola(rpm)/rpm;}
+	float __stdcall			TorqueRpmFun		(float rpm)		{return Parabola(rpm)/rpm;}
 	void 					InitDebug			()				;
 	void 					DbgSheduleUpdate	()				;
 	void 					DbgUbdateCl			()				;
@@ -480,7 +480,7 @@ private:
 	////////////////////////////////////////////////////
 	/////////////////////////////////////////////////
 	void InitParabola();
-	float _stdcall Parabola(float rpm);
+	float __stdcall Parabola(float rpm);
 	//float GetSteerAngle();
 	void LimitWheels();
 	void Drive();

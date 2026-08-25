@@ -6,9 +6,13 @@
 //	Description : ALife object registry
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "alife_object_registry.h"
+// psAI_Flags - see alife_level_registry_inline.h's comment (ai_debug.h's
+// own declaration is dead in this build; declared directly here).
 #include "ai_debug.h"
+
+extern Flags32 psAI_Flags;
 
 CALifeObjectRegistry::CALifeObjectRegistry(LPCSTR section)
 {

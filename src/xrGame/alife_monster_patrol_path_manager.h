@@ -10,15 +10,20 @@
 
 #include "game_graph_space.h"
 #include "script_export_space.h"
+// MSVC permissively accepts a bare `enum E;` forward declaration (no fixed
+// underlying type) as long as *some* full definition of E is reachable
+// from anywhere in the same named namespace across the whole translation
+// unit - a pre-C++11 extension. Standard C++ only allows forward-declaring
+// an enum that has a fixed underlying type (e.g. `enum E : int;`); a bare
+// `enum E;` with no previously-seen full definition is ill-formed, and GCC
+// enforces this (same bug class as notes file section 26b's
+// `namespace ALife { enum EHitType; }` fix in PHCharacter.h). The real,
+// fully-defined enums live in patrol_path_manager_space.h - include it for
+// real instead of guessing an underlying type that might not match.
+#include "patrol_path_manager_space.h"
 
 class CMovementManagerHolder;
 class CPatrolPath;
-
-namespace PatrolPathManager
-{
-	enum EPatrolStartType;
-	enum EPatrolRouteType;
-};
 
 class CALifeMonsterPatrolPathManager
 {

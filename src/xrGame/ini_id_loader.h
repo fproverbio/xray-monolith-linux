@@ -30,41 +30,56 @@ protected:
 	typedef xr_vector<ITEM_DATA> T_VECTOR;
 	static T_VECTOR* m_pItemDataVector;
 
+	// MSVC accepts a nested explicit specialization (`template <> ... LoadItemData<0>`/
+	// `<1>`) of a member template inside a class template (CIni_IdToIndex<...>) that's
+	// itself still dependent on the enclosing class's own template parameters - illegal
+	// in standard C++ (explicit specialization of a member template requires the
+	// enclosing class template to be non-dependent first). GCC's -Wtemplate-body flags
+	// it and hard-errors at first real instantiation (same bug class documented
+	// repeatedly this session, e.g. object_loader.h/object_saver.h, object_comparer.h,
+	// static_cast_checked.hpp). Rewritten with if constexpr - identical compile-time
+	// branch, standard-legal.
 	template <u32 NUM>
-	static void LoadItemData(u32, LPCSTR)
+	static void LoadItemData(u32 count, LPCSTR cfgRecord)
 	{
-		STATIC_CHECK(false, Specialization_for_LoadItemData_in_CIni_IdToIndex_not_found);
-		NODEFAULT;
-	}
-
-	template <>
-	static void LoadItemData<0>(u32 count, LPCSTR cfgRecord)
-	{
-		for (u32 k = 0; k < count; k += 1)
+		if constexpr (NUM == 0)
 		{
-			string64 buf;
-			LPCSTR id_str = _GetItem(cfgRecord, k, buf);
-			char* id_str_lwr = xr_strdup(id_str);
-			xr_strlwr(id_str_lwr);
-			ITEM_DATA item_data(T_INDEX(m_pItemDataVector->size()), T_ID(id_str));
-			m_pItemDataVector->push_back(item_data);
-			xr_free(id_str_lwr);
+			for (u32 k = 0; k < count; k += 1)
+			{
+				string64 buf;
+				LPCSTR id_str = _GetItem(cfgRecord, k, buf);
+				char* id_str_lwr = xr_strdup(id_str);
+				xr_strlwr(id_str_lwr);
+				ITEM_DATA item_data(T_INDEX(m_pItemDataVector->size()), T_ID(id_str));
+				m_pItemDataVector->push_back(item_data);
+				xr_free(id_str_lwr);
+			}
 		}
-	}
-
-	template <>
-	static void LoadItemData<1>(u32 count, LPCSTR cfgRecord)
-	{
-		for (u32 k = 0; k < count; k += 2)
+		else if constexpr (NUM == 1)
 		{
-			string64 buf, buf1;
-			LPCSTR id_str = _GetItem(cfgRecord, k, buf);
-			char* id_str_lwr = xr_strdup(id_str);
-			xr_strlwr(id_str_lwr);
-			LPCSTR rec1 = _GetItem(cfgRecord, k + 1, buf1);
-			ITEM_DATA item_data(T_INDEX(m_pItemDataVector->size()), T_ID(id_str), rec1);
-			m_pItemDataVector->push_back(item_data);
-			xr_free(id_str_lwr);
+			for (u32 k = 0; k < count; k += 2)
+			{
+				string64 buf, buf1;
+				LPCSTR id_str = _GetItem(cfgRecord, k, buf);
+				char* id_str_lwr = xr_strdup(id_str);
+				xr_strlwr(id_str_lwr);
+				LPCSTR rec1 = _GetItem(cfgRecord, k + 1, buf1);
+				ITEM_DATA item_data(T_INDEX(m_pItemDataVector->size()), T_ID(id_str), rec1);
+				m_pItemDataVector->push_back(item_data);
+				xr_free(id_str_lwr);
+			}
+		}
+		else
+		{
+			// Dependent on NUM (always false for any NUM reaching here,
+			// but not resolvable until instantiation) rather than a plain
+			// `false` - a hard-coded `false` inside an if-constexpr branch
+			// still gets checked at template-parse time regardless of
+			// which branch is ever actually taken, breaking the NUM==0/
+			// NUM==1 branches above too (same trap fixed the same way in
+			// ini_table_loader.h's convert(), this same batch).
+			STATIC_CHECK(NUM == u32(-1), Specialization_for_LoadItemData_in_CIni_IdToIndex_not_found);
+			NODEFAULT;
 		}
 	}
 
@@ -121,7 +136,7 @@ CSINI_IdToIndex::~CIni_IdToIndex()
 
 
 TEMPLATE_SPECIALIZATION
-const typename ITEM_DATA* CSINI_IdToIndex::GetById(const T_ID& str_id, bool no_assert)
+const ITEM_DATA* CSINI_IdToIndex::GetById(const T_ID& str_id, bool no_assert)
 {
 	T_VECTOR::iterator it = m_pItemDataVector->begin();
 	for (; m_pItemDataVector->end() != it; ++it)
@@ -140,7 +155,7 @@ const typename ITEM_DATA* CSINI_IdToIndex::GetById(const T_ID& str_id, bool no_a
 }
 
 TEMPLATE_SPECIALIZATION
-const typename ITEM_DATA* CSINI_IdToIndex::GetByIndex(T_INDEX index, bool no_assert)
+const ITEM_DATA* CSINI_IdToIndex::GetByIndex(T_INDEX index, bool no_assert)
 {
 	if ((size_t)index >= m_pItemDataVector->size())
 	{
@@ -158,7 +173,7 @@ void CSINI_IdToIndex::DeleteIdToIndexData()
 }
 
 TEMPLATE_SPECIALIZATION
-typename void CSINI_IdToIndex::InitInternal()
+void CSINI_IdToIndex::InitInternal()
 {
 	VERIFY(!m_pItemDataVector);
 	T_INIT::InitIdToIndex();

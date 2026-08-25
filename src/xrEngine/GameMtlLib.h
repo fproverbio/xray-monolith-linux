@@ -400,13 +400,22 @@ public:
 
 #define GET_RANDOM(a_vector) (a_vector[Random.randI(a_vector.size())])
 
+// Both macros originally used the `##` token-pasting operator between
+// _mtl_pair_ and `->` (`_mtl_pair_##->_a_vector_`) - pasting an identifier
+// directly with the arrow operator does not form a valid single
+// preprocessing token, a genuine pre-existing source bug (not an
+// intentional construct - plain `_mtl_pair_->_a_vector_` member access
+// needs no `##` at all). MSVC's preprocessor apparently tolerated this;
+// GCC hard-errors ("pasting mtl_pair and -> does not give a valid
+// preprocessing token"). Fixed by dropping the erroneous `##`. First real
+// caller: xrGame/PHSoundPlayer.cpp.
 #ifdef DEBUG
 #define CLONE_MTL_SOUND_CHECK(_res_, _mtl_pair_, _a_vector_)\
- { VERIFY2(!_mtl_pair_##->_a_vector_.empty(),_mtl_pair_->dbg_Name()); }
+ { VERIFY2(!_mtl_pair_->_a_vector_.empty(),_mtl_pair_->dbg_Name()); }
 #endif
 
 #define CLONE_MTL_SOUND_DO(_res_, _mtl_pair_, _a_vector_)\
- { _res_.clone(GET_RANDOM(_mtl_pair_##->_a_vector_),st_Effect,sg_SourceType); }
+ { _res_.clone(GET_RANDOM(_mtl_pair_->_a_vector_),st_Effect,sg_SourceType); }
 
 extern MTL_EXPORT_API CGameMtlLibrary GMLib;
 

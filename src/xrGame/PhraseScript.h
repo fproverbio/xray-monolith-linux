@@ -61,9 +61,16 @@ protected:
 	//имя скриптовой функции, которая возвращает какой-то текст
 	shared_str m_sScriptTextFunc;
 
-	//скриптовые действия, которые активируется после того как 
+	//скриптовые действия, которые активируется после того как
 	//говорится фраза
-	DEFINE_VECTOR(shared_str, ACTION_NAME_VECTOR, ACTION_NAME_VECTOR_IT);
+	// ACTION_NAME_VECTOR/PRECONDITION_VECTOR (DEFINE_VECTOR expands to a
+	// typedef pair) are already declared public above (needed there for
+	// Actions()/Preconditions()'s return types) - redeclaring the exact
+	// same typedefs here was a genuine redundant duplicate (same bug
+	// class/fix as xrServerEntities/xrServer_Objects.h's
+	// CSE_AbstractVisual inherited1/inherited2 in this same batch). MSVC
+	// tolerated the duplicate; GCC hard-errors ("redeclaration of
+	// typedef"). Dropped, kept just the member variable declarations.
 	ACTION_NAME_VECTOR m_ScriptActions;
 
 	DEFINE_VECTOR(shared_str, INFO_VECTOR, INFO_VECTOR_IT);
@@ -73,8 +80,6 @@ protected:
 
 	//список скриптовых предикатов, выполнение, которых необходимо
 	//для того чтоб фраза стала доступной
-	DEFINE_VECTOR(shared_str, PRECONDITION_VECTOR, PRECONDITION_VECTOR_IT);
-
 	PRECONDITION_VECTOR m_Preconditions;
 	//проверка наличия/отсутствия информации
 	INFO_VECTOR m_HasInfo;

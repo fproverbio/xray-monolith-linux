@@ -336,7 +336,7 @@ void CIKLimbsController::Destroy(CGameObject* O)
 	_bone_chains.clear();
 }
 
-void _stdcall CIKLimbsController::IKVisualCallback(IKinematics* K)
+void __stdcall CIKLimbsController::IKVisualCallback(IKinematics* K)
 {
 	//if (Device.Paused())
 	//	return;

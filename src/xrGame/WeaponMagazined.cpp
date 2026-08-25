@@ -1,14 +1,14 @@
 #include "pch_script.h"
 
 #include "WeaponMagazined.h"
-#include "actor.h"
+#include "Actor.h"
 #include "ParticlesObject.h"
 #include "Scope.h"
 #include "Silencer.h"
 #include "GrenadeLauncher.h"
-#include "inventory.h"
+#include "Inventory.h"
 #include "InventoryOwner.h"
-#include "xrserver_objects_alife_items.h"
+#include "xrServer_Objects_ALife_Items.h"
 #include "ActorEffector.h"
 #include "EffectorZoomInertion.h"
 #include "xr_level_controller.h"
@@ -960,7 +960,7 @@ void CWeaponMagazined::OnEmptyClick()
 		PlayBlendAnm(empty_click_layer, empty_click_speed, empty_click_power);
 }
 
-#include "../xrEngine/xr_input.h"
+#include "xr_input.h"
 void CWeaponMagazined::OnAnimationEnd(u32 state)
 {
 	switch (state)
@@ -1019,7 +1019,7 @@ void CWeaponMagazined::switch2_Idle()
 }
 
 #ifdef DEBUG
-#include "ai\stalker\ai_stalker.h"
+#include "ai/stalker/ai_stalker.h"
 #include "object_handler_planner.h"
 #endif
 void CWeaponMagazined::switch2_Fire()

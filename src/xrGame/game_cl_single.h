@@ -36,6 +36,11 @@ enum ESingleGameDifficulty
 };
 
 extern ESingleGameDifficulty g_SingleGameDifficulty;
-xr_token difficulty_type_token [ ];
+// Missing `extern` - an incomplete-bound array with no initializer is only
+// legal as a declaration referring to a real definition elsewhere (here,
+// game_cl_single.cpp's own `xr_token difficulty_type_token[] = {...}`),
+// never as a standalone definition. MSVC tolerated the omission; GCC
+// doesn't ("storage size ... isn't known").
+extern xr_token difficulty_type_token [ ];
 
 typedef enum_exporter<ESingleGameDifficulty> CScriptGameDifficulty;

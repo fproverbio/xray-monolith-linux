@@ -14,8 +14,8 @@
 		typename _builder,\
 		typename _allocator,\
 		template <\
-			typename _builder,\
-			typename _allocator\
+			typename _builder_param,\
+			typename _allocator_param\
 		>\
 		class	 _builder_allocator_constructor\
 	>\

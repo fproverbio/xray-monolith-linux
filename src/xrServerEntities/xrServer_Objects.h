@@ -10,7 +10,7 @@
 
 #include "xrMessages.h"
 #include "xrServer_Object_Base.h"
-#include "phnetstate.h"
+#include "PHNetState.h"
 
 #pragma warning(push)
 #pragma warning(disable:4005)
@@ -213,10 +213,14 @@ protected:
 public:
 SERVER_ENTITY_DECLARE_END
 
+// The SERVER_ENTITY_DECLARE_BEGIN2 macro (xrServer_Space.h) already declares
+// `typedef __B inherited1; typedef __C inherited2;` inside its expansion -
+// this class used to manually re-declare the exact same two typedefs right
+// after, a genuine redundant duplicate (confirmed: no other
+// SERVER_ENTITY_DECLARE_BEGIN2 user in this codebase does this). MSVC
+// tolerated the duplicate; GCC hard-errors ("redeclaration of typedef").
+// Dropped as dead weight rather than kept.
 SERVER_ENTITY_DECLARE_BEGIN2(CSE_AbstractVisual, CSE_Abstract, CSE_Visual)
-	typedef CSE_Abstract inherited1;
-	typedef CSE_Visual inherited2;
-
 	CSE_AbstractVisual(LPCSTR caSection);
 	virtual ~CSE_AbstractVisual();
 	virtual CSE_Visual* __stdcall visual();

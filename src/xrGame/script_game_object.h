@@ -43,25 +43,39 @@
 #include "searchlight.h"
 #endif
 
-enum EPdaMsg;
-enum ESoundTypes;
-enum ETaskState;
+// Every opaque enum forward declaration this block used to have (`enum X;`,
+// no fixed underlying type) is illegal standard C++ (same bug class as
+// restricted_object.h's ERestrictorTypes/PHMovementControl.h's EHitType/
+// imotion_position.h's motion_history_state elsewhere in this same batch).
+// An explicit fixed underlying type (`enum X : unsigned int;`) looked like
+// a dependency-free fix, but real testing found several of these enums'
+// actual bodies ARE reachable in the same translation unit as this file
+// (transitively, through this file's own Actor.h/CustomZone.h/Weapon.h/
+// etc. includes above) - and GCC hard-errors on an "underlying type
+// mismatch" between a `: unsigned int`-qualified forward declaration and a
+// real body that resolves to a different implicit underlying type. So:
+// real headers instead, all small already-proven-or-leaf files. Three
+// enums (MonsterSpace::EDirectionType/EPathState/EMonsterSounds) were
+// dropped outright rather than chasing a header for them - grep-confirmed
+// unused anywhere else in this file, so they never needed forward
+// declaring in the first place.
+#include "pda_space.h"
+#include "sound_memory_manager.h"
+#include "GameTaskDefs.h"
+#include "../xrServerEntities/alife_space.h"
+#include "script_entity_space.h"
+#include "movement_manager_space.h"
+#include "detail_path_manager_space.h"
+#include "sight_manager_space.h"
+#include "patrol_path_manager_space.h"
+#include "ai_monster_space.h"
+#include "game_object_space.h"
 
-namespace ALife { enum ERelationType; }
-namespace ScriptEntity { enum EActionType; }
-namespace MovementManager { enum EPathType; }
-namespace DetailPathManager { enum EDetailPathType; }
-namespace SightManager { enum ESightType; }
 namespace smart_cover { class object; }
 namespace doors { class door; }
 
 class NET_Packet;
 class CGameTask;
-
-namespace PatrolPathManager {
-	enum EPatrolStartType;
-	enum EPatrolRouteType;
-};
 
 namespace MemorySpace {
 	struct CMemoryInfo;
@@ -69,28 +83,6 @@ namespace MemorySpace {
 	struct CSoundObject;
 	struct CHitObject;
 	struct CNotYetVisibleObject;
-};
-
-namespace MonsterSpace {
-	enum EBodyState;
-	enum EMovementType;
-	enum EMovementDirection;
-	enum EDirectionType;
-	enum EPathState;
-	enum EObjectAction;
-	enum EMentalState;
-	enum EScriptMonsterMoveAction;
-	enum EScriptMonsterSpeedParam;
-	enum EScriptMonsterAnimAction;
-	enum EScriptMonsterGlobalAction;
-	enum EScriptSoundAnim;
-	enum EMonsterSounds;
-	enum EMonsterHeadAnimType;
-	struct SBoneRotation;
-};
-
-namespace GameObject {
-	enum ECallbackType;
 };
 
 class CGameObject;
@@ -152,11 +144,10 @@ class CProjector;
 
 class CScriptGameObject;
 
-namespace SightManager
-{
-	enum ESightType;
-}
-
+// SightManager::ESightType's real definition is already visible via this
+// file's own sight_manager_space.h include above - no forward declaration
+// needed (a redundant one here previously risked an "underlying type
+// mismatch" against the real body already seen).
 struct CSightParams
 {
 	SightManager::ESightType m_sight_type;

@@ -3,7 +3,17 @@
 
 #include "../xrServerEntities/associative_vector.h"
 #include "mixed_delegate.h"
-#include "atlas_stalkercoppc_v1.h"
+// atlas_stalkercoppc_v1.h - EXCLUDED, real gap: its own header genuinely
+// doesn't exist anywhere in this checkout (see xrGame/CMakeLists.txt's
+// atlas_stalkercoppc_v1.c exclusion comment for the full story - a
+// GameSpy ATLAS competition-system header, ~400 KEY_* constants, missing
+// from this source tree despite being listed in xrGame.vcxproj). Verified
+// (grep across this whole header) that nothing in profile_data_types.h
+// itself actually references any KEY_* symbol - this include is genuinely
+// vestigial here, so it's dropped rather than guessed-at. profile_data_types.cpp/
+// profile_data_types_script.cpp (which may need the real KEY_* constants)
+// stay excluded from the build separately.
+// #include "atlas_stalkercoppc_v1.h"
 #include "script_export_space.h"
 
 namespace gamespy_profile

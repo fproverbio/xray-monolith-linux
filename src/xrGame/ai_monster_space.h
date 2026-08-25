@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "xrserver_space.h"
+#include "../xrServerEntities/xrServer_Space.h"
 
 namespace MonsterSpace
 {

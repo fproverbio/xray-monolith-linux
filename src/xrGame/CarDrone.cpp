@@ -1,11 +1,11 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #ifdef CAR_NEW
 #include "Car.h"
 #include "CarDrone.h"
 
 #include "Level.h"
 #include "../Include/xrRender/Kinematics.h"
-#include "../xrphysics/IPHWorld.h"
+#include "IPHWorld.h"
 
 #include "script_game_object.h"
 #include "CameraFirstEye.h"
@@ -118,7 +118,7 @@ void CCarDrone::Load(LPCSTR section)
                 I.E->set_DynamicLimits(default_l_limit, default_w_limit * 1000.F);
             }
         }
-        R_ASSERT3(m_rotor_bones.size(), __FUNCTION__ " No m_rotor_bones", car->cNameSect_str());
+        R_ASSERT3(m_rotor_bones.size(), "No m_rotor_bones", car->cNameSect_str());
     }
     {
         m_drive_bones.clear();
@@ -138,7 +138,7 @@ void CCarDrone::Load(LPCSTR section)
                 I.E = car->m_pPhysicsShell->get_Element(bone_id);
             }
         }
-        R_ASSERT3(m_drive_bones.size(), __FUNCTION__ " No m_drive_bones", car->cNameSect_str());
+        R_ASSERT3(m_drive_bones.size(), "No m_drive_bones", car->cNameSect_str());
     }
 
     m_rotor_force = READ_IF_EXISTS(ini, r_float, cfg, "rotor_force", 0.0F);

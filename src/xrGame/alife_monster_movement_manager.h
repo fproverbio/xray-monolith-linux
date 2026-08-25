@@ -9,15 +9,17 @@
 #pragma once
 
 #include "script_export_space.h"
+// Same bug class as alife_monster_patrol_path_manager.h just above it in
+// this batch (and notes file section 26b's ALife::EHitType fix): a bare
+// `enum EPathType;` forward declaration with no fixed underlying type is
+// an MSVC-only extension, illegal in standard C++ unless a fixed
+// underlying type is given. The real, fully-defined enum lives in
+// movement_manager_space.h - include it for real.
+#include "movement_manager_space.h"
 
 class CMovementManagerHolder;
 class CALifeMonsterDetailPathManager;
 class CALifeMonsterPatrolPathManager;
-
-namespace MovementManager
-{
-	enum EPathType;
-};
 
 class CALifeMonsterMovementManager
 {

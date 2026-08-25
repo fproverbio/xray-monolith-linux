@@ -2,14 +2,16 @@
 #ifndef CPHMOVEMENT_CONTROL_H
 #define CPHMOVEMENT_CONTROL_H
 
-#include "../xrphysics/physicsexternalcommon.h"
-#include "../xrphysics/mathutils.h"
-#include "../xrphysics/movementboxdynamicactivate.h"
+#include "../xrPhysics/PhysicsExternalCommon.h"
+#include "../xrPhysics/MathUtils.h"
+#include "../xrPhysics/MovementBoxDynamicActivate.h"
 
-namespace ALife
-{
-	enum EHitType;
-};
+// `namespace ALife { enum EHitType; }` (the original forward declaration) is
+// illegal in standard C++ - same bug class already fixed this way in
+// xrPhysics/PHCharacter.h et al.; alife_space.h is self-contained, so
+// including the real definition is simpler and safer than guessing a
+// matching underlying type.
+#include "../xrServerEntities/alife_space.h"
 
 namespace DetailPathManager
 {

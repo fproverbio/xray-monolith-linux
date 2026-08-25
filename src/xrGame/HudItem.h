@@ -9,7 +9,7 @@ class CUIWindow;
 
 #include "actor_defs.h"
 #include "inventory_space.h"
-#include "hudsound.h"
+#include "HudSound.h"
 #include "HUDManager.h"
 
 #define TENDTO_SPEED         1.0f     // Модификатор силы инерции (больше - чувствительней)
@@ -98,6 +98,18 @@ protected:
 		fl_inertion_allow = (1 << 3),
 	};
 
+	// A fully anonymous struct member (no tag, no instance name) is only
+	// standard-legal for unions (anonymous unions inject their members
+	// into the enclosing scope) - GCC/MSVC both support it as an
+	// extension for plain structs too, but GCC applies the same
+	// "anonymous aggregate" restriction as real anonymous unions:
+	// members with non-trivial special member functions (shared_str's
+	// destructor/copy-assignment) aren't allowed. MSVC tolerated it; GCC
+	// doesn't. Fixed by giving the struct an instance name (m_motion) -
+	// same layout/behavior, just requires qualified access at every call
+	// site (see HudItem.cpp/Weapon.cpp/WeaponFire.cpp/player_hud.cpp/
+	// player_hud.h/CustomDevice.cpp/script_attachment_manager.cpp/.h,
+	// updated to match).
 	struct
 	{
 		const CMotionDef* m_current_motion_def;
@@ -108,7 +120,7 @@ protected:
 		u32 m_startedMotionState;
 		u8 m_started_rnd_anim_idx;
 		bool m_bStopAtEndAnimIsRunning;
-	};
+	} m_motion;
 
 	attachable_hud_item* m_attachable;
 

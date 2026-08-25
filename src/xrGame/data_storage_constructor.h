@@ -20,26 +20,34 @@ class CEmptyClassTemplate2
 
 #include "manager_builder_allocator_constructor.h"
 
+// Every nested template-template-parameter's own parameter list below was
+// originally spelled with reused placeholder names (_1/_2/_3/_4/_T) that
+// shadow an enclosing template parameter of the exact same name - MSVC
+// accepts this as an extension, GCC hard-errors ("declaration of template
+// parameter shadows template parameter"). Renamed every nesting level to
+// its own unique placeholder names (pure signature placeholders, never
+// referenced anywhere by name) - same bug class/fix as
+// manager_builder_allocator_constructor.h in this same batch.
 template <
 	typename _algorithm,
 	typename _manager,
 	typename _builder,
 	typename _allocator,
-	template <typename _T> class _vertex = CEmptyClassTemplate,
+	template <typename _dsc_vT> class _vertex = CEmptyClassTemplate,
 	template <
-		typename _1,
-		typename _2
+		typename _dsc_bac1,
+		typename _dsc_bac2
 	>
 	class _builder_allocator_constructor = CBuilderAllocatorConstructor,
 	template <
-		typename _1,
-		typename _2,
-		typename _3,
+		typename _dsc_mbac1,
+		typename _dsc_mbac2,
+		typename _dsc_mbac3,
 		template <
-			typename _1,
-			typename _2
+			typename _dsc_mbac4a,
+			typename _dsc_mbac4b
 		>
-		class _4
+		class _dsc_mbac4
 	>
 	class _manager_builder_allocator_constructor = CManagerBuilderAllocatorConstructor
 >

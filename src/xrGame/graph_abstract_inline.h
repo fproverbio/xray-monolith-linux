@@ -46,7 +46,7 @@ IC void CAbstractGraph::remove_vertex(const _vertex_id_type& vertex_id)
 {
 	vertex_iterator I = m_vertices.find(vertex_id);
 	VERIFY(m_vertices.end() != I);
-	VERTICES::value_type v = *I;
+	typename VERTICES::value_type v = *I;
 	delete_data(v);
 	m_vertices.erase(I);
 }
@@ -188,7 +188,7 @@ IC bool CAbstractGraph::is_accessible(const _vertex_id_type vertex_index) const
 }
 
 TEMPLATE_SPECIALIZATION
-IC typename CAbstractGraph::_vertex_id_type const&CAbstractGraph::value(_vertex_id_type const& vertex_index,
+IC _vertex_id_type const&CAbstractGraph::value(_vertex_id_type const& vertex_index,
                                                                         const_iterator i) const
 {
 	return ((*i).vertex_id());
@@ -227,12 +227,12 @@ TEMPLATE_SPECIALIZATION
 IC void CAbstractGraph::save(IWriter& stream)
 {
 	stream.open_chunk(0);
-	stream.w_u32((u32)vertices().size());
+	stream.w_u32((u32)this->vertices().size());
 	stream.close_chunk();
 
 	stream.open_chunk(1);
-	const_vertex_iterator I = vertices().begin();
-	const_vertex_iterator E = vertices().end();
+	typename CGraphAbstract<_data_type, _edge_weight_type, _vertex_id_type>::const_vertex_iterator I = this->vertices().begin();
+	typename CGraphAbstract<_data_type, _edge_weight_type, _vertex_id_type>::const_vertex_iterator E = this->vertices().end();
 	for (int i = 0; I != E; ++I, ++i)
 	{
 		stream.open_chunk(i);
@@ -251,8 +251,8 @@ IC void CAbstractGraph::save(IWriter& stream)
 
 	stream.open_chunk(2);
 	{
-		const_vertex_iterator I = vertices().begin();
-		const_vertex_iterator E = vertices().end();
+		typename CGraphAbstract<_data_type, _edge_weight_type, _vertex_id_type>::const_vertex_iterator I = this->vertices().begin();
+		typename CGraphAbstract<_data_type, _edge_weight_type, _vertex_id_type>::const_vertex_iterator E = this->vertices().end();
 		for (; I != E; ++I)
 		{
 			if ((*I).second->edges().empty())
@@ -261,8 +261,8 @@ IC void CAbstractGraph::save(IWriter& stream)
 			save_data((*I).second->vertex_id(), stream);
 
 			stream.w_u32((u32)(*I).second->edges().size());
-			const_iterator i = (*I).second->edges().begin();
-			const_iterator e = (*I).second->edges().end();
+			typename CGraphAbstract<_data_type, _edge_weight_type, _vertex_id_type>::const_iterator i = (*I).second->edges().begin();
+			typename CGraphAbstract<_data_type, _edge_weight_type, _vertex_id_type>::const_iterator e = (*I).second->edges().end();
 			for (; i != e; ++i)
 			{
 				save_data((*i).vertex_id(), stream);
@@ -276,7 +276,10 @@ IC void CAbstractGraph::save(IWriter& stream)
 TEMPLATE_SPECIALIZATION
 IC void CAbstractGraph::load(IReader& stream)
 {
-	clear();
+	// clear() is a member of the dependent base CGraphAbstract<...> - same
+	// dependent-base two-phase-lookup pattern as a_star_inline.h's
+	// data_storage()/finalize() calls in this same batch.
+	this->clear();
 
 	u32 id;
 	_data_type data;

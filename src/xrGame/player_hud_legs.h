@@ -1,5 +1,10 @@
 #pragma once
 
+// std::optional (used below) arrived transitively through PCH context on
+// Windows - genuinely missing its own #include here (same class of gap as
+// notes section 27a's DPNSEND_GUARANTEED).
+#include <optional>
+
 class CActor;
 class IKinematicsAnimated;
 class IKinematics;

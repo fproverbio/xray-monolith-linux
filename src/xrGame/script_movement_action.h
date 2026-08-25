@@ -11,24 +11,12 @@
 #include "script_abstract_action.h"
 #include "script_export_space.h"
 
-namespace DetailPathManager
-{
-	enum EDetailPathType;
-};
-
-namespace MonsterSpace
-{
-	enum EBodyState;
-	enum EMovementType;
-	enum EScriptMonsterMoveAction;
-	enum EScriptMonsterSpeedParam;
-};
-
-namespace PatrolPathManager
-{
-	enum EPatrolStartType;
-	enum EPatrolRouteType;
-};
+// Same illegal-opaque-forward-declaration bug as script_game_object.h's own
+// versions of these same enums (see its comment) - real headers included
+// directly to avoid an "underlying type mismatch" risk.
+#include "detail_path_manager_space.h"
+#include "ai_monster_space.h"
+#include "patrol_path_manager_space.h"
 
 class CPatrolPath;
 class CScriptGameObject;

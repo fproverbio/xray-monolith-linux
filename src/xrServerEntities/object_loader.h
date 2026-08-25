@@ -11,42 +11,61 @@
 template <class M, typename P>
 struct CLoader
 {
+	// MSVC accepts a nested explicit specialization (`template <> ... load_data<true>`)
+	// of a member template inside a class template (CHelper1<T>) that's itself still
+	// dependent on the enclosing CLoader<M,P>'s own template parameters - illegal in
+	// standard C++ (explicit specialization of a member template requires the
+	// enclosing class template to be non-dependent first). GCC's -Wtemplate-body
+	// flags it and hard-errors at first real instantiation (same bug class as notes
+	// file section 27d's object_comparer.h CHelper/CHelper4 and section 28d's
+	// static_cast_checked.hpp helper::check<bool>). Rewritten with if constexpr -
+	// identical compile-time branch, standard-legal. Every struct in this file has
+	// the same shape, fixed the same way.
 	template <typename T>
 	struct CHelper1
 	{
 		template <bool a>
 		IC static void load_data(T& data, M& stream, const P& p)
 		{
-			STATIC_CHECK(!is_polymorphic<T>::result, Cannot_load_polymorphic_classes_as_binary_data);
-			stream.r(&data, sizeof(T));
-		}
-
-		template <>
-		IC static void load_data<true>(T& data, M& stream, const P& p)
-		{
-			T* data1 = const_cast<T*>(&data);
-			data1->load(stream);
+			if constexpr (a)
+			{
+				T* data1 = const_cast<T*>(&data);
+				data1->load(stream);
+			}
+			else
+			{
+				STATIC_CHECK(!is_polymorphic<T>::result, Cannot_load_polymorphic_classes_as_binary_data);
+				stream.r(&data, sizeof(T));
+			}
 		}
 	};
 
+	// Also had a missing `typename` before the dependent
+	// object_type_traits::remove_pointer<T>::type (the by-now-standard
+	// first-instantiation-template-bug pattern) and a missing `template`
+	// disambiguator on the CHelper1<T>::load_data<...> call (T is dependent on
+	// CLoader<M,P>'s own template parameters here, so CHelper1<T> is a dependent
+	// type and load_data is a dependent name - `template` is required before a
+	// dependent name's explicit template-argument-list).
 	template <typename T>
 	struct CHelper
 	{
 		template <bool pointer>
 		IC static void load_data(T& data, M& stream, const P& p)
 		{
-			CHelper1<T>::load_data <
-				object_type_traits::is_base_and_derived_or_same_from_template<
-					IPureLoadableObject,
-					T
-				>::value
-				> (data, stream, p);
-		}
-
-		template <>
-		IC static void load_data<true>(T& data, M& stream, const P& p)
-		{
-			CLoader<M, P>::load_data(*(data = xr_new<object_type_traits::remove_pointer<T>::type>()), stream, p);
+			if constexpr (pointer)
+			{
+				CLoader<M, P>::load_data(*(data = xr_new<typename object_type_traits::remove_pointer<T>::type>()), stream, p);
+			}
+			else
+			{
+				CHelper1<T>::template load_data<
+					object_type_traits::is_base_and_derived_or_same_from_template<
+						IPureLoadableObject,
+						T
+					>::value
+					> (data, stream, p);
+			}
 		}
 	};
 
@@ -74,26 +93,29 @@ struct CLoader
 			};
 		};
 
+		// Same nested-explicit-specialization-inside-a-still-dependent-class-template
+		// bug as CHelper1/CHelper above, rewritten the same way with if constexpr.
 		template <typename T1, typename T2>
 		struct add_helper
 		{
-			template <bool>
+			template <bool tree>
 			IC static void add(T1& data, T2& value)
 			{
-				data.push_back(value);
-			}
-
-			template <>
-			IC static void add<true>(T1& data, T2& value)
-			{
-				data.insert(value);
+				if constexpr (tree)
+				{
+					data.insert(value);
+				}
+				else
+				{
+					data.push_back(value);
+				}
 			}
 		};
 
 		template <typename T1, typename T2>
 		IC static void add(T1& data, T2& value)
 		{
-			add_helper<T1, T2>::add < is_tree_structure<T1>::value > (data, value);
+			add_helper<T1, T2>::template add<is_tree_structure<T1>::value>(data, value);
 		}
 
 		template <typename T>
@@ -104,7 +126,7 @@ struct CLoader
 			u32 count = stream.r_u32();
 			for (u32 i = 0; i < count; ++i)
 			{
-				T::value_type temp;
+				typename T::value_type temp;
 				CLoader<M, P>::load_data(temp, stream, p);
 				if (p(data, temp))
 					add(data, temp);
@@ -112,19 +134,22 @@ struct CLoader
 		}
 	};
 
+	// Same nested-explicit-specialization bug as CHelper1/CHelper above, rewritten
+	// the same way with if constexpr.
 	template <typename T>
 	struct CHelper4
 	{
 		template <bool a>
 		IC static void load_data(T& data, M& stream, const P& p)
 		{
-			CHelper<T>::load_data < object_type_traits::is_pointer<T>::value > (data, stream, p);
-		}
-
-		template <>
-		IC static void load_data<true>(T& data, M& stream, const P& p)
-		{
-			CHelper3::load_data(data, stream, p);
+			if constexpr (a)
+			{
+				CHelper3::load_data(data, stream, p);
+			}
+			else
+			{
+				CHelper<T>::template load_data<object_type_traits::is_pointer<T>::value>(data, stream, p);
+			}
 		}
 	};
 
@@ -194,7 +219,7 @@ struct CLoader
 		u32 count = stream.r_u32();
 		for (u32 i = 0; i < count; ++i)
 		{
-			svector<T, size>::value_type temp;
+			typename svector<T, size>::value_type temp;
 			CLoader<M, P>::load_data(temp, stream, p);
 			if (p(data, temp))
 				data.push_back(temp);
@@ -213,7 +238,7 @@ struct CLoader
 		u32 count = stream.r_u32();
 		for (u32 i = 0; i < count; ++i)
 		{
-			std::queue<T1, T2>::value_type t;
+			typename std::queue<T1, T2>::value_type t;
 			CLoader<M, P>::load_data(t, stream, p);
 			if (p(temp, t))
 				temp.push(t);
@@ -234,7 +259,7 @@ struct CLoader
 		u32 count = stream.r_u32();
 		for (u32 i = 0; i < count; ++i)
 		{
-			T1<T2, T3>::value_type t;
+			typename T1<T2, T3>::value_type t;
 			CLoader<M, P>::load_data(t, stream, p);
 			if (p(temp, t))
 				temp.push(t);
@@ -255,7 +280,7 @@ struct CLoader
 		u32 count = stream.r_u32();
 		for (u32 i = 0; i < count; ++i)
 		{
-			T1<T2, T3, T4>::value_type t;
+			typename T1<T2, T3, T4>::value_type t;
 			CLoader<M, P>::load_data(t, stream, p);
 			if (p(temp, t))
 				temp.push(t);
@@ -279,7 +304,7 @@ struct CLoader
 	template <typename T>
 	IC static void load_data(T& data, M& stream, const P& p)
 	{
-		CHelper4<T>::load_data < object_type_traits::is_stl_container<T>::value > (data, stream, p);
+		CHelper4<T>::template load_data<object_type_traits::is_stl_container<T>::value>(data, stream, p);
 	}
 };
 

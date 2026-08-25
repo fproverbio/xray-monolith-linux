@@ -10,13 +10,20 @@
 
 #include "builder_allocator_constructor.h"
 
+// The template-template-parameter _builder_allocator_constructor's own
+// parameter list originally reused the outer template's own _builder/
+// _allocator names, shadowing them - MSVC accepts this as an extension,
+// GCC hard-errors ("declaration of template parameter shadows template
+// parameter"). Renamed to _builder_param/_allocator_param (pure signature
+// placeholders, never referenced by name) - same bug class/fix as
+// dijkstra.h/a_star.h/data_storage_constructor.h in this same batch.
 template <
 	typename _manager,
 	typename _builder,
 	typename _allocator,
 	template <
-		typename _builder,
-		typename _allocator
+		typename _builder_param,
+		typename _allocator_param
 	>
 	class _builder_allocator_constructor = CBuilderAllocatorConstructor
 >

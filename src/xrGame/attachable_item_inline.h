@@ -63,3 +63,11 @@ IC CInventoryItem& CAttachableItem::item() const
 	VERIFY(m_item);
 	return (*m_item);
 }
+
+// Default body for the pure virtual use_parent_ai_locations() declared in
+// attachable_item.h - see its own comment for why this moved out of the
+// class body.
+IC bool CAttachableItem::use_parent_ai_locations() const
+{
+	return !enabled();
+}

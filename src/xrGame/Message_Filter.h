@@ -2,7 +2,7 @@
 #define DEMO_MESSAGE_FILER
 
 #include <fastdelegate/fastdelegate.h>
-#include "../xrCore/net_utils.h"
+#include "../xrCore/NET_utils.h"
 #include "associative_vector.h"
 
 #define FILTERS_COUNT 32

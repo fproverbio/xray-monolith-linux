@@ -9,7 +9,7 @@
 #pragma once
 
 /**
-#include "xrServer_Objects_Alife_Items.h"
+#include "../xrServerEntities/xrServer_Objects_ALife_Items.h"
 
 namespace ALifeCommunication {
 	class CRemoveAttachedItemsPredicate {

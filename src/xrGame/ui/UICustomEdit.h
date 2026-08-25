@@ -5,7 +5,17 @@
 namespace text_editor
 {
 	class ENGINE_API line_edit_control;
-	enum init_mode;
+	// `enum init_mode;` (an unscoped-enum forward declaration with no fixed
+	// underlying type) used to sit here - same illegal-on-GCC/permissive-on-
+	// MSVC pattern already catalogued for `namespace ALife { enum EHitType; }`
+	// (notes section 26b). Unlike that case, `init_mode` (the real
+	// definition lives in xrEngine/line_edit_control.h) is grep-confirmed
+	// dead here - never referenced anywhere in this file or UICustomEdit.cpp,
+	// just a vestigial forward declaration with nothing left using it -
+	// so removed outright rather than adding a real #include for a symbol
+	// nothing needs, matching the "remove genuinely dead code" precedent
+	// (associative_vector_compare_predicate.h's self-referential typedefs,
+	// also section 26b/27d).
 };
 
 class CUICustomEdit : public CUIStatic

@@ -1,17 +1,17 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include "WeaponKnife.h"
 #include "Entity.h"
 #include "Actor.h"
-#include "level.h"
+#include "Level.h"
 #include "xr_level_controller.h"
 #include "game_cl_base.h"
 #include "../Include/xrRender/Kinematics.h"
-#include "../xrEngine/gamemtllib.h"
-#include "level_bullet_manager.h"
+#include "GameMtlLib.h"
+#include "Level_Bullet_Manager.h"
 #include "ai_sounds.h"
 #include "game_cl_single.h"
-#include "../xrEngine/SkeletonMotions.h"
+#include "SkeletonMotions.h"
 #include "player_hud.h"
 #include "ActorEffector.h"
 
@@ -438,7 +438,7 @@ void CWeaponKnife::OnRender()
 			float	sc_r				= i->second;
 			Fmatrix	sphere				= Fmatrix().scale(sc_r, sc_r, sc_r);
 			sphere.c					= i->first;
-			renderer.draw_ellipse		(sphere, D3DCOLOR_XRGB(100, 255, 0));
+			renderer.draw_ellipse		(sphere, D3DCOLOR_XRGB(100, 255, 0), false);
 		}
 		/*
 		Fmatrix	sphere				= Fmatrix().scale(.05f, .05f, .05f);
@@ -447,7 +447,7 @@ void CWeaponKnife::OnRender()
 		renderer.draw_line			(Fidentity, m_dbg_data.m_pos, m_dbg_data.m_endpos, D3DCOLOR_XRGB(255, 255, 0));
 		
 		sphere.c					= m_dbg_data.m_endpos;
-		renderer.draw_ellipse		(sphere, D3DCOLOR_XRGB(100, 255, 0));*/
+		renderer.draw_ellipse		(sphere, D3DCOLOR_XRGB(100, 255, 0), false);*/
 //Fvector victim_end			(m_dbg_data.m_pos);
 //victim_end.add				(m_dbg_data.m_pick_vector);
 		//renderer.draw_line			(Fidentity, m_dbg_data.m_pos, victim_end, D3DCOLOR_XRGB(0, 255, 255));
@@ -460,7 +460,7 @@ void CWeaponKnife::OnRender()
 		sphere.c		= *i;
 		u8				hit_color = u8(255 * hit_power);
 		hit_power		*= m_NextHitDivideFactor;
-		renderer.draw_ellipse(sphere, D3DCOLOR_XRGB(hit_color, 50, 0));
+		renderer.draw_ellipse(sphere, D3DCOLOR_XRGB(hit_color, 50, 0), false);
 	}
 	
 	for (dbg_draw_data::obbes_t::const_iterator i = m_dbg_data.m_target_boxes.begin(),
@@ -468,7 +468,7 @@ void CWeaponKnife::OnRender()
 	{
 		Fmatrix	tmp_matrix;
 		tmp_matrix.set(i->m_rotate.i, i->m_rotate.j, i->m_rotate.k, i->m_translate);
-		renderer.draw_obb(tmp_matrix, i->m_halfsize, D3DCOLOR_XRGB(0, 255, 0));
+		renderer.draw_obb(tmp_matrix, i->m_halfsize, D3DCOLOR_XRGB(0, 255, 0), false);
 	}
 }
 #endif

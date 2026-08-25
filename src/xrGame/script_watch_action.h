@@ -11,10 +11,10 @@
 #include "script_abstract_action.h"
 #include "script_export_space.h"
 
-namespace SightManager
-{
-	enum ESightType;
-};
+// Same illegal-opaque-forward-declaration bug as script_game_object.h's own
+// SightManager::ESightType (see its comment) - real header included
+// directly to avoid an "underlying type mismatch" risk.
+#include "sight_manager_space.h"
 
 class CScriptGameObject;
 

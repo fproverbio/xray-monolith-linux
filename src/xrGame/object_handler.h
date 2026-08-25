@@ -8,13 +8,15 @@
 
 #pragma once
 
-#include "inventoryowner.h"
+#include "InventoryOwner.h"
 #include "graph_engine_space.h"
 
-namespace MonsterSpace
-{
-	enum EObjectAction;
-}
+// Same illegal-opaque-forward-declaration bug as script_game_object.h's own
+// MonsterSpace::EObjectAction (see its comment) - a `: unsigned int`
+// forward declaration risks an "underlying type mismatch" against the real
+// body wherever it's also reachable in the same TU, so the real header
+// (already a proven leaf) is included directly instead.
+#include "ai_monster_space.h"
 
 class CAI_Stalker;
 class CWeapon;

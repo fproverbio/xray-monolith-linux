@@ -8,7 +8,25 @@
 
 #pragma once
 
+// psAI_Flags/aiALife - real global debug-flags declared in ai_debug.h;
+// this file uses them without including it (arrived transitively through
+// PCH context on Windows, same class of gap as notes section 27a's
+// DPNSEND_GUARANTEED - real definition lives in CustomMonster.cpp, not yet
+// ported, but the extern declaration is all a compile needs here).
+// ai_debug.h's own `extern Flags32 psAI_Flags;` is inside `#ifndef
+// MASTER_GOLD` - genuinely dead in every translation unit of this build:
+// xrCore.h's own MASTER_GOLD `#ifndef DEBUG` check runs before that same
+// file's later `#ifdef _DEBUG #define DEBUG` a few lines down, so
+// MASTER_GOLD always ends up defined regardless of the real _DEBUG compile
+// flag - a genuine pre-existing ordering quirk in xrCore.h, out of scope
+// to touch here (core, already-proven-compiling file, wide blast radius).
+// Declared directly instead, matching the same local `extern Flags32
+// psAI_Flags;` pattern already used successfully elsewhere in this
+// codebase (e.g. Level.cpp/script_engine.cpp/alife_trader_abstract.cpp).
+#include "ai_debug.h"
 #include "ai_space.h"
+
+extern Flags32 psAI_Flags;
 
 IC CALifeLevelRegistry::CALifeLevelRegistry(const GameGraph::_LEVEL_ID& level_id)
 {

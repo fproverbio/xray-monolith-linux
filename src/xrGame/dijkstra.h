@@ -11,6 +11,17 @@
 #include "vertex_path.h"
 #include "data_storage_constructor.h"
 
+// Every nested template-template-parameter's own parameter list below was
+// originally spelled with reused placeholder names (_1/_2/_3/_4/_T/
+// _algorithm/_manager/_builder/_allocator/_vertex/
+// _builder_allocator_constructor/_manager_builder_allocator_constructor)
+// that shadow an enclosing template parameter of the exact same name -
+// MSVC accepts this as an extension, GCC hard-errors ("declaration of
+// template parameter shadows template parameter"). Renamed every nesting
+// level to its own unique placeholder names (pure signature placeholders,
+// never referenced anywhere by name) - same bug class/fix as
+// data_storage_constructor.h/manager_builder_allocator_constructor.h in
+// this same batch.
 template <
 	typename _dist_type,
 	typename _priority_queue,
@@ -18,45 +29,45 @@ template <
 	typename _vertex_allocator,
 	bool euclidian_heuristics = true,
 	typename _data_storage_base = CVertexPath<euclidian_heuristics>,
-	template <typename _T> class _vertex = CEmptyClassTemplate,
+	template <typename _dj_vT> class _vertex = CEmptyClassTemplate,
 	template <
-		typename _1,
-		typename _2
+		typename _dj_bac1,
+		typename _dj_bac2
 	>
 	class _builder_allocator_constructor = CBuilderAllocatorConstructor,
 	template <
-		typename _1,
-		typename _2,
-		typename _3,
+		typename _dj_mbac1,
+		typename _dj_mbac2,
+		typename _dj_mbac3,
 		template <
-			typename _1,
-			typename _2
+			typename _dj_mbac4a,
+			typename _dj_mbac4b
 		>
-		class _4
+		class _dj_mbac4
 	>
 	class _manager_builder_allocator_constructor = CManagerBuilderAllocatorConstructor,
 	template <
-		typename _algorithm,
-		typename _manager,
-		typename _builder,
-		typename _allocator,
-		template <typename _T> class _vertex,
+		typename _dj_dsc_algorithm,
+		typename _dj_dsc_manager,
+		typename _dj_dsc_builder,
+		typename _dj_dsc_allocator,
+		template <typename _dj_dsc_vT> class _dj_dsc_vertex,
 		template <
-			typename _1,
-			typename _2
+			typename _dj_dsc_bac1,
+			typename _dj_dsc_bac2
 		>
-		class _builder_allocator_constructor = CBuilderAllocatorConstructor,
+		class _dj_dsc_builder_allocator_constructor = CBuilderAllocatorConstructor,
 		template <
-			typename _1,
-			typename _2,
-			typename _3,
+			typename _dj_dsc_mbac1,
+			typename _dj_dsc_mbac2,
+			typename _dj_dsc_mbac3,
 			template <
-				typename _1,
-				typename _2
+				typename _dj_dsc_mbac4a,
+				typename _dj_dsc_mbac4b
 			>
-			class _4
+			class _dj_dsc_mbac4
 		>
-		class _manager_builder_allocator_constructor = CManagerBuilderAllocatorConstructor
+		class _dj_dsc_manager_builder_allocator_constructor = CManagerBuilderAllocatorConstructor
 	>
 	class _data_storage_constructor = CDataStorageConstructor,
 	typename _iteration_type = u32

@@ -46,10 +46,16 @@ public:
 	IC bool enabled() const;
 	virtual void enable(bool value);
 protected:
-	virtual bool use_parent_ai_locations() const =0
-	{
-		return !enabled();
-	}
+	// A pure-specifier combined directly with a function-body in one
+	// member-declaration (`=0 { ... }`) is illegal standard C++ grammar -
+	// the pure-specifier must be followed directly by `;` (a pure virtual
+	// CAN still have a body, but only as a separate out-of-line
+	// definition, callable via a qualified name from derived classes).
+	// MSVC accepts the combined form as an extension; GCC hard-errors
+	// ("pure-specifier on function-definition"). Split: pure declaration
+	// here, default body moved to attachable_item_inline.h to match this
+	// file's existing IC-out-of-line convention.
+	virtual bool use_parent_ai_locations() const = 0;
 
 public:
 #ifdef DEBUG

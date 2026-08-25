@@ -14,10 +14,15 @@ class CSE_Abstract;
 class CCustomMonster;
 class CGameObject;
 
-namespace RestrictionSpace
-{
-	enum ERestrictorTypes;
-};
+// enum ERestrictorTypes; (opaque forward declaration, no fixed underlying
+// type) is a real MSVC-permissive extension - standard C++ requires a fixed
+// underlying type to forward-declare a plain enum without its full body
+// (the compiler can't otherwise know its size/underlying type). GCC rejects
+// it outright ("use of enum ERestrictorTypes without previous declaration"
+// at every use site). The real definition lives in xrServerEntities'
+// restriction_space.h (already a reachable xrGame include dir) - included
+// directly instead of gaming an underlying-type-matching forward decl.
+#include "restriction_space.h"
 
 template <bool add>
 struct CRestrictionPredicate;

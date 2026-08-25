@@ -16,17 +16,22 @@ public:
 
 	virtual void OnMessage(LPCSTR message);
 
-	virtual void SetCurrentOptValue() = 0
-	{
-	}; // opt->current
-	virtual void SaveBackUpOptValue() = 0
-	{
-	}; // current->backup
+	// Pure virtual functions with an (empty) body - a real MSVC extension
+	// (combining a pure-specifier `= 0` with a function-body in the same
+	// declaration), illegal in standard C++: the pure-specifier and the
+	// body must be split into a bare `= 0;` declaration here plus an
+	// out-of-class definition below the class (same fix already applied
+	// to `virtual ~X() = 0 { }` destructors elsewhere in this port - see
+	// notes section 26b; this is the same bug class on ordinary virtual
+	// functions instead of a destructor). Kept as real, callable no-op
+	// bodies (not removed) since derived overrides are free to invoke
+	// e.g. `CUIOptionsItem::SetCurrentOptValue()` as a base fallback, the
+	// usual reason this idiom is used at all.
+	virtual void SetCurrentOptValue() = 0; // opt->current
+	virtual void SaveBackUpOptValue() = 0; // current->backup
 	virtual void SaveOptValue() = 0; // current->opt
 	virtual void UndoOptValue() = 0; // backup->current
-	virtual bool IsChangedOptValue() const = 0
-	{
-	}; // backup!=current
+	virtual bool IsChangedOptValue() const = 0; // backup!=current
 	void OnChangedOptValue();
 
 protected:
@@ -54,3 +59,13 @@ protected:
 
 	static CUIOptionsManager m_optionsManager;
 };
+
+// Out-of-class bodies for the pure virtual functions declared above - see
+// the comment on their declarations. Empty, matching the original combined
+// `= 0 { }` bodies exactly (IsChangedOptValue's missing return was already
+// the case in that form too - a pure virtual whose base body is never
+// actually meant to be reached for its return value, only for its side
+// effect of existing as a callable base-class fallback).
+inline void CUIOptionsItem::SetCurrentOptValue() {}
+inline void CUIOptionsItem::SaveBackUpOptValue() {}
+inline bool CUIOptionsItem::IsChangedOptValue() const { return false; }

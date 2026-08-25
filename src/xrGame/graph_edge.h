@@ -28,11 +28,20 @@ public:
 };
 
 template <typename _edge_weight_type, typename _vertex_type, typename _edge_data_type>
-class CEdge : 
-	public CEdgeBase<_edge_weight_type,_vertex_type> 
+class CEdge :
+	public CEdgeBase<_edge_weight_type,_vertex_type>
 {
 private:
 	typedef CEdgeBase<_edge_weight_type, _vertex_type> inherited;
+	// Same missing-typename-import gap as the CEdge<...,xr_empty>
+	// partial specialization below (_vertex_id_type is a member of the
+	// dependent base CEdgeBase<...>, unqualified lookup in a template
+	// doesn't search dependent bases) - GCC's -Wtemplate-body structurally
+	// checks this primary template's body even though nothing in this
+	// port currently instantiates it (every real CGraphAbstract use goes
+	// through the xr_empty specialization), so it still needs fixing to
+	// keep the whole header well-formed.
+	using _vertex_id_type = typename inherited::_vertex_id_type;
 
 private:
 	_edge_data_type m_data;
@@ -50,7 +59,7 @@ class CEdge<_edge_weight_type, _vertex_type, xr_empty> :
 	public CEdgeBase<_edge_weight_type,_vertex_type> {
 private:
 	typedef CEdgeBase<_edge_weight_type, _vertex_type> inherited;
-	using _vertex_id_type = inherited::_vertex_id_type;
+	using _vertex_id_type = typename inherited::_vertex_id_type;
 
 public:
 	IC CEdge(const _edge_weight_type& weight, _vertex_type* vertex);

@@ -16,10 +16,9 @@ class CWeapon;
 class CMissile;
 class CFoodItem;
 
-namespace ObjectHandlerSpace
-{
-	enum EWorldProperties;
-};
+// Same illegal-opaque-forward-declaration bug as script_game_object.h's
+// enums (see its comment) - real header (a proven leaf) included directly.
+#include "object_handler_space.h"
 
 namespace MonsterSpace
 {

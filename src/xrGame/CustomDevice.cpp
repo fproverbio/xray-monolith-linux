@@ -382,7 +382,7 @@ void CCustomDevice::UpdateVisibility()
 					}
 					else if (wpn->IsZoomed())
 					{
-						if ((GetState() == eIdle || GetState() == eIdleZoomOut || GetState() == eShowing) && !m_current_motion.equal("anm_zoom_show"))
+						if ((GetState() == eIdle || GetState() == eIdleZoomOut || GetState() == eShowing) && !m_motion.m_current_motion.equal("anm_zoom_show"))
 							SwitchState(eIdleZoomIn);
 					}
 					else if (GetState() == eIdleZoom || GetState() == eIdleZoomIn)

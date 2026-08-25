@@ -8,6 +8,12 @@
 
 #pragma once
 
+# /* See dijkstra.h's comment: every nested template-template-parameter's own
+#    parameter list here was originally spelled with reused placeholder names
+#    that shadow an enclosing template parameter of the same name - GCC
+#    hard-errors on this (MSVC extension). Renamed identically to dijkstra.h's
+#    own primary declaration for consistency (though only this macro's own
+#    internal self-consistency actually matters). */
 #define TEMPLATE_SPECIALIZATION \
 	template <\
 		typename _dist_type,\
@@ -16,45 +22,45 @@
 		typename _vertex_allocator,\
 		bool	 euclidian_heuristics,\
 		typename _data_storage_base,\
-		template <typename _T> class _vertex,\
+		template <typename _dj_vT> class _vertex,\
 		template <\
-			typename _1,\
-			typename _2\
+			typename _dj_bac1,\
+			typename _dj_bac2\
 		>\
 		class	 _builder_allocator_constructor,\
 		template <\
-			typename _1,\
-			typename _2,\
-			typename _3,\
+			typename _dj_mbac1,\
+			typename _dj_mbac2,\
+			typename _dj_mbac3,\
 			template <\
-				typename _1,\
-				typename _2\
+				typename _dj_mbac4a,\
+				typename _dj_mbac4b\
 			>\
-			class	 _4\
+			class	 _dj_mbac4\
 		>\
 		class	 _manager_builder_allocator_constructor,\
 		template <\
-			typename _algorithm,\
-			typename _manager,\
-			typename _builder,\
-			typename _allocator,\
-			template <typename _T> class _vertex,\
+			typename _dj_dsc_algorithm,\
+			typename _dj_dsc_manager,\
+			typename _dj_dsc_builder,\
+			typename _dj_dsc_allocator,\
+			template <typename _dj_dsc_vT> class _dj_dsc_vertex,\
 			template <\
-				typename _1,\
-				typename _2\
+				typename _dj_dsc_bac1,\
+				typename _dj_dsc_bac2\
 			>\
-			class	 _builder_allocator_constructor,\
+			class	 _dj_dsc_builder_allocator_constructor,\
 			template <\
-				typename _1,\
-				typename _2,\
-				typename _3,\
+				typename _dj_dsc_mbac1,\
+				typename _dj_dsc_mbac2,\
+				typename _dj_dsc_mbac3,\
 				template <\
-					typename _1,\
-					typename _2\
+					typename _dj_dsc_mbac4a,\
+					typename _dj_dsc_mbac4b\
 				>\
-				class	 _4\
+				class	 _dj_dsc_mbac4\
 			>\
-			class	 _manager_builder_allocator_constructor\
+			class	 _dj_dsc_manager_builder_allocator_constructor\
 		>\
 		class _data_storage_constructor,\
 		typename _iteration_type\

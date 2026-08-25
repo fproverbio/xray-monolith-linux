@@ -8,6 +8,12 @@
 
 #pragma once
 
+// psAI_Flags/aiALife - see alife_level_registry_inline.h's comment (its own
+// ai_debug.h declaration is dead in this build; declared directly here).
+#include "ai_debug.h"
+
+extern Flags32 psAI_Flags;
+
 IC const CALifeSpawnHeader& CALifeSpawnRegistry::header() const
 {
 	return (m_header);

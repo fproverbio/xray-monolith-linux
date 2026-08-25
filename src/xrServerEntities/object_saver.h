@@ -8,6 +8,16 @@
 
 #pragma once
 
+// MSVC accepts a nested explicit specialization (`template <> ... save_data<true>`)
+// of a member template inside a class template (CHelper1<T>/CHelper<T>/CHelper4<T>)
+// that's itself still dependent on the enclosing CSaver<M,P>'s own template
+// parameters - illegal in standard C++ (explicit specialization of a member
+// template requires the enclosing class template to be non-dependent first).
+// GCC's -Wtemplate-body flags it and hard-errors at first real instantiation
+// (same bug class, same file family as object_loader.h - see its own comments -
+// and notes file section 27d's object_comparer.h CHelper/CHelper4 and section
+// 28d's static_cast_checked.hpp helper::check<bool>). Rewritten with if
+// constexpr throughout - identical compile-time branch, standard-legal.
 template <class M, typename P>
 struct CSaver
 {
@@ -17,15 +27,16 @@ struct CSaver
 		template <bool a>
 		IC static void save_data(const T& data, M& stream, const P& p)
 		{
-			STATIC_CHECK(!is_polymorphic<T>::result, Cannot_save_polymorphic_classes_as_binary_data);
-			stream.w(&data, sizeof(T));
-		}
-
-		template <>
-		IC static void save_data<true>(const T& data, M& stream, const P& p)
-		{
-			T* data1 = const_cast<T*>(&data);
-			data1->save(stream);
+			if constexpr (a)
+			{
+				T* data1 = const_cast<T*>(&data);
+				data1->save(stream);
+			}
+			else
+			{
+				STATIC_CHECK(!is_polymorphic<T>::result, Cannot_save_polymorphic_classes_as_binary_data);
+				stream.w(&data, sizeof(T));
+			}
 		}
 	};
 
@@ -35,18 +46,19 @@ struct CSaver
 		template <bool pointer>
 		IC static void save_data(const T& data, M& stream, const P& p)
 		{
-			CHelper1<T>::save_data <
-				object_type_traits::is_base_and_derived_or_same_from_template<
-					IPureSavableObject,
-					T
-				>::value
-				> (data, stream, p);
-		}
-
-		template <>
-		IC static void save_data<true>(const T& data, M& stream, const P& p)
-		{
-			CSaver<M, P>::save_data(*data, stream, p);
+			if constexpr (pointer)
+			{
+				CSaver<M, P>::save_data(*data, stream, p);
+			}
+			else
+			{
+				CHelper1<T>::template save_data<
+					object_type_traits::is_base_and_derived_or_same_from_template<
+						IPureSavableObject,
+						T
+					>::value
+					> (data, stream, p);
+			}
 		}
 	};
 
@@ -56,8 +68,8 @@ struct CSaver
 		IC static void save_data(const T& data, M& stream, const P& p)
 		{
 			stream.w_u32((u32)data.size());
-			T::const_iterator I = data.begin();
-			T::const_iterator E = data.end();
+			typename T::const_iterator I = data.begin();
+			typename T::const_iterator E = data.end();
 			for (; I != E; ++I)
 				if (p(data, *I))
 					CSaver<M, P>::save_data(*I, stream, p);
@@ -70,13 +82,14 @@ struct CSaver
 		template <bool a>
 		IC static void save_data(const T& data, M& stream, const P& p)
 		{
-			CHelper<T>::save_data < object_type_traits::is_pointer<T>::value > (data, stream, p);
-		}
-
-		template <>
-		IC static void save_data<true>(const T& data, M& stream, const P& p)
-		{
-			CHelper3::save_data(data, stream, p);
+			if constexpr (a)
+			{
+				CHelper3::save_data(data, stream, p);
+			}
+			else
+			{
+				CHelper<T>::template save_data<object_type_traits::is_pointer<T>::value>(data, stream, p);
+			}
 		}
 	};
 
@@ -136,8 +149,8 @@ struct CSaver
 	IC static void save_data(const svector<T, size>& data, M& stream, const P& p)
 	{
 		stream.w_u32((u32)data.size());
-		svector<T, size>::const_iterator I = data.begin();
-		svector<T, size>::const_iterator E = data.end();
+		typename svector<T, size>::const_iterator I = data.begin();
+		typename svector<T, size>::const_iterator E = data.end();
 		for (; I != E; ++I)
 			if (p(data, *I))
 				CSaver<M, P>::save_data(*I, stream, p);
@@ -188,7 +201,7 @@ struct CSaver
 	template <typename T>
 	IC static void save_data(const T& data, M& stream, const P& p)
 	{
-		CHelper4<T>::save_data < object_type_traits::is_stl_container<T>::value > (data, stream, p);
+		CHelper4<T>::template save_data<object_type_traits::is_stl_container<T>::value>(data, stream, p);
 	}
 };
 

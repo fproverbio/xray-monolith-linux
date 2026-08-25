@@ -14,11 +14,11 @@ class CSpaceRestrictor;
 template <typename _1>
 class intrusive_ptr;
 
-namespace RestrictionSpace
-{
-	struct CTimeIntrusiveBase;
-	enum ERestrictorTypes;
-};
+// Real ERestrictorTypes definition (see restricted_object.h's comment for
+// why the bare "enum ERestrictorTypes;" opaque forward declaration this
+// used to have isn't legal standard C++) - already a reachable xrGame
+// include dir.
+#include "restriction_space.h"
 
 namespace SpaceRestrictionHolder
 {
