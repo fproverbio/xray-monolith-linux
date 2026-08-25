@@ -186,12 +186,24 @@ target_include_directories(xrEngine PUBLIC .)
 # fmesh.cpp's `#include <d3dx9.h>` turned out to guard nothing real -
 # its one real caller (ConvertVertices, D3DXGetFVFVertexSize) is itself
 # entirely commented out upstream; guarded under _WIN32 as dead weight.
-# ai_script_lua_debug.cpp/ai_script_lua_extension.cpp stay excluded:
-# ai_script_space.h wants `luabind::functor<T>`, which genuinely does
-# not exist anywhere in the vendored luabind-deboostified fork (grep-
-# verified across src/3rd party/luabind/) - a real library API mismatch
-# between what this engine version expects and what's vendored, not a
-# mechanical fix. Text_Console.cpp/Text_Console_WndProc.cpp stay
+# ai_script_lua_debug.cpp/ai_script_lua_extension.cpp: now included (notes
+# file section 25). Their blocker was real - ai_script_space.h wants
+# `luabind::functor<T>`, which genuinely did not exist anywhere in the
+# vendored luabind-deboostified fork (upstream dropped it on purpose, see
+# its own doc/changes.txt: "removed functor (use object with
+# call_function() instead)") - but it turned out to be a missing-header
+# gap, not a missing-library one: src/xrServerEntities/pch_script.h (this
+# engine's OWN sibling precompiled header for lua/luabind users) already
+# `#include <luabind/functor.hpp>` right after <luabind/object.hpp>, and
+# three real call sites elsewhere in the tree (pch_script.h, xrGame's
+# GameTask.h, xrGame's Level_input.cpp) already expected that exact path
+# to resolve - ai_script_space.h was just missing the same line its
+# sibling already had. Fixed by vendoring src/3rd party/luabind/luabind/
+# functor.hpp (a `luabind::functor<T>` shim adapted from OpenXRay's
+# src/xrScriptEngine/Functor.hpp, built on primitives this fork's own
+# luabind kept - adl::object, the object-based call_function() overload,
+# default_converter/native_converter_base) and adding the missing
+# `#include <luabind/functor.hpp>` to ai_script_space.h itself. Text_Console.cpp/Text_Console_WndProc.cpp stay
 # excluded too: real Win32 GDI window creation (RegisterClass/
 # CreateWindow/GetDC/BitBlt/...) for the DEDICATED_SERVER-only debug
 # console (DEDICATED_SERVER itself dead code, see Text_Console.h's own
@@ -205,6 +217,8 @@ target_sources_grouped(
   defines.cpp
   stdafx.cpp
   _scripting.cpp
+  ai_script_lua_debug.cpp
+  ai_script_lua_extension.cpp
   Engine.cpp
   EngineAPI.cpp
   Device_Misc.cpp
@@ -337,7 +351,13 @@ target_sources_grouped(
 # device.h itself only forward-declares VkInstance/VkSurfaceKHR as opaque
 # pointer types (see device.h's comment), so no downstream consumer needs
 # volk.h/vulkan.h just to compile against xrEngine's headers.
-target_link_libraries(xrEngine PUBLIC xrCore xrCDB xrSound SDL2::SDL2)
+# xrLuabind is PUBLIC for the same reason SDL2::SDL2 is: ai_script_space.h
+# (pulled in by ai_script_lua_extension.h, one of this target's own PUBLIC
+# headers - see the "Engine" group above) #includes <lua.hpp> and
+# <luabind/{luabind,object,functor}.hpp>, so any downstream consumer of
+# xrEngine's headers (a future xrGame, notably) needs those include paths
+# too, not just this target's own .cpp files.
+target_link_libraries(xrEngine PUBLIC xrCore xrCDB xrSound SDL2::SDL2 xrLuabind)
 target_link_libraries(xrEngine PRIVATE volk::volk Vulkan::Headers)
 
 # theora/gif are PRIVATE: xrTheora_Stream.h/xrTheora_Surface.h/
@@ -359,3 +379,23 @@ target_link_libraries(xrEngine PRIVATE imgui)
 # no other xrEngine header branches on it, so it's not part of this
 # target's public interface.
 target_compile_definitions(xrEngine PRIVATE STATIC_RENDERER_R4)
+
+# ENGINE_BUILD - every real ENGINE_BUILD;STATIC_RENDERER_R2|R4;... config in
+# the original xrEngine.vcxproj defines this directly (grep-verified), so
+# this matches stock settings, not a new invention. It matters right now
+# for ai_script_lua_extension.cpp/.h (notes section 25): stdafx.h's own
+# comment above the DLL_API/ENGINE_API block spells out the intent - "you
+# must define ENGINE_BUILD [when] building the engine itself and not
+# define it if you are about to build DLL" - and ai_script_lua_extension.*
+# uses it to gate its xrGame-dependent half (vfExportToLua/
+# vfLoadStandardScripts/bfLoadFile/the `#include "ai_space.h"` at the top
+# of the .cpp) out of engine builds entirely, leaving only the
+# always-available half (bfPrintOutput/vfPrintError/bfLoadBuffer/
+# bfLoadFileIntoNamespace/bfGetNamespaceTable/bfIsObjectPresent/
+# lua_namespace_table) - exactly the split this pass needs to compile
+# these 2 files without pulling in any of xrGame. PRIVATE: DLL_API/
+# ENGINE_API both already expand to nothing either way (their real
+# __declspec(dllimport/dllexport) lines are commented out in stdafx.h,
+# same project-wide Windows-attribute stripping as everywhere else), so
+# no other xrEngine header's observable behavior depends on this macro.
+target_compile_definitions(xrEngine PRIVATE ENGINE_BUILD)

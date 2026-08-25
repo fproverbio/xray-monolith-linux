@@ -13,6 +13,7 @@ target_sources(xrLuabindApi INTERFACE
     from_stack.hpp
     function.hpp
     function_introspection.hpp
+    functor.hpp
     get_main_thread.hpp
     handle.hpp
     lua_argument_proxy.hpp
