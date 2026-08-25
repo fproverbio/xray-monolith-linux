@@ -359,7 +359,198 @@ target_sources_grouped(
   ui/UIOptionsManager.cpp
   ui/UIPropertiesBox.cpp
   ui/UIStatic.cpp
+  # Third ui/ batch (this pass - see playground/xray-monolith-vulkan-port-notes.md,
+  # the "ui/ sweep" milestone after section 31): 100 of the remaining 114
+  # on-disk ui/*.cpp files, real per-file g++ -c verification, not just
+  # closure-ranking. Systemic fixes this batch needed across most files:
+  # the usual lowercase #include "stdafx.h" bug (section 28) on 49 of these
+  # files; dozens of ordinary case-sensitivity/backslash #include fixes
+  # (uiwindow.h->UIWindow.h, restrictions.h->Restrictions.h, ../actor.h->
+  # ../Actor.h, ../level.h->../Level.h, etc. - see git diff for the full
+  # list, not enumerated individually here); a real luabind API-drift gap
+  # (luabind::policy::adopt is in a nested namespace - "using namespace
+  # luabind;" alone doesn't pull in unqualified adopt<N>() - needed a
+  # second "using namespace luabind::policy;" in 3 _script.cpp files); a
+  # real pre-existing self-shadowing-typedef bug in xrCore/intrusive_ptr.h
+  # (typedef object_type object_type;` - same bug class as the
+  # graph_vertex.h/associative_vector_compare_predicate.h findings from
+  # earlier passes, just never hit until a ui/ file finally instantiated
+  # intrusive_ptr<T> for the first time in this port - fixed by renaming
+  # the template parameter to _ip_object_type, keeping the exposed nested
+  # type name unchanged); a missing win32_compat.h strncat_s (added
+  # alongside the existing strncpy_s) and GetFullPathName (added, real
+  # realpath()-backed implementation) stand-in; an unguarded <dinput.h> on
+  # 13 files (wrapped in #ifdef _WIN32, matching the established
+  # UIEditBox.cpp/UIMessageBoxEx.cpp precedent - all only ever used
+  # win32_compat.h's portable DIK_* stand-ins, confirmed by grep per file);
+  # and several narrow, real removals of now-nonexistent GameSpy/MP-only
+  # types (ServerList.h/CServerList, UIChatWnd.h/CUIChatWnd, game_cl_mp,
+  # game_cl_deathmatch, game_cl_capture_the_artefact, game_cl_teamdeathmatch,
+  # login_manager.h - all confirmed absent anywhere in this source tree via
+  # grep, not a case-sensitivity issue - each removal narrowly scoped to the
+  # dead/unreachable call site, documented in-place in the affected file).
+  # See the notes file for the full per-bug breakdown.
+  ui/MMSound.cpp
+  ui/TeamInfo.cpp
+  ui/UI3tButton.cpp
+  ui/UIAchievements.cpp
+  ui/UIActorMenuInitialize.cpp
+  ui/UIActorMenuInventory.cpp
+  ui/UIActorMenuUpgrade.cpp
+  ui/UIActorMenu_action.cpp
+  ui/UIActorStateInfo.cpp
+  ui/UIBoosterInfo.cpp
+  ui/UIButton_script.cpp
+  ui/UIBuyWeaponTab.cpp
+  ui/UIBuyWndShared.cpp
+  ui/UICDkey.cpp
+  ui/UICellCustomItems.cpp
+  ui/UICellItem.cpp
+  ui/UICellItemFactory.cpp
+  ui/UICharacterInfo.cpp
+  ui/UIComboBox_script.cpp
+  ui/UICustomSpin.cpp
+  ui/UIDemoPlayControl.cpp
+  ui/UIDoubleProgressBar.cpp
+  ui/UIDragDropListEx.cpp
+  ui/UIDragDropReferenceList.cpp
+  ui/UIEditBox_script.cpp
+  ui/UIGameLog.cpp
+  ui/UIGameTutorial.cpp
+  ui/UIGameTutorialSimpleItem.cpp
+  ui/UIGameTutorialVideoItem.cpp
+  ui/UIHelper.cpp
+  ui/UIInvUpgrade.cpp
+  ui/UIInvUpgradeInfo.cpp
+  ui/UIInvUpgradeProperty.cpp
+  ui/UIInventoryUpgradeWnd.cpp
+  ui/UIInventoryUpgradeWnd_add.cpp
+  ui/UIInventoryUtilities.cpp
+  ui/UIItemInfo.cpp
+  ui/UILine.cpp
+  ui/UILines.cpp
+  ui/UIListBoxItem.cpp
+  ui/UIListItemServer.cpp
+  ui/UILogsWnd.cpp
+  ui/UIMMShniaga.cpp
+  ui/UIMPChangeMapAdm.cpp
+  ui/UIMPServerAdm.cpp
+  ui/UIMainIngameWnd.cpp
+  ui/UIMap.cpp
+  ui/UIMapInfo.cpp
+  ui/UIMapInfo_script.cpp
+  ui/UIMapLegend.cpp
+  ui/UIMapList.cpp
+  ui/UIMapWnd2.cpp
+  ui/UIMessageBox_script.cpp
+  ui/UIMessagesWindow.cpp
+  ui/UIMpItemsStoreWnd.cpp
+  ui/UIMpTradeWnd_init.cpp
+  ui/UIMpTradeWnd_items.cpp
+  ui/UIMpTradeWnd_misc.cpp
+  ui/UIMpTradeWnd_trade.cpp
+  ui/UIMpTradeWnd_wpn.cpp
+  ui/UINewsItemWnd.cpp
+  ui/UIOptConCom.cpp
+  ui/UIOptionsManagerScript.cpp
+  ui/UIOutfitInfo.cpp
+  ui/UIPdaKillMessage.cpp
+  ui/UIPdaMsgListItem.cpp
+  ui/UIPdaWnd.cpp
+  ui/UIProgressBar_script.cpp
+  ui/UIProgressShape.cpp
+  ui/UIPropertiesBox_script.cpp
+  ui/UIRadioButton.cpp
+  ui/UIRankingWnd.cpp
+  ui/UIRankingsCoC.cpp
+  ui/UIScriptWnd.cpp
+  ui/UISecondTaskWnd.cpp
+  ui/UISpeechMenu.cpp
+  ui/UISpinNum.cpp
+  ui/UISpinText.cpp
+  ui/UIStatic_script.cpp
+  ui/UISubLine.cpp
+  ui/UITabButton.cpp
+  ui/UITabButtonMP.cpp
+  ui/UITabControl.cpp
+  ui/UITabControl_script.cpp
+  ui/UITabControl_scroll.cpp
+  ui/UITabScrollArrows.cpp
+  ui/UITalkDialogWnd.cpp
+  ui/UITalkWnd.cpp
+  ui/UITaskWnd.cpp
+  ui/UITextureMaster.cpp
+  ui/UITrackBar.cpp
+  ui/UIWindow.cpp
+  ui/UIWindow_script.cpp
+  ui/UIWndCallback.cpp
+  ui/UIWpnParams.cpp
+  ui/UIXmlInit.cpp
+  ui/UI_IB_Static.cpp
+  ui/map_hint.cpp
+  ui/ui_af_params.cpp
+  ui/uiscriptwnd_script2.cpp
 )
+
+# ui/ sweep (this pass): of the 114 files that were still unwired after
+# section 31, 100 now compile clean and are wired in above. The remaining
+# 14 are EXCLUDED, each with real, individually-diagnosed evidence - not
+# a guess, and not the same root cause across the board:
+#
+#   UIActorMenu.cpp(6) UIActorMenuDeadBodySearch.cpp(6) UIActorMenuTrade.cpp(6)
+#   UIHudStatesWnd.cpp(7)
+#     - all four reach ai/monsters/basemonster/base_monster.h (via
+#       ../ai/monsters/BaseMonster/base_monster.h, case-fixed to the real
+#       on-disk "basemonster"), which itself has a real, unrelated bug (an
+#       undeclared `OUT` macro at two call sites, `int Type` shadowing a
+#       template parameter) that would need fixing INSIDE ai/ - explicitly
+#       out of scope for this pass per the task boundary. Not touched.
+#   UIListBox_script.cpp(13) UIScriptWnd_script.cpp(7) UIActorMenu_script.cpp(1)
+#     - all three register a class_<Derived, bases<...>, WrapType> (a
+#       ::luabind::wrap_base-derived wrapper enabling Lua-side virtual
+#       overrides) for a UI class ultimately deriving from the noncopyable
+#       CUIWindow hierarchy, with a plain .def(constructor<>()). This
+#       vendored luabind fork's constructor<Class, Pointer, Signature>
+#       machinery (luabind/detail/constructor.hpp) ends up trying to
+#       construct the WrapType from a raw base-class pointer in a way GCC
+#       rejects ("no matching function for call to
+#       CWrapperBase<T>::CWrapperBase(pointer)") - root cause not fully
+#       chased into class.hpp's constructor_registration/default_pointer
+#       template plumbing; a real, non-trivial pre-existing luabind/GCC
+#       incompatibility, not something to force a workaround for. Worth a
+#       dedicated future pass - likely affects other not-yet-attempted
+#       wrap_base-registered UI _script.cpp files too.
+#   UIMapWndActions.cpp(22) UIMapWnd.cpp(14)
+#     - both reach a template-instantiation cascade through
+#       action_base_inline.h/action_planner.h/condition_state_inline.h/
+#       graph_engine_inline.h/operator_abstract_inline.h/problem_solver.h
+#       (CActionPlanner<CUIMapWnd,...>/CProblemSolver<...>/CGraphEngine -
+#       the "action planner" template family) - similar shape to the
+#       graph-engine-cycle bug fixed in an earlier pass (section 30) but a
+#       different, unrelated template family/root cause, not chased this
+#       pass. A plausible dedicated-pass target, analogous to how the
+#       graph-engine cycle got its own session.
+#   UIServerInfo.cpp(1)
+#     - needs ximage.h/xmemfile.h (CxImage/CxMemFile, for decoding a
+#       downloaded MP server's map-preview screenshot) from the cximage
+#       3rd-party library, which isn't vendored into this build at all -
+#       real usage (CxMemFile/CxImage constructed and used, not a dead
+#       include), not droppable narrowly. Vendoring a whole new image
+#       library is out of scope for one file; deferred.
+#   UIMpTradeWnd.cpp(10) UISpawnWnd.cpp(16) UISkinSelector.cpp(20)
+#     - all three are genuinely MP-only dialogs (trade confirm, spawn/map
+#       select, skin selector) built around game_cl_mp - a type confirmed
+#       (grep) absent anywhere in this source tree, same as the several
+#       game_cl_mp/ServerList.h/UIChatWnd.h gaps fixed narrowly elsewhere
+#       in this batch. Unlike those, game_cl_mp is used pervasively
+#       throughout each of these three files' real logic (4-6 call sites
+#       each, not 1-2 isolated null-checked branches) - gutting them would
+#       mean rewriting most of the class, not a narrow removal. Deferred.
+#
+# (parenthesized number = real g++ -c error count as of this pass, not a
+# complexity estimate). ~254 ui/ files remained unstarted before this
+# pass (271 minus the 17 from section 30's tail); after this pass, only
+# these 14 remain (100 ported + the pre-existing 38).
 
 target_sources_grouped(
   TARGET xrGame

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIMpTradeWnd.h"
 
 #include "UIMpItemsStoreWnd.h"
@@ -8,7 +8,6 @@
 #include "UICellItem.h"
 
 #include "../UIDialogHolder.h"
-#include "../game_cl_deathmatch.h"
 
 
 void CUIMpTradeWnd::OnBtnOkClicked(CUIWindow* w, void* d)
@@ -220,7 +219,7 @@ void CUIMpTradeWnd::FillUpSubLevelItems()
 	}
 }
 
-#include "../actor.h"
+#include "../Actor.h"
 
 void CUIMpTradeWnd::Show(bool status)
 {

@@ -13,6 +13,7 @@
 
 #include <alloca.h>
 #include <cerrno>
+#include <climits> // PATH_MAX (GetFullPathName)
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -336,6 +337,29 @@ inline errno_t strncpy_s(char (&dest)[N], const char* src, size_t count)
 	return strncpy_s(dest, N, src, count);
 }
 
+// Same shape as strncpy_s above (first real call site: xrGame/ui/UITalkWnd.cpp,
+// building a save-slot filename by appending an extension) - a straight,
+// bounded, always-null-terminated implementation of MSVC's real strncat_s.
+inline errno_t strncat_s(char* dest, size_t destsz, const char* src, size_t count)
+{
+	if (!dest || destsz == 0)
+		return EINVAL;
+	size_t dest_len = std::strlen(dest);
+	if (dest_len >= destsz)
+		return EINVAL;
+	size_t avail = destsz - dest_len - 1;
+	size_t n = (count == static_cast<size_t>(-1)) ? avail : count;
+	if (n > avail)
+		n = avail;
+	std::strncat(dest, src, n);
+	return 0;
+}
+template <size_t N>
+inline errno_t strncat_s(char (&dest)[N], const char* src, size_t count)
+{
+	return strncat_s(dest, N, src, count);
+}
+
 inline void _splitpath(const char* path, char* drive, char* dir, char* fname, char* ext)
 {
 	// MSVC's _splitpath has 4 independently-sized output buffers (no sizes
@@ -594,6 +618,37 @@ inline void* GetProcessHeap() { return reinterpret_cast<void*>(1); }
 // - immediately fed into GetModuleFileName). No real "loaded module"
 // concept to model for a statically-linked Linux binary; /proc/self/exe
 // gives the real, correct answer directly.
+// GetFullPathName - resolves lpFileName to an absolute path via realpath()
+// (first real call site: xrGame/ui/UIMapList.cpp's StartDedicatedServer(),
+// a genuinely Win32-only "relaunch as a separate dedicated-server.exe
+// process" flow - see notes file's established "dedicated server is
+// Win32-only, not functionally portable" precedent; this stand-in exists
+// so the surrounding code compiles, not to make that flow work on Linux).
+// lpFilePart, if non-null, is set to point at the filename component
+// within lpBuffer, matching the real Win32 API's contract.
+inline DWORD GetFullPathName(const char* lpFileName, DWORD nBufferLength, char* lpBuffer, char** lpFilePart)
+{
+	char resolved[PATH_MAX];
+	if (!realpath(lpFileName, resolved))
+	{
+		lpBuffer[0] = '\0';
+		if (lpFilePart)
+			*lpFilePart = nullptr;
+		return 0;
+	}
+	size_t len = std::strlen(resolved);
+	if (len >= nBufferLength)
+		len = nBufferLength - 1;
+	std::memcpy(lpBuffer, resolved, len);
+	lpBuffer[len] = '\0';
+	if (lpFilePart)
+	{
+		char* slash = std::strrchr(lpBuffer, '/');
+		*lpFilePart = slash ? slash + 1 : lpBuffer;
+	}
+	return static_cast<DWORD>(len);
+}
+
 inline void* GetModuleHandle(const char*) { return nullptr; }
 inline DWORD GetModuleFileName(void*, char* buf, DWORD size)
 {

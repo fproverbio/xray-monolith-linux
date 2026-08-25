@@ -1,28 +1,30 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include "UIMainIngameWnd.h"
 #include "UIMessagesWindow.h"
 #include "../UIZoneMap.h"
 
 
+#ifdef _WIN32
 #include <dinput.h>
-#include "../actor.h"
+#endif
+#include "../Actor.h"
 #include "../ActorCondition.h"
 #include "../EntityCondition.h"
 #include "../CustomOutfit.h"
 #include "../ActorHelmet.h"
 #include "../PDA.h"
 #include "../xrServerEntities/character_info.h"
-#include "../inventory.h"
+#include "../Inventory.h"
 #include "../UIGameSP.h"
-#include "../weaponmagazined.h"
-#include "../missile.h"
+#include "../WeaponMagazined.h"
+#include "../Missile.h"
 #include "../Grenade.h"
-#include "../xrServerEntities/xrServer_objects_ALife.h"
+#include "../xrServerEntities/xrServer_Objects_ALife.h"
 #include "../alife_simulator.h"
 #include "../alife_object_registry.h"
 #include "../game_cl_base.h"
-#include "../level.h"
+#include "../Level.h"
 #include "../seniority_hierarchy_holder.h"
 
 #include "../date_time.h"
@@ -50,7 +52,11 @@
 #include "../game_news.h"
 
 #include "static_cast_checked.hpp"
-#include "game_cl_capture_the_artefact.h"
+// game_cl_capture_the_artefact.h - and the game_cl_CaptureTheArtefact type -
+// genuinely absent from this source tree (removed along with the rest of
+// the MP subsystem, see notes file). Its only call site below is already
+// unreachable in this SP-only fork (this whole function early-returns on
+// IsGameTypeSingle() before ever reaching it).
 #include "UIHudStatesWnd.h"
 #include "UIActorMenu.h"
 
@@ -380,26 +386,10 @@ void CUIMainIngameWnd::Update()
 	}
 	else if (GameID() == eGameIDCaptureTheArtefact)
 	{
-		//this is a bad style... It left for backward compatibility
-		//need to move this logic into UIGameCTA class
-		//bool b_Artefact = (NULL != m_pActor->inventory().ItemFromSlot(ARTEFACT_SLOT));
-		game_cl_CaptureTheArtefact* cta_game = static_cast_checked<game_cl_CaptureTheArtefact*>(&Game());
-		R_ASSERT(cta_game);
-		R_ASSERT(lookat_player);
-
-		if ((pActor->ID() == cta_game->GetGreenArtefactOwnerID()) ||
-			(pActor->ID() == cta_game->GetBlueArtefactOwnerID()))
-		{
-			SetWarningIconColor(ewiArtefact, 0xffff0000);
-		}
-		else if (pActor->inventory().ItemFromSlot(ARTEFACT_SLOT)) //own artefact
-		{
-			SetWarningIconColor(ewiArtefact, 0xff00ff00);
-		}
-		else
-		{
-			SetWarningIconColor(ewiArtefact, 0x00ffffff);
-		}
+		// game_cl_CaptureTheArtefact is gone (see the include comment above) -
+		// and this whole function is unreachable in this SP-only fork anyway
+		// (IsGameTypeSingle() early-return above). Left as a no-op branch
+		// rather than deleting the eGameIDCaptureTheArtefact case entirely.
 	}
 } //update
 

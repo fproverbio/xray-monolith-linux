@@ -1,12 +1,12 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIPdaWnd.h"
-#include "../Pda.h"
+#include "../PDA.h"
 
 #include "xrUIXmlParser.h"
 #include "UIXmlInit.h"
 #include "UIInventoryUtilities.h"
 
-#include "../level.h"
+#include "../Level.h"
 #include "UIGameCustom.h"
 
 #include "UIStatic.h"
@@ -32,7 +32,7 @@
 #include "Actor.h"
 #include "Inventory.h"
 #include "../xrEngine/XR_IOConsole.h"
-#include "ui\UIProgressBar.h"
+#include "ui/UIProgressBar.h"
 #include "player_hud.h"
 
 u32 g_pda_info_state = 0;

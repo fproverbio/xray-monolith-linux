@@ -9,7 +9,7 @@
 #include "UIMapInfo.h"
 #include "UIComboBox.h"
 #include "UIListBoxItem.h"
-#include "../../xrEngine/xr_ioconsole.h"
+#include "../../xrEngine/XR_IOConsole.h"
 #include "../string_table.h"
 
 #include "object_broker.h"
@@ -148,7 +148,7 @@ void CUIMapList::OnListItemClicked()
 	m_pMapInfo->InitMap(M.map_name.c_str(), M.map_ver.c_str());
 }
 
-xr_token g_GameModes[];
+extern xr_token g_GameModes[];
 
 void CUIMapList::OnModeChange()
 {
@@ -314,7 +314,7 @@ void CUIMapList::SetServerParams(LPCSTR params)
 	m_srv_params = params;
 }
 
-#include "uilistboxitem.h"
+#include "UIListBoxItem.h"
 
 void CUIMapList::AddWeather(const shared_str& WeatherType, const shared_str& WeatherTime, u32 _id)
 {

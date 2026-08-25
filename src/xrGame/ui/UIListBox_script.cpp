@@ -2,13 +2,16 @@
 #include "UIListBox.h"
 #include "UIListBoxItem.h"
 #include "UIListBoxItemMsgChain.h"
-#include "ServerList.h"
 #include "UIMapList.h"
 #include "UISpinText.h"
 #include "UIMapInfo.h"
 #include "UIComboBox.h"
 
 using namespace luabind;
+// luabind::policy::adopt is in a nested namespace - "using namespace luabind;"
+// alone does not pull in unqualified adopt<N>() below (same-shape gap as
+// the get_globals->globals/.type() API-drift fixes elsewhere in this port).
+using namespace luabind::policy;
 
 
 struct CUIListBoxItemWrapper : public CUIListBoxItem, public ::luabind::wrap_base
@@ -60,38 +63,13 @@ void CUIListBox::script_register(lua_State* L)
 		class_<CUIListBoxItemMsgChain, CUIListBoxItem, CUIListBoxItemMsgChainWrapper>("CUIListBoxItemMsgChain")
 		.def(constructor<float>()),
 
-		class_<SServerFilters>("SServerFilters")
-		.def(constructor<>())
-		.def_readwrite("empty", &SServerFilters::empty)
-		.def_readwrite("full", &SServerFilters::full)
-		.def_readwrite("with_pass", &SServerFilters::with_pass)
-		.def_readwrite("without_pass", &SServerFilters::without_pass)
-		.def_readwrite("without_ff", &SServerFilters::without_ff)
-		.def_readwrite("listen_servers", &SServerFilters::listen_servers),
-
-		class_<connect_error_cb>("connect_error_cb")
-		.def(constructor<>())
-		.def(constructor<connect_error_cb::lua_object_type, connect_error_cb::lua_function_type>())
-		.def("bind", &connect_error_cb::bind)
-		.def("clear", &connect_error_cb::clear),
-
-		class_<CServerList, CUIWindow>("CServerList")
-		.def(constructor<>())
-		.enum_("enum_connect_errcode")
-		[
-			value("ece_unique_nick_not_registred", int(ece_unique_nick_not_registred)),
-			value("ece_unique_nick_expired", int(ece_unique_nick_expired))
-		]
-		.def("SetConnectionErrCb", &CServerList::SetConnectionErrCb)
-		.def("ConnectToSelected", &CServerList::ConnectToSelected)
-		.def("SetFilters", &CServerList::SetFilters)
-		.def("SetPlayerName", &CServerList::SetPlayerName)
-		.def("RefreshList", &CServerList::RefreshGameSpyList)
-		.def("RefreshQuick", &CServerList::RefreshQuick)
-		.def("ShowServerInfo", &CServerList::ShowServerInfo)
-		.def("NetRadioChanged", &CServerList::NetRadioChanged)
-		.def("SetSortFunc", &CServerList::SetSortFunc),
-
+		// SServerFilters/connect_error_cb/CServerList (ServerList.h) registration
+		// removed: ServerList.h - and every type it declared (SServerFilters,
+		// connect_error_cb, CServerList, the GameSpy server-browser/connect-error
+		// enum) - genuinely does not exist anywhere in this source tree (grep-
+		// confirmed, not a case-sensitivity issue). Same "real platform/feature
+		// gap, GameSpy/multiplayer subsystem removed from this fork" treatment as
+		// RegistryFuncs.cpp/DirectPlay8 elsewhere in this port (see notes file).
 
 		class_<CUIMapList, CUIWindow>("CUIMapList")
 		.def(constructor<>())

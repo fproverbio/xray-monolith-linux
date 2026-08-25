@@ -1,13 +1,19 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIMpTradeWnd.h"
 #include "UIMpItemsStoreWnd.h"
 
 #include "UICellItem.h"
 #include "UIDragDropListEx.h"
 #include "UICellCustomItems.h"
+#ifdef _WIN32
 #include <dinput.h>
-#include "game_cl_deathmatch.h"
-#include "game_cl_capture_the_artefact.h"
+#endif
+// game_cl_deathmatch.h/game_cl_capture_the_artefact.h - and the
+// game_cl_Deathmatch/game_cl_CaptureTheArtefact types - genuinely absent
+// from this source tree (removed along with the rest of the MP subsystem,
+// see notes file). Both real call sites below are already null-checked
+// (`if (cta_game && ...)` / `if (dm_game && ...)`), so both branches are
+// dropped rather than kept unreachable.
 
 bool CUIMpTradeWnd::TryToSellItem(SBuyItemInfo* sell_itm, bool do_destroy, SBuyItemInfo*& itm_res)
 {
@@ -124,21 +130,11 @@ bool CUIMpTradeWnd::TryToBuyItem(SBuyItemInfo* buy_itm, u32 buy_flags, SBuyItemI
 	if (!b_can_buy)
 		return false;
 
-	if (0 == (bf_ignore_team & buy_flags))
-	{
-		if (GameID() == eGameIDCaptureTheArtefact)
-		{
-			game_cl_CaptureTheArtefact* cta_game = smart_cast<game_cl_CaptureTheArtefact*>(&Game());
-			if (cta_game && !cta_game->LocalPlayerCanBuyItem(buy_item_name))
-				return false;
-		}
-		else
-		{
-			game_cl_Deathmatch* dm_game = smart_cast<game_cl_Deathmatch*>(&Game());
-			if (dm_game && !dm_game->LocalPlayerCanBuyItem(buy_item_name))
-				return false;
-		}
-	}
+	// Originally checked game_cl_CaptureTheArtefact/game_cl_Deathmatch's
+	// LocalPlayerCanBuyItem() team restriction here - both types are gone
+	// (see the include comment above), and both checks only ever narrowed
+	// b_can_buy further, never widened it, so dropping them is a safe,
+	// narrow behavior change (no MP team-based buy restriction).
 
 	u32 _item_cost = m_item_mngr->GetItemCost(buy_item_name, GetRank());
 	if (is_helper)

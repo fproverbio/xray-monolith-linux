@@ -1,8 +1,8 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIMpTradeWnd.h"
 #include "UIDragDropListEx.h"
 #include "UICellItem.h"
-#include "../weaponmagazinedwgrenade.h"
+#include "../WeaponMagazinedWGrenade.h"
 #include "../../xrEngine/xr_input.h"
 #include "UIMpItemsStoreWnd.h"
 

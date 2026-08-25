@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIServerInfo.h"
 
 #include "UIStatic.h"
@@ -7,9 +7,14 @@
 #include "UIXmlInit.h"
 #include "UI3tButton.h"
 #include "UIGameCustom.h"
-#include "../level.h"
-#include "../game_cl_mp.h"
+#include "../Level.h"
+// game_cl_mp.h - and the game_cl_mp type - genuinely absent from this
+// source tree (removed along with the rest of the MP subsystem, see notes
+// file). Its only two call sites below (OnSpectatorBtnClick/OnNextBtnClick)
+// are MP-server-lobby-only button handlers; both become no-ops.
+#ifdef _WIN32
 #include <dinput.h>
+#endif
 #include "ximage.h"
 #include "xmemfile.h"
 
@@ -152,20 +157,12 @@ void CUIServerInfo::SetServerRules(u8 const* data_ptr, u32 const data_size)
 
 void xr_stdcall CUIServerInfo::OnSpectatorBtnClick(CUIWindow* w, void* d)
 {
-	game_cl_mp* mp_game = smart_cast<game_cl_mp*>(&Game());
-	VERIFY(mp_game);
-
 	HideDialog();
-	mp_game->OnSpectatorSelect();
 }
 
 void xr_stdcall CUIServerInfo::OnNextBtnClick(CUIWindow* w, void* d)
 {
-	game_cl_mp* mp_game = smart_cast<game_cl_mp*>(&Game());
-	VERIFY(mp_game);
-
 	HideDialog();
-	mp_game->OnMapInfoAccept();
 }
 
 bool CUIServerInfo::OnKeyboardAction(int dik, EUIMessages keyboard_action)

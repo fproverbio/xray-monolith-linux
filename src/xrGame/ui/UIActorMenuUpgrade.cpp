@@ -1,4 +1,4 @@
-//#include "stdafx.h"
+//#include "StdAfx.h"
 #include "pch_script.h"
 #include "UIActorMenu.h"
 #include "UIInventoryUpgradeWnd.h"
@@ -12,8 +12,8 @@
 #include "UICellItem.h"
 #include "../InventoryOwner.h"
 #include "../Inventory.h"
-#include "../actor.h"
-#include "../uigamesp.h"
+#include "../Actor.h"
+#include "../UIGameSP.h"
 #include "UI3tButton.h"
 
 #include "inventory_upgrade.h"

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UITalkDialogWnd.h"
 
 #include "xrUIXmlParser.h"
@@ -10,11 +10,12 @@
 #include "UIBtnHint.h"
 
 #include "../game_news.h"
-#include "../level.h"
-#include "../actor.h"
+#include "../Level.h"
+#include "../Actor.h"
 #include "../alife_registry_wrappers.h"
-#include "dinput.h"
-
+#ifdef _WIN32
+#include <dinput.h>
+#endif
 #define				TALK_XML				"talk.xml"
 
 CUITalkDialogWnd::CUITalkDialogWnd()

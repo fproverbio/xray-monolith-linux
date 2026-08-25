@@ -176,37 +176,52 @@ using intrusive_base_deferred_nonatomic = intrusive_base_impl<DeletionPolicy::De
 using intrusive_base_strict = intrusive_base_impl<DeletionPolicy::Strict, CounterPolicy::Atomic>;
 using intrusive_base_strict_nonatomic = intrusive_base_impl<DeletionPolicy::Strict, CounterPolicy::NonAtomic>;
 
-#define TEMPLATE_SPECIALIZATION template <typename object_type>
-#define _intrusive_ptr intrusive_ptr<object_type>
+// NOTE: the template parameter is deliberately NOT named "object_type" -
+// the class below exposes a member typedef of that exact name (see the
+// typedef right after "public:"), and naming the template parameter the
+// same thing used to make it `typedef object_type object_type;` - legal
+// C++ (a member typedef may share a template parameter's name) but a
+// self-shadowing typedef that poisons the whole template under GCC's
+// -Wtemplate-body (real instantiation then hard-errors as "instantiating
+// erroneous template"); MSVC apparently never actually validated this.
+// Same bug class as playground/xray-monolith-vulkan-port-notes.md's
+// graph_vertex.h/associative_vector_compare_predicate.h findings. Fixed by
+// renaming the template *parameter* only - the exposed nested-type name
+// ("object_type", used both internally in this header via the qualified
+// `_intrusive_ptr::object_type` and potentially by external callers) is
+// unchanged, since template parameter names are never part of any external
+// contract, only their position is.
+#define TEMPLATE_SPECIALIZATION template <typename _ip_object_type>
+#define _intrusive_ptr intrusive_ptr<_ip_object_type>
 
 TEMPLATE_SPECIALIZATION
 class intrusive_ptr
 {
 public:
-    typedef object_type object_type;
+    typedef _ip_object_type object_type;
     typedef _intrusive_ptr self_type;
 
 private:
-    static constexpr DeletionPolicy deletion_policy = object_type::deletion_policy;
-    static constexpr bool virtual_destructor = object_type::virtual_destructor;
+    static constexpr DeletionPolicy deletion_policy = _ip_object_type::deletion_policy;
+    static constexpr bool virtual_destructor = _ip_object_type::virtual_destructor;
 
     // Static check instead of the old enum hack
-    static_assert(std::is_base_of_v<intrusive_base_marker, object_type>,
+    static_assert(std::is_base_of_v<intrusive_base_marker, _ip_object_type>,
         "intrusive_ptr<T>: T must be derived from intrusive_base");
 
     // Safety Enforcement
     // This asserts that 'object_type' does NOT have a public destructor if policy is Strict (intrusive_base_strict).
     // If this triggers, it means you forgot to make your destructor protected.
     // Note: std::is_destructible_v is false if the destructor is protected/private.
-    static_assert(!(deletion_policy == DeletionPolicy::Strict && std::is_destructible_v<object_type>),
+    static_assert(!(deletion_policy == DeletionPolicy::Strict && std::is_destructible_v<_ip_object_type>),
         "intrusive_ptr<T>: T must have a protected destructor, Strict Policy");
 
 
     // Static check to see if class have virtual destructor if base is virtual
-    static_assert(!virtual_destructor || std::is_polymorphic_v<object_type>,
+    static_assert(!virtual_destructor || std::is_polymorphic_v<_ip_object_type>,
         "intrusive_ptr<T>: T must be polymorphic because the base class is virtual");
 
-    object_type* m_object;
+    _ip_object_type* m_object;
 
 protected:
     IC void dec();
@@ -216,26 +231,26 @@ public:
     template <typename U> friend class intrusive_ptr;
 
     IC intrusive_ptr() noexcept;
-    IC intrusive_ptr(object_type* rhs);
+    IC intrusive_ptr(_ip_object_type* rhs);
     IC intrusive_ptr(self_type const& rhs);
 
     // Move Constructor
     IC intrusive_ptr(self_type&& rhs) noexcept;
 
     // Generalized Copy Constructor (Derived -> Base)
-    template <typename other_type, std::enable_if_t<std::is_convertible_v<other_type*, object_type*>, int> = 0>
+    template <typename other_type, std::enable_if_t<std::is_convertible_v<other_type*, _ip_object_type*>, int> = 0>
     IC intrusive_ptr(intrusive_ptr<other_type> const& rhs);
 
     IC ~intrusive_ptr();
 
-    IC self_type& operator=(object_type* rhs);
+    IC self_type& operator=(_ip_object_type* rhs);
     IC self_type& operator=(self_type const& rhs);
 
     // Move Assignment
     IC self_type& operator=(self_type&& rhs) noexcept;
 
     // Generalized Assignment
-    template <typename other_type, std::enable_if_t<std::is_convertible_v<other_type*, object_type*>, int> = 0>
+    template <typename other_type, std::enable_if_t<std::is_convertible_v<other_type*, _ip_object_type*>, int> = 0>
     IC self_type& operator=(intrusive_ptr<other_type> const& rhs);
 
     // Accessors
@@ -303,7 +318,7 @@ IC _intrusive_ptr::intrusive_ptr() noexcept
 }
 
 TEMPLATE_SPECIALIZATION
-IC _intrusive_ptr::intrusive_ptr(object_type* rhs)
+IC _intrusive_ptr::intrusive_ptr(_ip_object_type* rhs)
 {
     m_object = nullptr;
     set(rhs);
@@ -326,7 +341,7 @@ IC _intrusive_ptr::intrusive_ptr(self_type&& rhs) noexcept
 
 // Generalized Constructor (Derived -> Base)
 TEMPLATE_SPECIALIZATION
-template <typename other_type, std::enable_if_t<std::is_convertible_v<other_type*, object_type*>, int>>
+template <typename other_type, std::enable_if_t<std::is_convertible_v<other_type*, _ip_object_type*>, int>>
 IC _intrusive_ptr::intrusive_ptr(intrusive_ptr<other_type> const& rhs)
 {
     m_object = nullptr;
@@ -344,14 +359,14 @@ IC void _intrusive_ptr::dec()
 {
     if (m_object)
     {
-        object_type* temp = m_object;
+        _ip_object_type* temp = m_object;
         m_object = nullptr;
         temp->intrusive_release(temp);
     }
 }
 
 TEMPLATE_SPECIALIZATION
-IC typename _intrusive_ptr::self_type& _intrusive_ptr::operator=(object_type* rhs)
+IC typename _intrusive_ptr::self_type& _intrusive_ptr::operator=(_ip_object_type* rhs)
 {
     set(rhs);
     return (*this);
@@ -379,7 +394,7 @@ IC typename _intrusive_ptr::self_type& _intrusive_ptr::operator=(self_type&& rhs
 
 // Generalized Assignment
 TEMPLATE_SPECIALIZATION
-template <typename other_type, std::enable_if_t<std::is_convertible_v<other_type*, object_type*>, int>>
+template <typename other_type, std::enable_if_t<std::is_convertible_v<other_type*, _ip_object_type*>, int>>
 IC typename _intrusive_ptr::self_type& _intrusive_ptr::operator=(intrusive_ptr<other_type> const& rhs)
 {
     set(rhs.get());
@@ -413,12 +428,12 @@ IC bool _intrusive_ptr::equal(const self_type& rhs) const noexcept
 }
 
 TEMPLATE_SPECIALIZATION
-IC void _intrusive_ptr::set(object_type* rhs)
+IC void _intrusive_ptr::set(_ip_object_type* rhs)
 {
     if (rhs)
 		rhs->intrusive_ref_add();
 
-    object_type* old = m_object;
+    _ip_object_type* old = m_object;
     m_object = rhs;
 
     if (old)

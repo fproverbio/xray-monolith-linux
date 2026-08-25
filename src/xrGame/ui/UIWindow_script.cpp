@@ -132,6 +132,10 @@ void SetCursorPosition_script(Fvector2& pos)
 }
 
 using namespace luabind;
+// luabind::policy::adopt is in a nested namespace - "using namespace luabind;"
+// alone does not pull in unqualified adopt<N>() below (same-shape gap as
+// the get_globals->globals/.type() API-drift fixes elsewhere in this port).
+using namespace luabind::policy;
 #pragma optimize("s",on)
 void CUIWindow::script_register(lua_State* L)
 {

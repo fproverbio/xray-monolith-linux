@@ -11,7 +11,6 @@
 #include "UIWindow.h"
 
 class CUIGameLog;
-class CUIChatWnd;
 struct GAME_NEWS_DATA;
 struct KillMessageStruct;
 
@@ -27,14 +26,16 @@ public:
 	void AddChatMessage(shared_str msg, shared_str author);
 	//.	void				SetChatOwner					(game_cl_GameState* owner);
 	void PendingMode(bool const is_in_pending_mode);
-	CUIChatWnd* GetChatWnd() { return m_pChatWnd; }
+	// GetChatWnd()/CUIChatWnd removed - see UIMessagesWindow.cpp: UIChatWnd.h
+	// genuinely does not exist anywhere in this source tree (MP chat window,
+	// removed along with the rest of the GameSpy/MP subsystem), and grep
+	// confirmed no other file in the codebase called GetChatWnd().
 	virtual void Show(bool show);
 
 protected:
 	virtual void Init(float x, float y, float width, float height);
 
 	CUIGameLog* m_pChatLog;
-	CUIChatWnd* m_pChatWnd;
 	CUIGameLog* m_pGameLog;
 
 	bool m_in_pending_mode;

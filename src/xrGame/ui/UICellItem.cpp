@@ -3,15 +3,15 @@
 //	Last updated: 13/08/2015
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UICellItem.h"
-#include "uicursor.h"
+#include "UICursor.h"
 #include "../inventory_item.h"
 #include "../eatable_item.h"
 #include "UIDragDropListEx.h"
 #include "../xr_level_controller.h"
 #include "../../xrEngine/xr_input.h"
-#include "../level.h"
+#include "../Level.h"
 #include "object_broker.h"
 #include "UIXmlInit.h"
 #include "UIProgressBar.h"

@@ -1,18 +1,20 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIXmlInit.h"
 #include "UI3tButton.h"
 #include "UIProgressBar.h"
 #include "UIPropertiesBox.h"
 #include "UIListBox.h"
 #include "UIListBoxItem.h"
+#ifdef _WIN32
 #include <dinput.h>
+#endif
 #include "UIDemoPlayControl.h"
 #include "UICursor.h"
 #include "../xrEngine/XR_IOConsole.h"
 #include "string_table.h"
-#include "level.h"
-#include "demoinfo.h"
-#include "demoplay_control.h"
+#include "../Level.h"
+#include "DemoInfo.h"
+#include "DemoPlay_Control.h"
 
 CUIDemoPlayControl::CUIDemoPlayControl()
 {

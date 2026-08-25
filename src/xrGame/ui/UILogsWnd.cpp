@@ -5,7 +5,7 @@
 //	Description : UI Logs (PDA) window class implementation
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UILogsWnd.h"
 
 #include "UIXmlInit.h"
@@ -20,7 +20,7 @@
 #include "UICharacterInfo.h"
 #include "UIInventoryUtilities.h"
 
-#include "../actor.h"
+#include "../Actor.h"
 #include "../game_news.h"
 #include "../alife_time_manager.h"
 #include "../alife_registry_wrappers.h"

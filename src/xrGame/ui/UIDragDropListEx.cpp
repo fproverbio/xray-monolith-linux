@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIDragDropListEx.h"
 #include "UIScrollBar.h"
 #include "object_broker.h"
@@ -7,7 +7,9 @@
 #include "../Level.h"
 //Alundaio
 #include "../Inventory.h"
+#ifdef _WIN32
 #include <dinput.h>
+#endif
 //-Alundaio
 
 CUIDragItem* CUIDragDropListEx::m_drag_item = NULL;

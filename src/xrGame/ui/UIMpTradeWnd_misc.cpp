@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIMpTradeWnd.h"
 #include "UIMpItemsStoreWnd.h"
 
@@ -11,8 +11,9 @@
 #include "../inventory_item.h"
 #include "../PhysicsShellHolder.h"
 #include "object_broker.h"
+#ifdef _WIN32
 #include <dinput.h>
-
+#endif
 #include "UICellCustomItems.h"
 
 bool CUIMpTradeWnd::OnKeyboardAction(int dik, EUIMessages keyboard_action)

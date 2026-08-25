@@ -4,9 +4,10 @@
 #include "UIStatic.h"
 #include "UIGameCustom.h"
 #include "UIXmlInit.h"
-#include "../game_cl_mp.h"
+#ifdef _WIN32
 #include <dinput.h>
-#include "../level.h"
+#endif
+#include "../Level.h"
 #include "../string_table.h"
 
 CUISpeechMenu::CUISpeechMenu(LPCSTR section_name)
@@ -60,10 +61,12 @@ bool CUISpeechMenu::OnKeyboardAction(int dik, EUIMessages keyboard_action)
 	if (dik < DIK_1 || dik > DIK_0)
 		return CUIDialogWnd::OnKeyboardAction(dik, keyboard_action);
 
-	game_cl_mp* game = smart_cast<game_cl_mp*>(&Game());
-
+	// game_cl_mp.h - and the game_cl_mp type - genuinely absent from this
+	// source tree (removed along with the rest of the MP subsystem, see
+	// notes file). This handler's only job (OnMessageSelected on the
+	// current MP game) can't exist without that type; still hide the
+	// dialog and consume the key the same way the original always did.
 	HideDialog();
-	game->OnMessageSelected(this, static_cast<u8>(dik - DIK_1));
 
 	return true;
 }

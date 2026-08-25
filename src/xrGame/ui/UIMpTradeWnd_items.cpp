@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIMpTradeWnd.h"
 #include "../inventory_item.h"
 #include "../PhysicsShellHolder.h"
@@ -933,8 +933,9 @@ void CUIMpTradeWnd::DumpPreset(ETradePreset idx)
 #endif // #ifndef MASTER_GOLD
 }
 
+#ifdef _WIN32
 #include <dinput.h>
-
+#endif
 void CUICellItemTradeMenuDraw::OnDraw(CUICellItem* cell)
 {
 	Fvector2 pos;

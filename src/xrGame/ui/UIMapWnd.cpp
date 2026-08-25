@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIMapWnd.h"
 #include "UIMap.h"
 #include "UIXmlInit.h"
@@ -18,7 +18,7 @@
 #include "UIMapWndActionsSpace.h"
 #include "UIHint.h"
 #include "map_hint.h"
-#include "uicursor.h"
+#include "UICursor.h"
 
 #include "UIPropertiesBox.h"
 #include "UIListBoxItem.h"
@@ -1153,10 +1153,10 @@ void CUIMapWnd::Reset()
 	ResetActionPlanner();
 }
 
-#include "../gametaskmanager.h"
-#include "../actor.h"
+#include "../GametaskManager.h"
+#include "../Actor.h"
 #include "../map_spot.h"
-#include "../gametask.h"
+#include "../GameTask.h"
 
 void CUIMapWnd::SpotSelected(CUIWindow* w)
 {

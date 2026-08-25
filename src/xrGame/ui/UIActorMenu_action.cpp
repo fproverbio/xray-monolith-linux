@@ -5,12 +5,12 @@
 //	Description : UI ActorMenu actions implementation
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIActorMenu.h"
 #include "UIActorStateInfo.h"
-#include "../actor.h"
-#include "../uigamesp.h"
-#include "../inventory.h"
+#include "../Actor.h"
+#include "../UIGameSP.h"
+#include "../Inventory.h"
 #include "../inventory_item.h"
 #include "../InventoryBox.h"
 #include "object_broker.h"

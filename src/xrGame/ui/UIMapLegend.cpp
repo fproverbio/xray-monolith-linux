@@ -5,7 +5,7 @@
 //	Description : UI Map Legend Wnd (PDA : Task) class impl
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "UIMapLegend.h"
 
 #include "xrUIXmlParser.h"
@@ -22,7 +22,7 @@
 
 #include "UIInventoryUtilities.h"
 #include "../string_table.h"
-#include "../level.h"
+#include "../Level.h"
 
 
 UIMapLegend::UIMapLegend()
