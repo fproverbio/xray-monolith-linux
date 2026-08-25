@@ -13,32 +13,35 @@
 template <
 	typename _data_type,
 	typename _vertex_id_type,
-	typename _graph_type
+	typename _graph_type,
+	typename _edge_weight_type
 >
 class CVertex
 {
 public:
 	typedef _vertex_id_type _vertex_id_type;
+	// FIX (was a real mutual-recursive-instantiation cycle under GCC,
+	// documented at length in an earlier pass - see
+	// playground/xray-monolith-vulkan-port-notes.md's integration-pass
+	// section for the full diagnosis): _edge_weight_type used to be
+	// derived here via `typename _edge_type::_edge_weight_type`, a
+	// nested-name lookup that requires _edge_type (CEdge<...>) to be a
+	// COMPLETE type at this exact point - but CEdge's own CEdgeBase base
+	// needs CVertex::_vertex_id_type, and CVertex is still mid-
+	// instantiation (triggered by CGraphAbstract::EDGES needing it
+	// complete), so GCC correctly rejects the whole cycle (MSVC tolerated
+	// it). The real fix: CGraphAbstract already has _edge_weight_type as
+	// its own plain, already-resolved template parameter (graph_abstract.h) -
+	// passing it down to CVertex as an explicit template ARGUMENT (this
+	// parameter) needs no nested lookup into anything still-incomplete,
+	// unlike deriving it from CEdge or from _graph_type. `_edge_type`
+	// itself (below) is still resolved via nested lookup into _graph_type,
+	// but only for xr_vector<_edge_type>'s *type name* - lazy template
+	// instantiation means that doesn't require _graph_type/_edge_type
+	// complete at this line, only when EDGES is actually used with an
+	// operation needing sizeof/layout, by which point every class in the
+	// cycle has finished being defined for this translation unit.
 	typedef typename _graph_type::CEdge _edge_type;
-	// KNOWN GENUINE BLOCKER (documented, not mechanically fixed this pass -
-	// see playground/xray-monolith-vulkan-port-notes.md's integration-pass
-	// section): this line is a real mutual-recursive-instantiation cycle
-	// under GCC. CGraphAbstract::EDGES needs CVertex complete;
-	// CVertex::_edge_weight_type (this line) needs _edge_type (CEdge<...>)
-	// complete; CEdge's own CEdgeBase base needs CVertex::_vertex_id_type -
-	// i.e. a request for a member of *this exact CVertex specialization*
-	// that loops back in through a different template while this
-	// specialization is still mid-instantiation. GCC treats a class
-	// template as wholly "incomplete" to any external nested-name lookup
-	// for its entire instantiation, even for members declared/processed
-	// earlier in the same pass (tried routing through _graph_type
-	// directly instead - same wall, just one hop later). The original
-	// MSVC target tolerated this; standard C++/GCC does not. A real fix
-	// needs restructuring this three-way CGraphAbstract/CVertex/CEdge
-	// dependency (e.g. an explicit _edge_weight_type template parameter
-	// on CVertex instead of deriving it via nested lookup) - out of scope
-	// for a mechanical port pass; left as-is, real bug, not guessed at.
-	typedef typename _edge_type::_edge_weight_type _edge_weight_type;
 	typedef xr_vector<_edge_type> EDGES;
 	typedef xr_vector<CVertex*> VERTICES;
 

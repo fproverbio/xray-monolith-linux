@@ -6,6 +6,14 @@
 
 #pragma once
 
+// object_type_traits (is_same<>) used by convert<T_CONVERT_ITEM>() below -
+// never #included at all in the original source, relying entirely on
+// whatever transitively pulled it in first via this header's actual
+// includers. That happened to always work under MSVC's translation-unit-
+// wide (not per-header) name visibility for templates not yet
+// instantiated at parse time; GCC's -Wtemplate-body structurally checks
+// this header standalone regardless, so the real #include is needed.
+#include "../xrServerEntities/object_type_traits.h"
 
 //T_ITEM		-	тип элемента таблицы
 //					

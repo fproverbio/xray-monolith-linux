@@ -21,10 +21,14 @@ template <
 class CGraphAbstract
 {
 public:
+	// _edge_weight_type passed explicitly (4th argument) - see
+	// graph_vertex.h's comment for why this, not a nested lookup, is what
+	// breaks the real mutual-recursive-instantiation cycle this used to hit.
 	typedef CVertex<
 		_data_type,
 		_vertex_id_type,
-		CGraphAbstract
+		CGraphAbstract,
+		_edge_weight_type
 	> CVertex;
 
 	typedef CEdge<

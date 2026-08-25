@@ -11,13 +11,15 @@
 #define TEMPLATE_SPECIALIZATION template <\
 	typename _data_type,\
 	typename _vertex_id_type,\
-	typename _graph_type\
+	typename _graph_type,\
+	typename _edge_weight_type\
 >
 
 #define CSGraphVertex CVertex<\
 	_data_type,\
 	_vertex_id_type,\
-	_graph_type\
+	_graph_type,\
+	_edge_weight_type\
 >
 
 TEMPLATE_SPECIALIZATION
