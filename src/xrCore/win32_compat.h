@@ -105,6 +105,12 @@ using D3DCOLOR = unsigned long;
 #define D3DCOLOR_RGBA(r, g, b, a) \
 	((D3DCOLOR)((((a)&0xff) << 24) | (((r)&0xff) << 16) | (((g)&0xff) << 8) | ((b)&0xff)))
 
+// RGB - real wingdi.h macro (0x00bbggrr packing), used here purely as a
+// color-packing helper for default-argument values (e.g.
+// IGame_Level.h's CServerInfo::AddItem), not tied to any live GDI object.
+#define RGB(r, g, b) \
+	((unsigned long)((unsigned char)(r) | ((unsigned short)(unsigned char)(g) << 8) | (((unsigned long)(unsigned char)(b)) << 16)))
+
 #ifndef MAX_PATH
 #define MAX_PATH _MAX_PATH
 #endif
@@ -366,6 +372,7 @@ inline char* strupr(char* s)
 inline char* _strupr(char* s) { return strupr(s); }
 inline int stricmp(const char* a, const char* b) { return strcasecmp(a, b); }
 inline int _stricmp(const char* a, const char* b) { return strcasecmp(a, b); }
+inline int strcmpi(const char* a, const char* b) { return strcasecmp(a, b); }
 inline long long _atoi64(const char* s) { return std::atoll(s); }
 inline unsigned long long _strtoui64(const char* s, char** end, int base) { return std::strtoull(s, end, base); }
 inline int _vsnprintf(char* buf, size_t n, const char* fmt, va_list args) { return vsnprintf(buf, n, fmt, args); }
@@ -685,6 +692,7 @@ inline int MultiByteToWideChar(unsigned codePage, unsigned long /*flags*/, const
 using HWND = void*;
 using HMONITOR = void*;
 using HMODULE = void*;
+using HINSTANCE = void*;
 using LPSTR = char*;
 using LPCSTR = const char*;
 using UINT = unsigned int;
@@ -707,6 +715,19 @@ struct POINT
 	long x;
 	long y;
 };
+
+// GDI object handles (Text_Console.h's CTextConsole - a GDI-rendered
+// debug console for DEDICATED_SERVER builds; DEDICATED_SERVER is never
+// defined in any real Monolith config, same dead-code-path category as
+// _EDITOR/INGAME_EDITOR, see notes section 21a point 5 - but the class
+// itself is still unconditionally declared, so these need to at least
+// exist). Opaque handles on Win32 anyway, so void* is a correct
+// representation, not a placeholder - same treatment as HWND/HMONITOR/
+// HMODULE above.
+using HDC = void*;
+using HFONT = void*;
+using HBRUSH = void*;
+using HBITMAP = void*;
 
 // TerminateProcess: this codebase's one call site (EventAPI.cpp's debug
 // "quit" console command) just wants immediate, no-cleanup process exit -

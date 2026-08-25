@@ -4,7 +4,7 @@
 #include "Environment.h"
 #include "xr_efflensflare.h"
 #include "thunderbolt.h"
-#include "rain.h"
+#include "Rain.h"
 
 #include "IGame_Level.h"
 #include "../xrServerEntities/object_broker.h"
@@ -429,6 +429,12 @@ void CEnvDescriptorMixer::clear()
 	*/
 }
 
+// IUnknown: real COM interface, but get_ref_count() is only ever
+// forward-declared here (dead debug leftover - never called or defined
+// in this file), so an incomplete-type forward declaration is enough;
+// no need to pull in a COM-interface definition for a pointer-only,
+// unused declaration.
+struct IUnknown;
 int get_ref_count(IUnknown* ii);
 
 void CEnvDescriptorMixer::lerp(CEnvironment* env, CEnvDescriptor& A, CEnvDescriptor& B, float f, CEnvModifier& Mdf,
@@ -802,7 +808,12 @@ void CEnvironment::load_weather_effects()
 		sections_type& sections = config->sections();
 
 		env.reserve(sections.size() + 2);
-		env.push_back(create_descriptor("00:00:00", false));
+		// MSVC-permissive: `false` isn't a null pointer constant, only a
+		// literal `0`/`nullptr` is - GCC rejects the implicit bool->
+		// pointer conversion. create_descriptor() itself treats a null
+		// config as "no data to load", exactly this boundary
+		// descriptor's intent.
+		env.push_back(create_descriptor("00:00:00", nullptr));
 
 		sections_type::const_iterator i = sections.begin();
 		sections_type::const_iterator e = sections.end();
@@ -814,7 +825,7 @@ void CEnvironment::load_weather_effects()
 
 		CInifile::Destroy(config);
 
-		env.push_back(create_descriptor("24:00:00", false));
+		env.push_back(create_descriptor("24:00:00", nullptr));
 		env.back()->exec_time_loaded = DAY_LENGTH;
 	}
 

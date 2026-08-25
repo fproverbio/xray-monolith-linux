@@ -5,8 +5,8 @@
 #include "XR_IOConsole.h"
 #include "line_editor.h"
 
-#include "igame_level.h"
-#include "igame_persistent.h"
+#include "IGame_Level.h"
+#include "IGame_Persistent.h"
 
 #include "x_ray.h"
 #include "xr_input.h"
@@ -677,7 +677,9 @@ void CConsole::Show()
 	}
 	bVisible = true;
 
+#ifdef _WIN32
 	GetCursorPos(&m_mouse_pos);
+#endif
 
 	ec().clear_states();
 	scroll_delta = 0;
@@ -707,10 +709,12 @@ void CConsole::Hide()
 	// if ( g_pGameLevel ||
 	// ( g_pGamePersistent && g_pGamePersistent->m_pMainMenu && g_pGamePersistent->m_pMainMenu->IsActive() ))
 
+#ifdef _WIN32
 	if (pInput->get_exclusive_mode())
 	{
 		SetCursorPos(m_mouse_pos.x, m_mouse_pos.y);
 	}
+#endif
 
 	bVisible = false;
 	reset_selected_tip();

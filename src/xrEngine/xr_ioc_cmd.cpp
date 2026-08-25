@@ -1,13 +1,13 @@
 #include "stdafx.h"
-#include "igame_level.h"
+#include "IGame_Level.h"
 
 //#include "xr_effgamma.h"
 #include "x_ray.h"
-#include "xr_ioconsole.h"
+#include "XR_IOConsole.h"
 #include "xr_ioc_cmd.h"
 //#include "fbasicvisual.h"
-#include "cameramanager.h"
-#include "environment.h"
+#include "CameraManager.h"
+#include "Environment.h"
 #include "xr_input.h"
 #include "CustomHUD.h"
 
@@ -594,12 +594,15 @@ public:
 			}
 		}
 
-		RECT winRect;
-		GetClientRect(Device.m_hWnd, &winRect);
-		Device.clientWidth = winRect.right;
-		Device.clientHeight = winRect.bottom;
-		MapWindowPoints(Device.m_hWnd, nullptr, reinterpret_cast<LPPOINT>(&winRect), 2);
-		ClipCursor(&winRect);
+		// Replaces GetClientRect/MapWindowPoints/ClipCursor - same
+		// SDL2 substitution as Device_create.cpp/Device_destroy.cpp
+		// (query real client size, grab the cursor to the window as
+		// the closest equivalent to an arbitrary ClipCursor rect).
+		int cw = 0, ch = 0;
+		SDL_GetWindowSize(Device.m_sdlWnd, &cw, &ch);
+		Device.clientWidth = static_cast<u32>(cw);
+		Device.clientHeight = static_cast<u32>(ch);
+		SDL_SetWindowGrab(Device.m_sdlWnd, SDL_TRUE);
 	}
 };
 //-----------------------------------------------------------------------
@@ -867,9 +870,28 @@ public:
 		HMONITOR h = ResolveSelectedMonitor();
 		if (!h)
 		{
-			POINT p;
-			GetCursorPos(&p);
-			h = MonitorFromPoint(p, MONITOR_DEFAULTTOPRIMARY);
+			// Replaces GetCursorPos + MonitorFromPoint(..,
+			// MONITOR_DEFAULTTOPRIMARY): find which SDL display's bounds
+			// contain the global cursor position, falling back to
+			// display 0 (the MONITOR_DEFAULTTOPRIMARY behavior) if the
+			// point isn't inside any of them - same HMONITOR-as-
+			// display-index+1 encoding as MonitorList.cpp.
+			int px = 0, py = 0;
+			SDL_GetGlobalMouseState(&px, &py);
+			int display_idx = 0;
+			int n = SDL_GetNumVideoDisplays();
+			for (int i = 0; i < n; ++i)
+			{
+				SDL_Rect bounds;
+				if (SDL_GetDisplayBounds(i, &bounds) == 0 &&
+					px >= bounds.x && px < bounds.x + bounds.w &&
+					py >= bounds.y && py < bounds.y + bounds.h)
+				{
+					display_idx = i;
+					break;
+				}
+			}
+			h = xr_MonitorFromDisplayIndex(display_idx);
 		}
 
 		if (!Device.ChangeOutputMonitor(h))

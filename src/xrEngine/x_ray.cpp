@@ -26,23 +26,15 @@
 #include "xrSASH.h"
 #include "MonitorList.h"
 
-// IGame_Level.h/IGame_Persistent.h are not ported yet (see device.cpp's
-// file comment for the full reasoning - same exclusion already applied to
-// this batch's Rain.cpp/Environment_misc.cpp/etc, see
-// playground/xray-monolith-vulkan-port-notes.md). Unlike device.cpp/
-// Device_destroy.cpp, this file's own CApplication::OnEvent() calls real
-// methods on g_pGameLevel/g_pGamePersistent (net_Start/net_Stop/PreStart/
-// Start/Disconnect/OpenDemoFile) - a forward declaration is not enough to
-// make those compile, so this file stays out of xrEngine's CMakeLists.txt
-// source list until IGame_Level.h/IGame_Persistent.h are real (see that
-// file's exclusion comment). Kept here anyway, alongside the two forward
-// declarations below, purely so the rest of this file's real fixes in this
-// pass (SDL2/Vulkan-adjacent #include cleanup) can be reviewed/diffed
-// against a file that still parses on its own merits.
-class IGame_Level;
-extern IGame_Level* g_pGameLevel;
-class IGame_Persistent;
-extern IGame_Persistent* g_pGamePersistent;
+// IGame_Level.h/IGame_Persistent.h are now real (notes file section 24) -
+// this file's CApplication::OnEvent() calls real methods on
+// g_pGameLevel/g_pGamePersistent (net_Start/net_Stop/PreStart/Start/
+// Disconnect/OpenDemoFile), and Startup()'s DEL_INSTANCE(g_pGamePersistent)
+// needs IGame_Persistent's real DLL_Pure base to be visible for the
+// implicit derived-to-base conversion - a forward declaration was never
+// enough for either.
+#include "IGame_Level.h"
+#include "IGame_Persistent.h"
 
 // resource.h (IDD_STARTUP/IDC_STATIC_LOGO dialog resource ids) and
 // <process.h> are only needed by the Win32 splash-dialog/DPI-awareness
@@ -100,11 +92,13 @@ XRCORE_API u32 build_id;
 
 
 //Discord
+#ifdef USE_DISCORD_INTEGRATION
 discord::Core* discord_core{};
 discord::Activity discordPresence{};
 static int64_t StartTime;
-bool use_discord = true;
 #pragma comment(lib, "discord_game_sdk.lib")
+#endif // USE_DISCORD_INTEGRATION
+bool use_discord = true;
 rpc_info discord_gameinfo;
 rpc_strings discord_strings;
 float discord_update_rate = .5f;
@@ -387,6 +381,16 @@ void CheckPrivilegySlowdown()
 #endif // DEBUG
 }
 
+// The whole ICU (xr_ToUTF8)/Discord Game SDK block below is real,
+// working code, but both are genuinely Windows-only in this checkout
+// (no Linux .so/vendored source for either - see the USE_DISCORD_
+// INTEGRATION #include guard near the top of this file) and nothing in
+// the currently-built tree calls any of it outside USE_DISCORD_
+// INTEGRATION-guarded code (device.cpp's mt_DiscordThread is itself
+// #ifdef _WIN32). Same "guard, don't stub, real feature to reimplement
+// later if still needed" treatment as xrNetServer's DirectPlay8 removal
+// or xrSound's WASAPI-hotplug removal.
+#ifdef USE_DISCORD_INTEGRATION
 LPCSTR xr_ToUTF8(LPCSTR input, int max_length)
 {
 	UErrorCode errorCode = U_ZERO_ERROR;
@@ -616,6 +620,7 @@ void clearDiscordPresence()
 	if (discord_core)
 		discord_core->ActivityManager().ClearActivity([](discord::Result result) {});
 }
+#endif // USE_DISCORD_INTEGRATION
 
 void Startup()
 {
@@ -684,12 +689,18 @@ void Startup()
 	g_SpatialSpace = xr_new<ISpatial_DB>();
 	g_SpatialSpacePhysic = xr_new<ISpatial_DB>();
 
-	// Destroy LOGO
+	// Destroy LOGO (only ever created by the Win32 splash-dialog code in
+	// WinMain_impl below - logoWindow stays NULL on non-Windows, nothing
+	// to destroy)
+#ifdef _WIN32
 	DestroyWindow(logoWindow);
 	logoWindow = NULL;
+#endif
 
 	//Discord Rich Presence - Rezy
+#ifdef USE_DISCORD_INTEGRATION
 	Init_Discord();
+#endif
 
 	//Reshade
 	use_reshade = init_reshade();
@@ -705,7 +716,9 @@ void Startup()
 	Device.Run();
 
 	// Discord
+#ifdef USE_DISCORD_INTEGRATION
 	clearDiscordPresence();
+#endif
 
 	//Reshade
 	if (use_reshade)
@@ -744,6 +757,18 @@ void Startup()
 	destroyEngine();
 }
 
+// logDlgProc/WinMain_impl/stack_overflow_exception_filter/WinMain below:
+// the real Win32 executable entry point (splash-dialog window proc,
+// single-instance mutex check, DPI-awareness/kernel32 dynamic-loading
+// dance, and the SEH __try/__except wrapper around it) - genuinely
+// Windows-only from top to bottom, not a mechanical-fix candidate, and
+// nothing else in this tree calls any of these three functions. A real
+// Linux entry point (SDL_main or a plain main()) is a dedicated future
+// pass, same "out of scope for a window/device/input bootstrap pass"
+// call already made for device.cpp/Device_create.cpp's real SDL2/Vulkan
+// work - guarded here rather than force-split into a portable/
+// non-portable half that doesn't actually exist.
+#ifdef _WIN32
 static INT_PTR CALLBACK logDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 {
 	switch (msg)
@@ -762,6 +787,7 @@ static INT_PTR CALLBACK logDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 	}
 	return TRUE;
 }
+#endif // _WIN32
 
 // Always request high performance GPU
 extern "C"
@@ -840,6 +866,12 @@ IntroDSHOW_wnd (g_hInstance,g_hPrevInstance,"GameData\\Stalker_Intro.avi",g_nCmd
 g_bIntroFinished = TRUE ;
 }
 */
+// damn_keys_filter: real Win32 accessibility-toggle suppression
+// (StickyKeys/FilterKeys/ToggleKeys/screensaver, via SystemParametersInfo)
+// for the duration of the game's main loop - genuinely Windows-only, no
+// portable equivalent, and its one use site (WinMain_impl, above) is
+// itself already guarded under _WIN32.
+#ifdef _WIN32
 #define dwStickyKeysStructSize sizeof( STICKYKEYS )
 #define dwFilterKeysStructSize sizeof( FILTERKEYS )
 #define dwToggleKeysStructSize sizeof( TOGGLEKEYS )
@@ -946,6 +978,7 @@ struct damn_keys_filter
 #undef dwStickyKeysStructSize
 #undef dwFilterKeysStructSize
 #undef dwToggleKeysStructSize
+#endif // _WIN32
 
 #include "xr_ioc_cmd.h"
 
@@ -997,6 +1030,7 @@ ENGINE_API bool g_dedicated_server = false;
 
 #endif // DEDICATED_SERVER
 
+#ifdef _WIN32
 int APIENTRY WinMain_impl(HINSTANCE hInstance,
                           HINSTANCE hPrevInstance,
                           char* lpCmdLine,
@@ -1343,6 +1377,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
 	return (0);
 }
+#endif // _WIN32
 
 LPCSTR _GetFontTexName(LPCSTR section) { return GetFontTextureName(section); }
 
@@ -1434,7 +1469,15 @@ void CApplication::OnEvent(EVENT E, u64 P1, u64 P2)
 	{
 		g_SASH.EndBenchmark();
 
-		PostQuitMessage(0);
+		// Replaces PostQuitMessage(0): push a synthetic SDL_QUIT event so
+		// device.cpp's message_loop() (which already breaks on SDL_QUIT,
+		// see its ProcessEvent()/message_loop() comments) unwinds the
+		// same way it would for a real window-close request.
+		{
+			SDL_Event quit_event{};
+			quit_event.type = SDL_QUIT;
+			SDL_PushEvent(&quit_event);
+		}
 
 		for (u32 i = 0; i < Levels.size(); i++)
 		{
@@ -1838,6 +1881,14 @@ void CApplication::LoadAllArchives()
 }
 
 //launcher stuff----------------------------
+// InitLauncher/FreeLauncher (real Win32 LoadLibrary/GetProcAddress of a
+// separate xrLauncher.dll, not vendored anywhere in this checkout - same
+// "external prebuilt Windows binary with no Linux equivalent" category
+// as the Discord Game SDK) are dead code even on Windows: doLauncher()
+// below, their only would-be caller, has had its entire body commented
+// out upstream already and unconditionally returns 0. Guarded out
+// rather than ported for genuinely unreachable code.
+#ifdef _WIN32
 extern "C" {
 typedef int __cdecl LauncherFunc(int);
 }
@@ -1867,6 +1918,7 @@ void FreeLauncher()
 		pLauncher = NULL;
 	};
 }
+#endif // _WIN32
 
 int doLauncher()
 {

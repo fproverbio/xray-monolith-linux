@@ -2,12 +2,12 @@
 #pragma hdrstop
 
 #ifndef _EDITOR
-#include "render.h"
+#include "Render.h"
 #endif
 
 #include "Environment.h"
 #include "xr_efflensflare.h"
-#include "rain.h"
+#include "Rain.h"
 #include "thunderbolt.h"
 #include "xrHemisphere.h"
 #include "perlin.h"
@@ -23,7 +23,7 @@
 #endif
 
 //#include "D3DUtils.h"
-#include "../xrcore/xrCore.h"
+#include "../xrCore/xrCore.h"
 
 #include "../Include/xrRender/EnvironmentRender.h"
 #include "../Include/xrRender/LensFlareRender.h"
@@ -497,6 +497,13 @@ void CEnvironment::SelectEnvs(float gt)
 	}
 }
 
+// get_ref_count(): real Win32 COM (IUnknown::AddRef/Release) debug
+// helper for D3D object ref-counting - only ever forward-declared
+// (Environment_misc.cpp), never actually called anywhere in this tree.
+// Genuinely Windows/COM-only with no portable equivalent worth writing
+// for dead code - same treatment as mailSlot.cpp's real-but-unported
+// Windows-only mechanism.
+#ifdef _WIN32
 int get_ref_count(IUnknown* ii)
 {
 	if (ii)
@@ -507,6 +514,7 @@ int get_ref_count(IUnknown* ii)
 	else
 		return 0;
 }
+#endif
 
 void CEnvironment::lerp(float& current_weight)
 {

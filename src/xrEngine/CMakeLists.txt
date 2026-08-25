@@ -59,40 +59,79 @@ target_include_directories(xrEngine PUBLIC .)
 # message queues, no drop-in portable equivalent) - a genuine Windows API
 # with no portable equivalent, not a mechanical fix. Excluded.
 #
-# Rain.cpp, Environment_misc.cpp, xr_efflensflare.cpp, pure_relcase.cpp,
-# XR_IOConsole.cpp, xr_ioc_cmd.cpp: despite being in the original candidate
-# list, direct-#include tracing found real dependencies on xrEngine files
-# that are themselves large, not-yet-ported, and not part of this batch:
-# IGame_Level.h (needs xrCDB/xr_area.h, the CDB<->game-world bridge header
-# whose .cpp was already excluded from xrCDB in an earlier module - see
-# notes section 17a), IGame_Persistent.h, Render.h's sibling Environment.h
-# (weather/lighting, 453 lines), CameraManager.h, Rain.h, bone.h
-# (CBoneInstance), and (xr_efflensflare.cpp only) ui_toolscustom.h/
-# ui_main.h, which don't exist anywhere in this repo checkout at all.
-# Excluded rather than forced - a real dependency on unported core object-
-# graph/environment/renderer infrastructure, not a mechanical fix. Revisit
-# once IGame_Level.h/Environment.h/CameraManager.h are ported.
-# (ObjectDump.cpp turned out fine despite an initial similar-looking
-# worry - its only "big" include, xr_object.h, was just a case-mismatch
-# path away from already compiling clean, see xr_object.h/IRenderable.h/
-# ICollidable.h/Render.h fixes below.)
+# IGame_Level.h/IGame_Persistent.h/Environment.h/CameraManager.h/bone.h/
+# motion.h/Rain.h (notes file section 24, Part A) turned out to be the
+# same story as ObjectDump.cpp/xr_object.h/Render.h below: interface/
+# forward-declaration-heavy, not the scary concrete-DirectX-dependency
+# blockers they looked like from name/line-count alone. All seven ported
+# clean with only the by-now-familiar case-sensitive #include fixes
+# (iinputreceiver.h -> IInputReceiver.h, ../xrcdb/xr_area.h ->
+# ../xrCDB/xr_area.h, a literal ..\xrServerEntities\ backslash path,
+# etc) plus one genuinely-missing macro (RGB(), added to xrCore/
+# win32_compat.h next to the existing D3DCOLOR_RGBA - same "real,
+# well-documented Win32 macro used purely as a color-packing helper"
+# category). That unblocked the six files excluded in the previous
+# batch for exactly this reason - Rain.cpp, Environment_misc.cpp,
+# xr_efflensflare.cpp, pure_relcase.cpp, XR_IOConsole.cpp, xr_ioc_cmd.cpp
+# all compile clean now, plus Environment.cpp/IGame_Level.cpp/
+# IGame_Persistent.cpp/CameraManager.cpp/CameraBase.cpp/bone.cpp/
+# motion.cpp/PS_instance.cpp/GameMtlLib.cpp/Effector.cpp/EffectorPP.cpp
+# themselves (see the "World" group below). Real fixes beyond case/path:
+# xr_ioc_cmd.cpp's GetClientRect/MapWindowPoints/ClipCursor and
+# GetCursorPos/MonitorFromPoint call sites replaced with the same
+# SDL_GetWindowSize/SDL_SetWindowGrab substitution Device_create.cpp/
+# Device_destroy.cpp already established, plus an SDL_GetDisplayBounds
+# scan for the monitor-at-cursor case (xr_MonitorFromDisplayIndex is
+# MonitorList.h's existing HMONITOR encoding); Environment_misc.cpp's
+# `create_descriptor(id, false)` calls needed `nullptr` instead (GCC
+# rejects `false` as a null pointer constant, MSVC accepted it) and its
+# forward-declared-but-never-called `get_ref_count(IUnknown*)` needed
+# only a forward `struct IUnknown;` (pointer-only use, never
+# dereferenced); GameMtlLib.h needed one more case fix
+# (../include/xrapi/xrapi.h -> ../Include/xrAPI/xrAPI.h) and win32_
+# compat.h gained `strcmpi` (an MSVC alias for the already-present
+# stricmp/_stricmp) plus HDC/HFONT/HBRUSH/HBITMAP/HINSTANCE opaque
+# void* handles (Text_Console.h's GDI-based CTextConsole - a
+# DEDICATED_SERVER-only debug console, DEDICATED_SERVER itself never
+# defined in any real config just like _EDITOR/INGAME_EDITOR - still
+# needs to parse since x_ray.cpp #includes Text_Console.h
+# unconditionally).
 #
-# x_ray.cpp: joins the Rain.cpp/IGame_Level.h exclusion group just above
-# for the identical reason, not a Win32/SDL2 gap - its window/Vulkan-
-# adjacent pieces (InitSettings/InitConsole/Startup/the WinMain chain)
-# were updated in this pass to at least #include cleanly, but
-# CApplication::OnEvent (KERNEL:start/disconnect/start_mp_demo handling)
-# calls real methods on g_pGameLevel/g_pGamePersistent
-# (net_Start/net_Stop/PreStart/Start/Disconnect/OpenDemoFile) - unlike
-# every other file in this batch, these aren't bare pointers or TODO'd,
-# so the forward declarations device.cpp/Device_destroy.cpp use aren't
-# enough here; IGame_Level.h/IGame_Persistent.h being real is a hard
-# requirement, not an optimization. WinMain_impl/WinMain themselves are
-# also still unguarded Win32 (splash-dialog creation, SEH __try/__except
-# around DllMain calls, damn_keys_filter's SystemParametersInfo) -
-# secondary to the IGame_Level.h blocker but real, and out of scope for a
-# window/device/input bootstrap pass either way. Revisit alongside
-# Rain.cpp etc.
+# x_ray.cpp itself needed real, not just cosmetic, additional work
+# beyond the IGame_Level.h/IGame_Persistent.h unblock (this file's
+# CApplication::OnEvent/Startup() call real methods on those types, so
+# they're now #included for real, not just forward-declared - fixing
+# the DEL_INSTANCE(g_pGamePersistent) "cannot convert to DLL_Pure*"
+# error that follows from that). It also still had substantial
+# genuinely-unguarded Win32-only code with no _WIN32 guard at all, now
+# fixed the same way every other unguarded Windows-only block in this
+# port has been handled: the whole Discord Game SDK/ICU rich-presence
+# block (xr_ToUTF8/DiscordLog/updateDiscordPresence/Init_Discord/
+# clearDiscordPresence and their discord::-typed globals) guarded under
+# the file's own pre-existing USE_DISCORD_INTEGRATION macro (already
+# only defined under _WIN32); logDlgProc/WinMain_impl/
+# stack_overflow_exception_filter/WinMain (the splash-dialog window
+# proc, single-instance mutex, DPI-awareness dance, and SEH __try/
+# __except wrapper - a real Win32 executable entry point top to bottom,
+# called by nothing else in this tree) guarded as one unit under
+# _WIN32, matching device.cpp's mt_DiscordThread "guard the whole
+# function" precedent rather than an artificial portable/non-portable
+# split that doesn't actually exist; damn_keys_filter (StickyKeys/
+# FilterKeys/ToggleKeys/screensaver suppression via
+# SystemParametersInfo) guarded under _WIN32 too, since its one use
+# site is inside the now-guarded WinMain_impl; and InitLauncher/
+# FreeLauncher (LoadLibrary of a separate xrLauncher.dll not vendored
+# anywhere in this checkout) guarded under _WIN32 as genuinely dead
+# code even on Windows - doLauncher(), their only caller, has had its
+# entire body commented out upstream already. Two small real SDL
+# substitutions matching the established Device_create.cpp/
+# Device_destroy.cpp idiom: CApplication::OnEvent's PostQuitMessage(0)
+# -> pushing a synthetic SDL_QUIT event (device.cpp's message_loop()
+# already breaks on one), and Startup()'s DestroyWindow(logoWindow) ->
+# guarded under _WIN32 (logoWindow is only ever set by the
+# now-_WIN32-guarded splash dialog, so it's always NULL here on Linux -
+# nothing to destroy). HINSTANCE joined HWND/HMONITOR/HMODULE as an
+# opaque void* in win32_compat.h.
 target_sources_grouped(
   TARGET xrEngine
   NAME "Engine"
@@ -139,6 +178,35 @@ target_sources_grouped(
   MonitorList.cpp
   Xr_input.cpp
   xr_input_xinput.cpp
+)
+
+# Game-world/environment cluster unblocked this pass (notes file section
+# 24, Part A) - see the file comment above the "Engine" group for the
+# full story. x_ray.cpp is here too (the WinMain/CApplication entry
+# point) since it only compiles now that IGame_Level.h/IGame_Persistent.h
+# are real.
+target_sources_grouped(
+  TARGET xrEngine
+  NAME "World"
+  FILES
+  IGame_Level.cpp
+  IGame_Persistent.cpp
+  Environment.cpp
+  Environment_misc.cpp
+  CameraManager.cpp
+  CameraBase.cpp
+  Effector.cpp
+  EffectorPP.cpp
+  bone.cpp
+  motion.cpp
+  Rain.cpp
+  xr_efflensflare.cpp
+  pure_relcase.cpp
+  PS_instance.cpp
+  GameMtlLib.cpp
+  XR_IOConsole.cpp
+  xr_ioc_cmd.cpp
+  x_ray.cpp
 )
 
 # xrXMLParser/xrNetServer are NOT linked here - grepped the final file
