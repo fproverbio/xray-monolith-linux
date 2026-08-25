@@ -37,6 +37,25 @@ add_subdirectory("src/3rd party/OpenAL-new")
 add_subdirectory("src/3rd party/luajit-2")
 add_subdirectory("src/3rd party/Vulkan")
 
+# glslang (Khronos reference GLSL/HLSL -> SPIR-V compiler), pinned to the
+# same vulkan-sdk-1.4.321.0 tag as src/3rd party/Vulkan above to keep the
+# whole Vulkan toolchain internally consistent. Not consumed by anything
+# yet (no renderer backend exists to compile shaders for), vendored ahead
+# of need since it's fully independent, low-risk work - see
+# src/3rd party/glslang/NOTES.txt for the full rationale. ENABLE_HLSL is
+# on since Monolith's existing shaders are HLSL; ENABLE_OPT is off since
+# SPIRV-Tools isn't vendored (upstream itself just warns that HLSL-
+# generated SPIR-V may be unvalidated without it - fine for now, revisit
+# if that ever matters).
+set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
+set(ENABLE_SPVREMAPPER OFF CACHE BOOL "" FORCE)
+set(GLSLANG_TESTS OFF CACHE BOOL "" FORCE)
+set(GLSLANG_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(ENABLE_HLSL ON CACHE BOOL "" FORCE)
+set(ENABLE_OPT OFF CACHE BOOL "" FORCE)
+set(BUILD_EXTERNAL OFF CACHE BOOL "" FORCE)
+add_subdirectory("src/3rd party/glslang")
+
 # SDL2's own real upstream CMakeLists.txt (src/3rd party/SDL2/) is used
 # verbatim via add_subdirectory - configured entirely through cache
 # variables rather than a hand-written wrapper. Audio is off (OpenAL-Soft

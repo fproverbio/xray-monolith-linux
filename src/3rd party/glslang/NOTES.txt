@@ -1,0 +1,192 @@
+Vendored glslang - provenance
+==============================
+
+Upstream:  https://github.com/KhronosGroup/glslang
+Tag:       vulkan-sdk-1.4.321.0
+Commit:    8a85691a0740d390761a1008b4696f57facd02c4
+Date:      2025-06-26 16:48:41 -0600
+Subject:   "Update CHANGES for 15.4.0"  (glslang version 15.4.0)
+License:   Custom BSD-style (see LICENSE.txt) - permissive, redistribution
+           with the upstream copyright/disclaimer preserved is sufficient.
+
+Tag match: exact. glslang tags vulkan-sdk-1.4.321.0 itself (verified via
+`git ls-remote --tags`), the same tag already pinned for Vulkan-Headers
+and volk in src/3rd party/Vulkan/ - so the whole Vulkan-adjacent toolchain
+in this tree (headers, loader, shader compiler) is pinned to one
+consistent Vulkan SDK line. No fallback tag was needed.
+
+Why glslang (over a GLSL-only alternative)
+-------------------------------------------
+glslang is the Khronos reference front-end compiler from GLSL/HLSL source
+to SPIR-V. Its HLSL front end (glslang/HLSL/, enabled via ENABLE_HLSL=ON
+below) can take Monolith's existing HLSL shaders as direct input - no
+shader rewrite to GLSL is required to get a working Vulkan pipeline,
+though that rewrite-vs-keep-HLSL decision belongs to whoever does the
+actual shader-porting pass, not to this vendoring step.
+
+What was vendored (smallest set for "compile source string to SPIR-V")
+-------------------------------------------------------------------------
+Copied from upstream, unmodified:
+  CMakeLists.txt, CHANGES.md, LICENSE.txt, README.md, parse_version.cmake,
+  build_info.h.tmpl         - top-level files load-bearing for the CMake
+                               build (CHANGES.md's version header is
+                               parsed at configure time by
+                               parse_version.cmake to generate
+                               glslang/build_info.h from the .tmpl).
+  glslang/                  - full subtree: MachineIndependent/, HLSL/,
+                               GenericCodeGen/, OSDependent/{Unix,Windows,Web}/,
+                               CInterface/, ResourceLimits/, Public/,
+                               Include/, ExtensionHeaders/.
+  SPIRV/                    - full subtree: the GLSL/HLSL-IR -> SPIR-V
+                               code generator (GlslangToSpv.cpp et al).
+  External/CMakeLists.txt   - kept so add_subdirectory(External) still
+                               resolves; it no-ops cleanly with
+                               BUILD_EXTERNAL=OFF (see options below), and
+                               even with BUILD_EXTERNAL=ON it would just
+                               skip its IS_DIRECTORY checks for
+                               External/googletest and External/spirv-tools
+                               since neither is present.
+  StandAlone/DirStackFileIncluder.h
+                             - a single 149-line, header-only, dependency-
+                               free utility class (implements
+                               glslang::TShader::Includer to resolve
+                               #include directives against a directory
+                               stack). NOT part of the standalone CLI tool
+                               despite living in StandAlone/ - it is
+                               #include'd directly by
+                               glslang/CInterface/glslang_c_interface.cpp,
+                               which is compiled into the core `glslang`
+                               library target itself. Omitting all of
+                               StandAlone/ (as the "skip the CLI tool"
+                               instruction first suggested) breaks the
+                               core library build with a "fatal error:
+                               StandAlone/DirStackFileIncluder.h: No such
+                               file or directory" - confirmed by hitting
+                               this exact failure once, then fixing it by
+                               vendoring just this one header. This is the
+                               one real, non-obvious gap found in this
+                               vendoring pass; everything else built
+                               clean on the first real attempt.
+
+Deliberately dropped from upstream (not needed for the core "TShader/
+TProgram -> GlslangToSpv" compile-to-SPIR-V API, all gated behind CMake
+options this vendoring turns off - see below):
+  Test/ (43 MB of test-suite shader fixtures), gtests/ (Google Test
+  harness), StandAlone/ (the rest of it - the glslang-standalone and
+  spirv-remap CLI tool sources + their own CMakeLists.txt),
+  .github/, kokoro/ (CI configs), ndk_test/, Android.mk, BUILD.gn, .gn
+  (alternate build systems - this tree uses CMake exclusively),
+  standalone.gclient, DEPS, known_good.json, known_good_khr.json,
+  update_glslang_sources.py, build_info.py (gclient/submodule-fetching
+  infrastructure for pulling in SPIRV-Tools/SPIRV-Headers/googletest -
+  not run; see "SPIRV-Tools" note below), plus assorted repo-meta files
+  (.clang-format, .gitattributes, .mailmap, _config.yml,
+  license-checker.cfg, CODE_OF_CONDUCT.md, SECURITY.md,
+  README-spirv-remap.txt).
+
+No git submodules: glslang does not use real git submodules for
+SPIRV-Tools/SPIRV-Headers/googletest (confirmed: no .gitmodules file at
+this tag) - it uses its own update_glslang_sources.py + known_good.json
+to clone pinned commits into External/ on demand. Since that script was
+never run, External/ contains only its own CMakeLists.txt, and the
+options below (ENABLE_OPT=OFF, GLSLANG_TESTS=OFF) mean the CMake build
+never expects those directories to exist.
+
+CMake options used for the standalone verification build
+------------------------------------------------------------
+    cmake -S "src/3rd party/glslang" -B <scratch-build-dir> -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DENABLE_GLSLANG_BINARIES=OFF \   # skip glslang-standalone/spirv-remap CLI tools
+      -DENABLE_SPVREMAPPER=OFF \        # skip the SPIR-V remapper tool/lib
+      -DGLSLANG_TESTS=OFF \             # skip gtests/ + the Test/ suite
+      -DGLSLANG_ENABLE_INSTALL=OFF \    # skip install() rules (not installing this tree)
+      -DENABLE_HLSL=ON \                # HLSL input support - required for this port
+      -DENABLE_OPT=OFF \                # no SPIRV-Tools optimizer/validator vendored (yet)
+      -DBUILD_SHARED_LIBS=OFF \         # static libs, matching every other 3rd-party lib here
+      -DBUILD_EXTERNAL=OFF              # nothing under External/ to add_subdirectory into
+
+Real option names differ from the task brief's placeholders: there is no
+ENABLE_CTEST or BUILD_TESTING option in glslang's CMakeLists.txt at all -
+the real name is GLSLANG_TESTS (confirmed by reading
+src/3rd party/glslang/CMakeLists.txt directly). ENABLE_RTTI and
+ENABLE_EXCEPTIONS were left at their upstream defaults (both OFF, i.e.
+-fno-rtti -fno-exceptions on GCC/Clang) rather than forced on - that's
+how upstream's own CI builds it by default, the smoke test below did not
+need RTTI or exceptions from the library side, and this keeps the vendored
+config as close to stock upstream as possible.
+
+Target breakdown (real, as of glslang 15.4.0 - not the older per-stage
+GenericCodeGen/MachineIndependent/SPIRV/HLSL/OSDependent/OGLCompiler
+split the task brief described from memory of older glslang versions):
+  glslang                        - STATIC. The real, single library.
+                                    Contains GenericCodeGen, HLSL,
+                                    MachineIndependent (incl. the
+                                    preprocessor and the HLSL/ front end
+                                    when ENABLE_HLSL=ON), OSDependent/Unix
+                                    (POSIX thread-local pool allocator),
+                                    the CInterface, and - because ENABLE_OPT
+                                    is off - the SPIRV/ code generator
+                                    sources too (GlslangToSpv.cpp,
+                                    SpvBuilder.cpp, etc. get compiled
+                                    straight into this one target).
+                                    ALIAS: glslang::glslang
+  glslang-default-resource-limits - STATIC. GetDefaultResources() /
+                                    DefaultTBuiltInResource, needed by any
+                                    caller of TShader::parse().
+                                    ALIAS: glslang::glslang-default-resource-limits
+  GenericCodeGen, MachineIndependent, SPIRV, OSDependent
+                                  - STATIC, but each is built from a
+                                    single stub.cpp and does nothing but
+                                    `target_link_libraries(<name>
+                                    INTERFACE glslang)` - i.e. these are
+                                    thin compatibility shims for code that
+                                    still expects the pre-consolidation
+                                    per-stage target names. Not needed if
+                                    you just link `glslang` directly.
+  OGLCompiler does not exist in this glslang version - it was removed
+  upstream well before this tag; ignore that name if referenced in older
+  glslang integration guides.
+
+Directory + target(s) for whoever wires this into the real build later
+---------------------------------------------------------------------------
+Not added to the top-level CMakeLists.txt by this change (out of scope
+for this vendoring pass - left for the person doing the actual shader-
+compilation integration). To wire it in:
+
+    add_subdirectory("src/3rd party/glslang")
+
+with the same cache variables set beforehand as in the verification build
+above (set(... CACHE BOOL "" FORCE) pattern, matching how SDL2's options
+are set in the top-level CMakeLists.txt). Note GLSLANG_TESTS and
+GLSLANG_ENABLE_INSTALL already default to OFF automatically in this
+scenario (glslang's own CMakeLists.txt detects NOT PROJECT_IS_TOP_LEVEL
+when pulled in via add_subdirectory and flips those two defaults off by
+itself) - only ENABLE_GLSLANG_BINARIES, ENABLE_SPVREMAPPER, ENABLE_HLSL,
+ENABLE_OPT and BUILD_SHARED_LIBS need to be forced explicitly.
+
+Link against: glslang::glslang and glslang::glslang-default-resource-limits
+(or the bare `glslang` / `glslang-default-resource-limits` target names).
+
+SPIRV-Tools (optimizer/validator) - explicitly not vendored yet
+--------------------------------------------------------------------
+ENABLE_OPT=OFF means glslang will happily emit SPIR-V without running it
+through spirv-opt/spirv-val first (upstream's own configure-time message
+when this happens: "spirv-tools not linked - illegal SPIRV may be
+generated for HLSL" - seen verbatim in the verification build log below).
+This is fine for a first "does the compiler even work" pass, but a real
+shader pipeline should eventually validate/optimize its SPIR-V output
+before feeding it to a driver. That is future work, tracked separately -
+not done here.
+
+Standalone verification (see also the smoke-test program described in
+the commit/PR notes for this change): a full clean `ninja` build of this
+exact vendored tree, using the options above, completed 61/61 steps with
+zero errors (two pre-existing upstream `-Wmaybe-uninitialized` false-
+positive warnings in glslang/MachineIndependent/ParseHelper.cpp, not
+touched/patched - real upstream code, not something introduced here). A
+throwaway test program linking glslang + glslang-default-resource-limits,
+calling glslang::InitializeProcess(), constructing a glslang::TShader for
+a 3-line HLSL vertex-shader passthrough, parsing it with
+EShSourceHlsl/EShClientVulkan/EShTargetSpv_1_0, linking a TProgram, and
+calling glslang::GlslangToSpv() produced 155 words (620 bytes) of SPIR-V
+with the correct 0x07230203 magic number.
