@@ -6,13 +6,18 @@
 #include "../../Include/xrAPI/xrAPI.h"
 #include "../../Layers/xrRender/dxRenderFactory.h"
 
+// MSVC permits defining a member of one specific class-template
+// instantiation without the `template<>` prefix (treating it as an
+// implicit specialization); real standard C++ requires it. GCC rejects
+// the bare form outright ("specializing member ... requires 'template<>'
+// syntax") - added here, not a behavior change.
 #define FACTORY_PTR_INSTANCIATE(Class) \
-	inline void FactoryPtr<I##Class>::CreateObject(void) \
+	template<> inline void FactoryPtr<I##Class>::CreateObject(void) \
 { \
 	if (!RenderFactory) RenderFactory = &RenderFactoryImpl; \
 	m_pObject = RenderFactory->Create##Class(); \
 } \
-	inline void FactoryPtr<I##Class>::DestroyObject(void) \
+	template<> inline void FactoryPtr<I##Class>::DestroyObject(void) \
 { \
 	RenderFactory->Destroy##Class(m_pObject); \
 	m_pObject = NULL; \

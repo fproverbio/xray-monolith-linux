@@ -12,7 +12,13 @@
 
 namespace text_editor
 {
-	enum key_state;
+	// MSVC allows a bare unscoped-enum forward declaration (defaulting the
+	// underlying type); standard C++ requires a fixed underlying type for
+	// an opaque-enum-declaration. u32 matches the real definition in
+	// line_edit_control.h (a 32-bit bit-flags enum, "// Flags32") - both
+	// declarations need the same underlying type to refer to the same
+	// entity.
+	enum key_state : u32;
 	class line_edit_control;
 
 	class base : private xray::noncopyable

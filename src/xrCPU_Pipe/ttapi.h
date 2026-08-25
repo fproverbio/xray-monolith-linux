@@ -1,7 +1,17 @@
 #ifndef _TTAPI_H_INCLUDED_
 #define _TTAPI_H_INCLUDED_
 
+// Declarations-only stub pass (see playground/xray-monolith-vulkan-port-
+// notes.md section 21, Part 1 item 2) - only the header needs to exist so
+// xrCPU_Pipe.h's includers can see these declarations; the real
+// implementation (PLC.cpp/ttapi.cpp, SSE-based skinning) stays unported.
+// Matches xrCore_platform.h's established _WIN32-vs-win32_compat.h split
+// rather than pulling real <windows.h> on Linux.
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include "../xrCore/win32_compat.h"
+#endif
 
 /*
 	Trivial (and dumb) Threads API

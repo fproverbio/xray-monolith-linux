@@ -29,8 +29,8 @@ struct CDestroyer
 	template <typename T, int size>
 	IC static void delete_data(svector<T, size>& data)
 	{
-		svector<T, size>::iterator I = data.begin();
-		svector<T, size>::iterator E = data.end();
+		typename svector<T, size>::iterator I = data.begin();
+		typename svector<T, size>::iterator E = data.end();
 		for (; I != E; ++I)
 			delete_data(*I);
 		data.clear();
@@ -81,18 +81,27 @@ struct CDestroyer
 		delete_data(data, true);
 	}
 
+	// CHelperN's bool-template-parameter + `template <> delete_data<true>`
+	// pattern is a compile-time-bool-dispatch idiom MSVC allows written as
+	// an explicit specialization nested inside a class template body -
+	// that's non-conformant (explicit specialization must be at namespace
+	// scope); GCC rejects it outright ("explicit specialization in
+	// non-namespace scope", surfacing as "instantiating erroneous
+	// template" at first real use - see
+	// playground/xray-monolith-vulkan-port-notes.md section 17d's
+	// identical-shaped diagnosis). Rewritten as a single template with
+	// `if constexpr` (C++17, already this tree's baseline) - same
+	// compile-time dispatch, same call-site syntax
+	// (`CHelperN<T>::template delete_data<bool_expr>(data)`), no behavior
+	// change.
 	template <typename T>
 	struct CHelper1
 	{
 		template <bool a>
-		IC static void delete_data(T&)
+		IC static void delete_data(T& data)
 		{
-		}
-
-		template <>
-		IC static void delete_data<true>(T& data)
-		{
-			data.destroy();
+			if constexpr (a)
+				data.destroy();
 		}
 	};
 
@@ -102,16 +111,16 @@ struct CDestroyer
 		template <bool a>
 		IC static void delete_data(T& data)
 		{
-			CHelper1<T>::delete_data < object_type_traits::is_base_and_derived<IPureDestroyableObject, T>::value > (data
-			);
-		}
-
-		template <>
-		IC static void delete_data<true>(T& data)
-		{
-			if (data)
-				CDestroyer::delete_data(*data);
-			xr_delete(data);
+			if constexpr (a)
+			{
+				if (data)
+					CDestroyer::delete_data(*data);
+				xr_delete(data);
+			}
+			else
+			{
+				CHelper1<T>::template delete_data<object_type_traits::is_base_and_derived<IPureDestroyableObject, T>::value>(data);
+			}
 		}
 	};
 
@@ -120,8 +129,8 @@ struct CDestroyer
 		template <typename T>
 		IC static void delete_data(T& data)
 		{
-			T::iterator I = data.begin();
-			T::iterator E = data.end();
+			typename T::iterator I = data.begin();
+			typename T::iterator E = data.end();
 			for (; I != E; ++I)
 				CDestroyer::delete_data(*I);
 			data.clear();
@@ -134,20 +143,17 @@ struct CDestroyer
 		template <bool a>
 		IC static void delete_data(T& data)
 		{
-			CHelper2<T>::delete_data < object_type_traits::is_pointer<T>::value > (data);
-		}
-
-		template <>
-		IC static void delete_data<true>(T& data)
-		{
-			CHelper3::delete_data(data);
+			if constexpr (a)
+				CHelper3::delete_data(data);
+			else
+				CHelper2<T>::template delete_data<object_type_traits::is_pointer<T>::value>(data);
 		}
 	};
 
 	template <typename T>
 	IC static void delete_data(T& data)
 	{
-		CHelper4<T>::delete_data < object_type_traits::is_stl_container<T>::value > (data);
+		CHelper4<T>::template delete_data<object_type_traits::is_stl_container<T>::value>(data);
 	}
 };
 

@@ -128,6 +128,7 @@
 # define __stdcall
 # define __cdecl
 # define _cdecl // older alternate spelling MSVC also recognizes
+# define __fastcall // same family, used by pure.h's RP_FUNC typedef
 // __declspec(novtable)/__declspec(align(N))/etc - raw MSVC attribute
 // syntax GCC doesn't parse at all (not just an unknown identifier, an
 // actual syntax error - "struct __declspec ( novtable ) X" is invalid
@@ -139,6 +140,12 @@
 // is otherwise a plain syntax error where it prefixes a typedef's base
 // type (e.g. "typedef __w64 unsigned ptrt;" in xrCDB/ISpatial.h).
 # define __w64
+// __interface - raw MSVC keyword (COM-style "all-public-pure-virtual"
+// class shorthand). A plain struct has identical semantics for every
+// real use in this codebase (via the xr_pure_interface macro below) -
+// no vtable-layout/ABI guarantee is relied on beyond ordinary C++
+// virtual dispatch.
+# define __interface struct
 #endif
 #define _inline inline
 #define __inline inline

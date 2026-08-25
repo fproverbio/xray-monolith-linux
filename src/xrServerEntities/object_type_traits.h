@@ -19,40 +19,39 @@
 			enum { value = sizeof(detail::yes) == sizeof(select<T>(0)) };\
 		};
 
+// _if<...>::selector<bool> and is_type<...>::selector<T> both used a
+// `template <>` explicit specialization of a nested member class
+// template, written inside the still-generic enclosing class template's
+// body - MSVC tolerates this (non-conformant extension), GCC rejects it
+// outright ("explicit specialization in non-namespace scope"), surfacing
+// as "instantiating erroneous template" at first real use (same shape as
+// object_destroyer.h's CHelperN fix - see
+// playground/xray-monolith-vulkan-port-notes.md section 17d/21). Rewritten
+// as a partial specialization of the *outer* template instead (legal at
+// namespace scope), same `_if<expr,T1,T2>::result` / `is_type<T1,T2>::value`
+// call-site interface, no behavior change.
 template <bool expression, typename T1, typename T2>
 struct _if
 {
-	template <bool>
-	struct selector
-	{
-		typedef T2 result;
-	};
+	typedef T2 result;
+};
 
-	template <>
-	struct selector<true>
-	{
-		typedef T1 result;
-	};
-
-	typedef typename selector<expression>::result result;
+template <typename T1, typename T2>
+struct _if<true, T1, T2>
+{
+	typedef T1 result;
 };
 
 template <typename T1, typename T2>
 struct is_type
 {
-	template <typename T>
-	struct selector
-	{
-		enum { value = false, };
-	};
+	enum { value = false, };
+};
 
-	template <>
-	struct selector<T1>
-	{
-		enum { value = true, };
-	};
-
-	enum { value = selector<T2>::value, };
+template <typename T1>
+struct is_type<T1, T1>
+{
+	enum { value = true, };
 };
 
 template <typename T>
@@ -129,22 +128,18 @@ namespace object_type_traits
 		typedef T type;
 	};
 
+	// Same nested-specialization-in-a-class-template fix as _if/is_type
+	// above - moved to a partial specialization of the outer template.
 	template <typename T>
 	struct is_void
 	{
-		template <typename P>
-		struct select
-		{
-			enum { value = false };
-		};
+		enum { value = false };
+	};
 
-		template <>
-		struct select<void>
-		{
-			enum { value = true };
-		};
-
-		enum { value = select<T>::value };
+	template <>
+	struct is_void<void>
+	{
+		enum { value = true };
 	};
 
 	template <typename T>

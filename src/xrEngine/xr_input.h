@@ -1,8 +1,17 @@
 #ifndef __XR_INPUT__
 #define __XR_INPUT__
 
+// Declarations-only stub pass (see playground/xray-monolith-vulkan-port-
+// notes.md section 21, Part 1 item 3) - real input is a future SDL2 pass
+// (Xr_input.cpp/xr_input_xinput.* stay unported, see notes section 21a
+// point 6); DIDEVCAPS/DIDEVICEINSTANCE/DIDEVICEOBJECTINSTANCE/
+// LPDIRECTINPUT8/LPDIRECTINPUTDEVICE8/DIK_* now live in win32_compat.h
+// (already in scope via xrCore.h, pulled in earlier by stdafx.h) instead
+// of real <dinput.h>.
+#ifdef _WIN32
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
+#endif
 
 class ENGINE_API IInputReceiver;
 
