@@ -12,14 +12,25 @@
 
 template <
 	typename _data_type,
-	typename _vertex_id_type,
+	typename _TVertexId,
 	typename _graph_type,
 	typename _edge_weight_type
 >
 class CVertex
 {
 public:
-	typedef _vertex_id_type _vertex_id_type;
+	// Template parameter itself renamed to _TVertexId (was _vertex_id_type,
+	// identical to this exposed member typedef's name) - real bug found
+	// empirically: this exact self-shadowing idiom is harmless for most
+	// instantiations but becomes a hard "instantiating erroneous template"
+	// error for others (e.g. CVertex<CPhrase*, shared_str, ...> reached via
+	// PhraseDialog.h's dialogue graph) once GCC's -Wtemplate-body dependent-
+	// name resolution has to look through multiple templates in the same
+	// mutual-recursive chain this file's other fix (above/below) addresses.
+	// Renaming the *parameter* (not the exposed nested-type name, which
+	// every external consumer keeps using unchanged via
+	// CVertex<...>::_vertex_id_type) removes the shadow entirely.
+	typedef _TVertexId _vertex_id_type;
 	// FIX (was a real mutual-recursive-instantiation cycle under GCC,
 	// documented at length in an earlier pass - see
 	// playground/xray-monolith-vulkan-port-notes.md's integration-pass

@@ -67,6 +67,20 @@ using UINT_PTR = uintptr_t;
 using DWORD_PTR = uintptr_t;
 using ULONG_PTR = uintptr_t;
 using INT_PTR = intptr_t;
+// __int64 - an MSVC extended-integer *keyword* (built into the compiler, no
+// header needed there), used directly as a type name in several source
+// files for pointer<->integer round-trips (e.g. `(void*)(__int64)data` /
+// `(int)(__int64)itm->GetData()`, first hit: xrGame/ui/UIComboBox.cpp).
+// GCC/Clang have no such keyword - xrCore's own _types.h already
+// established s64/u64 as the portable replacement typedefs for exactly this
+// MSVC-ism, but existing call sites still spell it `__int64` directly. A
+// plain `#define` (rather than `using __int64 = long long;`) is needed
+// specifically so `unsigned __int64` (also used elsewhere in this tree,
+// e.g. xrCore/rt_lzoconf.h) still parses too - `unsigned` can only combine
+// with a builtin type-specifier grammatically, not with a typedef-name, so
+// a `using`-alias would silently break that combination while a textual
+// macro survives it (`unsigned __int64` -> `unsigned long long`).
+#define __int64 long long
 using PSTR = char*;
 using LPVOID = void*;
 using PVOID = void*;

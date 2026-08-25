@@ -11,17 +11,14 @@
 #include "ai_monster_space.h"
 #include "graph_engine_space.h"
 #include "game_graph_space.h"
-
-
-namespace MovementManager
-{
-	enum EPathType;
-};
-
-namespace DetailPathManager
-{
-	enum EDetailPathType;
-};
+// Same bug class as alife_monster_movement_manager.h (notes section 26b's
+// ALife::EHitType fix): a bare `enum EPathType;`/`enum EDetailPathType;`
+// forward declaration with no fixed underlying type is an MSVC-only
+// extension, illegal in standard C++ unless a fixed underlying type is
+// given. The real, fully-defined enums live in movement_manager_space.h
+// and detail_path_manager_space.h - include them for real.
+#include "movement_manager_space.h"
+#include "detail_path_manager_space.h"
 
 template <
 	typename _Graph,

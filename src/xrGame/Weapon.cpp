@@ -1102,7 +1102,12 @@ void CWeapon::net_Import(NET_Packet& P)
 	P.r_u8(wstate);
 
 	u8 Zoom;
-	P.r_u8((u8)Zoom);
+	// The original `(u8)Zoom` cast created a temporary rvalue, breaking
+	// r_u8's out-parameter write-back (Zoom is already u8 - the cast was
+	// always redundant, and MSVC's non-const-ref-to-rvalue extension
+	// masked that it silently discarded the read value). GCC correctly
+	// rejects binding r_u8's `u8&` parameter to that temporary.
+	P.r_u8(Zoom);
 
 	if (H_Parent() && H_Parent()->Remote())
 	{
@@ -1776,12 +1781,18 @@ float CWeapon::GetConditionMisfireProbability() const
             );
         
     }
-    if (!smart_cast<CActor*>(H_Parent()))
+    // const CActor*/const CGameObject* (was non-const): this method is
+    // `const`, so H_Parent() returns `const CObject*` here - dynamic_cast
+    // (what smart_cast/fast_dynamic_cast falls back to without the fast-
+    // cast optimization enabled) can never cast away constness. Both real
+    // uses below (a null-check, and lua_game_object() which is itself
+    // const-qualified) only ever read through the pointer.
+    if (!smart_cast<const CActor*>(H_Parent()))
     {
         ::luabind::functor<float> funct;
         if (ai().script_engine().functor("xr_weapon_jam.GetConditionMisfireProbability", funct))
         {
-            auto gobj = smart_cast<CGameObject*>(H_Parent());
+            auto gobj = smart_cast<const CGameObject*>(H_Parent());
             result = funct(lua_game_object(), gobj ? gobj->lua_game_object() : nullptr, result);
         }
     }

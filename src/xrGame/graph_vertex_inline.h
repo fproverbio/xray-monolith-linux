@@ -52,7 +52,15 @@ IC CSGraphVertex::~CVertex()
 TEMPLATE_SPECIALIZATION
 IC const typename CSGraphVertex::_edge_type*CSGraphVertex::edge(const _vertex_id_type& vertex_id) const
 {
-	EDGES::const_iterator I = std::find(edges().begin(), edges().end(), vertex_id);
+	// FIX: missing `typename` before this dependent nested type (EDGES is a
+	// member typedef of the current instantiation - GCC's -Wtemplate-body
+	// correctly flags this as a warning under -fpermissive at first parse,
+	// but since `I` then silently fails to be declared as the intended
+	// iterator type, real uses of `I` below become hard "not declared in
+	// this scope" errors at actual instantiation (e.g. CGraphAbstract<CPhrase*,
+	// float, shared_str> from PhraseDialog.h) - same missing-typename pattern
+	// catalogued throughout this port (see notes §16/§17d/§21c/§26b/§27d/§29a).
+	typename EDGES::const_iterator I = std::find(edges().begin(), edges().end(), vertex_id);
 	if (m_edges.end() == I)
 		return (0);
 	return (&*I);
@@ -61,7 +69,7 @@ IC const typename CSGraphVertex::_edge_type*CSGraphVertex::edge(const _vertex_id
 TEMPLATE_SPECIALIZATION
 IC typename CSGraphVertex::_edge_type*CSGraphVertex::edge(const _vertex_id_type& vertex_id)
 {
-	EDGES::iterator I = std::find(m_edges.begin(), m_edges.end(), vertex_id);
+	typename EDGES::iterator I = std::find(m_edges.begin(), m_edges.end(), vertex_id);
 	if (m_edges.end() == I)
 		return (0);
 	return (&*I);
@@ -80,7 +88,7 @@ IC void CSGraphVertex::add_edge(CVertex* vertex, const _edge_weight_type& edge_w
 TEMPLATE_SPECIALIZATION
 IC void CSGraphVertex::remove_edge(const _vertex_id_type& vertex_id)
 {
-	EDGES::iterator I = std::find(m_edges.begin(), m_edges.end(), vertex_id);
+	typename EDGES::iterator I = std::find(m_edges.begin(), m_edges.end(), vertex_id);
 	VERIFY(m_edges.end() != I);
 	CVertex* vertex = (*I).vertex();
 	vertex->on_edge_removal(this);
@@ -99,7 +107,7 @@ IC void CSGraphVertex::on_edge_addition(CVertex* vertex)
 TEMPLATE_SPECIALIZATION
 IC void CSGraphVertex::on_edge_removal(const CVertex* vertex)
 {
-	VERTICES::iterator I = std::find(m_vertices.begin(), m_vertices.end(), vertex);
+	typename VERTICES::iterator I = std::find(m_vertices.begin(), m_vertices.end(), vertex);
 	VERIFY(I != m_vertices.end());
 	m_vertices.erase(I);
 }

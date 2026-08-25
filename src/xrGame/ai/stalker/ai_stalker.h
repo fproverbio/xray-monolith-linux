@@ -46,10 +46,7 @@ namespace MonsterSpace
 	enum EMovementDirection;
 };
 
-namespace StalkerSpace
-{
-	enum EBodyAction;
-};
+#include "ai_stalker_space.h"
 
 namespace smart_cover
 {
@@ -62,7 +59,7 @@ namespace smart_cover
 	};
 };
 
-enum ECriticalWoundType;
+#include "../../stalker_animation_names.h"
 
 class CALifeSimulator;
 class CCharacterPhysicsSupport;

@@ -14,6 +14,13 @@
 #include "ai_debug.h"
 #include "ef_storage.h"
 
+// psAI_Flags: ai_debug.h's own `extern Flags32 psAI_Flags;` is inside
+// `#ifndef MASTER_GOLD`, which is genuinely dead in every translation unit
+// of this build (xrCore.h ordering bug - see alife_level_registry_inline.h's
+// own comment for the full trace). Declared directly instead, matching the
+// established workaround used elsewhere in this codebase.
+extern Flags32 psAI_Flags;
+
 CPatternFunction::CPatternFunction(LPCSTR caFileName, CEF_Storage* storage) : CBaseFunction(storage)
 {
 	m_dwPatternCount = 0;
@@ -137,7 +144,13 @@ float CPatternFunction::ffGetValue()
 		
 		int j = xr_sprintf(caString,sizeof(caString),"%32s (",m_caName);
 		
-		for ( i=0; i<m_dwVariableCount; ++i)
+		// i: standard C++ scopes a for-init-statement's variable to just that
+		// for statement, not to the rest of the enclosing block - the outer
+		// loop's `i` (line above) is already out of scope here. MSVC's legacy
+		// for-scope leakage (permissive, /Zc:forScope-) tolerated reusing it;
+		// declared fresh here instead (matches this loop's actual, independent
+		// use - it never depends on the outer loop's final value).
+		for (u32 i=0; i<m_dwVariableCount; ++i)
 			j += xr_sprintf(caString + j, sizeof(caString)-j, " %3d",m_dwaVariableValues[i] + 1);
 		
 		xr_sprintf	(caString + j,sizeof(caString)-j, ") = %7.2f",value);

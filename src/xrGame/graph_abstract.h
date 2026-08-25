@@ -46,7 +46,20 @@ public:
 	typedef typename VERTICES::iterator vertex_iterator;
 	typedef typename EDGES::const_iterator const_iterator;
 	typedef typename EDGES::iterator iterator;
-	typedef _vertex_id_type _vertex_id_type;
+	// (a redundant self-referential `typedef _vertex_id_type
+	// _vertex_id_type;` used to be here - a legal but pointless re-
+	// declaration of the template parameter under its own name, since
+	// nothing anywhere in this port ever accesses it via
+	// CGraphAbstract<...>::_vertex_id_type nested-name lookup, only as
+	// the bare template parameter already in scope throughout this class
+	// body - confirmed by grep. GCC's -Wtemplate-body downgrades the
+	// shadowing to a warning under -fpermissive at first parse, but (for
+	// this specific class, unlike CVertex's own analogous self-shadow,
+	// which stays real/needed and harmless - see graph_vertex.h) turns
+	// into a hard "instantiating erroneous template" error on the first
+	// real instantiation of CGraphAbstract anywhere in the port
+	// (PhraseDialog.h's CGraphAbstract<CPhrase*, float, shared_str>).
+	// Simply removing the dead redeclaration fixes it.
 
 private:
 	VERTICES m_vertices;

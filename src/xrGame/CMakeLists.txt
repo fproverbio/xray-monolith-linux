@@ -293,6 +293,24 @@ target_sources_grouped(
   traffic_optimization.cpp
   danger_cover_location.cpp
   level_graph_vertex.cpp
+  # Graph-engine-cycle-fix follow-up (integration pass, see notes file):
+  # real recursive #include-closure verified, each compiles clean now
+  # that the shared root cause (f91d6195 + this pass's further fixes to
+  # graph_vertex.h/graph_abstract.h/alife_abstract_registry.h/
+  # object_loader.h/ai_stalker.h) is resolved:
+  alife_anomalous_zone.cpp
+  alife_dynamic_object.cpp
+  alife_object_registry.cpp
+  alife_online_offline_group_brain.cpp
+  alife_registry_container.cpp
+  alife_simulator_base2.cpp
+  alife_smart_terrain_task.cpp
+  alife_storage_manager.cpp
+  car_memory.cpp
+  character_community.cpp
+  character_rank.cpp
+  character_reputation.cpp
+  monster_community.cpp
 )
 
 target_sources_grouped(
@@ -327,6 +345,20 @@ target_sources_grouped(
   ui/ui_arrow.cpp
   ui/xrUIXmlParser.cpp
   ui_base.cpp
+  # Second ui/ batch (integration pass after the graph-engine-cycle fix,
+  # f91d6195) - real recursive #include-closure verified, each compiles
+  # clean:
+  ui/ArtefactDetectorUI.cpp
+  ui/UIAnimatedStatic.cpp
+  ui/UIComboBox.cpp
+  ui/UIDebugFonts.cpp
+  ui/UIHint.cpp
+  ui/UIKeyBinding.cpp
+  ui/UIMessageBox.cpp
+  ui/UIOptionsItem.cpp
+  ui/UIOptionsManager.cpp
+  ui/UIPropertiesBox.cpp
+  ui/UIStatic.cpp
 )
 
 target_sources_grouped(
@@ -365,61 +397,80 @@ target_sources_grouped(
   xr_dsa_signer.cpp
   xr_dsa_verifyer.cpp
   xr_level_controller.cpp
+  # Second general batch (integration pass after the graph-engine-cycle
+  # fix, f91d6195) - real recursive #include-closure verified, each
+  # compiles clean:
+  CustomMonster_VCPU.cpp
+  HUDCrosshair.cpp
+  PHSimpleCallsScript.cpp
+  detail_path_manager_smooth.cpp
+  ef_pattern.cpp
+  movement_manager_physic.cpp
 )
 
-# EXCLUDED - integration pass (see playground/xray-monolith-vulkan-port-notes.md,
-# section 29): 50 files from the Weapon*/Car*/Helicopter* and alife_*/
-# character_*/monster_community clusters, all blocked by the exact same real,
-# confirmed root cause - a genuine mutual-recursive class-template
-# instantiation cycle in the graph-pathfinding engine
-# (CGraphAbstract/CVertex/CEdge, graph_abstract.h/graph_vertex.h/graph_edge.h):
-# CGraphAbstract::EDGES needs CVertex complete; CVertex::_edge_weight_type
-# needs CEdge (nested in _graph_type::CEdge) complete; CEdge's own CEdgeBase
-# base needs CVertex::_vertex_id_type - a request for a member of the *exact
-# CVertex specialization already being instantiated*, looping back in through
-# a different template mid-instantiation. GCC treats a class template as
-# wholly "incomplete" to any external nested-name lookup for its entire
-# instantiation (even for a member declared/processed earlier in the same
-# pass); the original MSVC target tolerated this, standard C++ does not
-# provably require compilers to. See graph_vertex.h's own inline comment (on
-# the `typedef typename _edge_type::_edge_weight_type _edge_weight_type;`
-# line) for the full trace - reproduced via a real minimal standalone
-# instantiation test (CGraphAbstract<CPatrolPoint, float, unsigned int,
-# xr_empty>), not guessed at. A real fix needs restructuring this three-way
-# dependency (e.g. an explicit _edge_weight_type template parameter on
-# CVertex instead of deriving it via nested lookup through CEdge) - a
-# genuine, non-mechanical redesign of shared graph-engine code touching
-# dijkstra.h/a_star.h/graph_engine.h and everything built on them, out of
-# scope for a mechanical port pass. Every file below reaches this same
-# instantiation somewhere in its own #include closure (CGraphAbstract
-# instantiated for CPatrolPoint - patrol paths; CPhrase* - dialogue graphs,
-# reached transitively through PhraseDialog.h from Weapon.h's own hud/hit
-# item-holder chain; or CServerEntityWrapper* - the ALife registry/spawn
-# graph) - none of these 50 files have their own separate bug beyond this
-# one shared root cause (re-verified individually, not assumed):
-#   Car.cpp CarCameras.cpp CarDrone.cpp CarInput.cpp CarNew.cpp CarWeapon.cpp
-#   Grenade.cpp Helicopter.cpp Helicopter2.cpp HelicopterMovementManager.cpp
-#   HelicopterWeapon.cpp Weapon.cpp WeaponAutomaticShotgun.cpp
-#   WeaponBinocularsVision.cpp WeaponDispersion.cpp WeaponKnife.cpp
-#   WeaponMagazined.cpp WeaponMagazinedWGrenade.cpp WeaponPistol.cpp
-#   WeaponRG6.cpp WeaponRPG7.cpp WeaponRevolver.cpp WeaponSSRS.cpp
-#   WeaponShotgun.cpp WeaponStatMgun.cpp WeaponStatMgunBarrel.cpp
-#   WeaponStatMgunFire.cpp WeaponStatMgunIR.cpp WeaponStatMgunMisc.cpp
-#   alife_anomalous_zone.cpp alife_dynamic_object.cpp
-#   alife_monster_detail_path_manager.cpp alife_monster_patrol_path_manager.cpp
-#   alife_object_registry.cpp alife_online_offline_group_brain.cpp
-#   alife_registry_container.cpp alife_simulator_base2.cpp
-#   alife_smart_terrain_task.cpp alife_spawn_registry.cpp
-#   alife_spawn_registry_spawn.cpp alife_storage_manager.cpp
-#   alife_surge_manager.cpp alife_trader_abstract.cpp alife_update_manager.cpp
-#   car_memory.cpp character_community.cpp character_rank.cpp
-#   character_reputation.cpp monster_community.cpp weaponBM16.cpp
-# All 50 files are otherwise real, unmodified-since-revert-worthy source
-# (their own genuine bugs this pass found and fixed - case sensitivity,
-# missing typename, dependent-base lookup, etc. - are still fixed in place;
-# they're excluded here purely on this one shared blocker) - a future
-# dedicated pass fixing the graph engine's instantiation order should be
-# able to add all 50 back with zero further work on their own account.
+# UPDATE (see notes file, latest integration pass): the graph-engine
+# instantiation cycle described below at length is now actually fixed
+# (graph_vertex.h/graph_abstract.h restructured so CVertex takes
+# _edge_weight_type as an explicit template parameter instead of deriving
+# it via nested lookup - commit f91d6195 - plus several further real bugs
+# in the same instantiation chain found once the cycle itself cleared:
+# a second, genuinely-needed self-shadowing-typedef case in CVertex itself
+# fixed by renaming the template parameter rather than the exposed nested
+# type; a dead self-shadowing typedef in CGraphAbstract just deleted;
+# alife_abstract_registry.h's `typedef typename _data_type _data;` -
+# `typename` is illegal before a bare template parameter, only before a
+# qualified dependent name; xrServerEntities/object_loader.h missing
+# `typename` before `object_type_traits::remove_const<T1>::type`;
+# ai_stalker.h's two illegal unscoped-enum forward declarations, replaced
+# with real #includes; _rect.h's `in(Tvector&)` binding a temporary,
+# fixed to `const Tvector&`; a `dynamic_cast`-casts-away-constness bug in
+# Weapon.cpp from calling smart_cast<CActor*>/<CGameObject*> on H_Parent()
+# from inside a const method). Of the 50 files originally excluded here,
+# 36 now compile clean and are wired in below (Game3_ALife group above for
+# the alife_*/character_*/car_memory/monster_community ones; a new
+# "Game3_Vehicles_Weapons" group below for the Car*/Weapon*/Helicopter*/
+# Grenade ones). The remaining 14 have real issues of their own, not yet
+# individually chased - EXCLUDED, each needing its own future look:
+#   HelicopterMovementManager.cpp(1) WeaponBinocularsVision.cpp(6)
+#   WeaponMagazined.cpp(15) WeaponMagazinedWGrenade.cpp(2)
+#   WeaponStatMgun.cpp(1) WeaponStatMgunFire.cpp(15) WeaponStatMgunMisc.cpp(1)
+#   alife_monster_detail_path_manager.cpp(7) alife_monster_patrol_path_manager.cpp(1)
+#   alife_spawn_registry.cpp(3) alife_spawn_registry_spawn.cpp(1)
+#   alife_surge_manager.cpp(5) alife_trader_abstract.cpp(2) alife_update_manager.cpp(7)
+# (parenthesized number = real g++ -c error count as of this pass, not a
+# file size/complexity estimate - each is a concrete, findable bug or
+# small set of bugs, same shape as everything fixed above, just not yet
+# done). See the notes file's per-batch section for the exact original
+# root-cause diagnosis this comment used to carry in full.
+
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game3_Vehicles_Weapons"
+  FILES
+  Car.cpp
+  CarCameras.cpp
+  CarDrone.cpp
+  CarInput.cpp
+  CarNew.cpp
+  CarWeapon.cpp
+  Grenade.cpp
+  Helicopter.cpp
+  Helicopter2.cpp
+  HelicopterWeapon.cpp
+  Weapon.cpp
+  WeaponAutomaticShotgun.cpp
+  WeaponDispersion.cpp
+  WeaponKnife.cpp
+  WeaponPistol.cpp
+  WeaponRG6.cpp
+  WeaponRPG7.cpp
+  WeaponRevolver.cpp
+  WeaponSSRS.cpp
+  WeaponShotgun.cpp
+  WeaponStatMgunBarrel.cpp
+  WeaponStatMgunIR.cpp
+  weaponBM16.cpp
+)
 
 # xrCore/xrCDB/xrSound/xrEngine/xrPhysics: real header dependencies, verified
 # via #include grep (not just carried over from the .vcxproj's

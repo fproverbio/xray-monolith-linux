@@ -23,7 +23,14 @@ protected:
 	OBJECT_REGISTRY m_objects;
 
 public:
-	typedef typename _data_type _data;
+	// `typename` was never valid here - it only applies before a qualified
+	// dependent name (e.g. `typename Foo::bar`), not a bare template
+	// parameter already in scope. MSVC tolerated it; GCC's -Wtemplate-body
+	// correctly flags the malformed parse, which then cascades into
+	// "instantiating erroneous template" on this class's first real
+	// instantiation (CALifeAbstractRegistry<...> via the ALife registry
+	// family, e.g. reached from Car.cpp's own #include closure).
+	typedef _data_type _data;
 
 	IC CALifeAbstractRegistry();
 	virtual ~CALifeAbstractRegistry();

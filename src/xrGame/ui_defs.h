@@ -54,7 +54,12 @@ typedef svector<S2DVert,UI_FRUSTUM_SAFE> sPoly2D;
 
 class C2DFrustum
 {
-	svector<Fplane2,FRUSTUM_MAXPLANES> planes;
+	// FRUSTUM_MAXPLANES (no UI_ prefix) is a different macro entirely -
+	// xrCDB/Frustum.h's own constant, same value (12) by coincidence, only
+	// reachable here transitively via Windows' PCH chain (not included by
+	// this file). UI_FRUSTUM_MAXPLANES is defined right above specifically
+	// for this class and otherwise unused - clearly what was meant.
+	svector<Fplane2,UI_FRUSTUM_MAXPLANES> planes;
 	Frect m_rect;
 	bool m_force_clip; // when true, ClipPoly always runs even if the poly is fully inside m_rect
 public:

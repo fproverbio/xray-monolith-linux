@@ -143,7 +143,12 @@ public:
 	};
 
 	IC BOOL in(T x, T y) const { return (x >= x1) && (x <= x2) && (y >= y1) && (y <= y2); };
-	IC BOOL in(Tvector& p) const { return (p.x >= x1) && (p.x <= x2) && (p.y >= y1) && (p.y <= y2); };
+	// const& (was a bare `Tvector&`): only ever reads p.x/p.y, never
+	// modifies - MSVC accepted binding a temporary (e.g. a function's
+	// by-value return) to the non-const reference as an extension, GCC
+	// correctly rejects it. First real call site: xrGame/ui/UIPropertiesBox.cpp
+	// passing GetUICursor().GetCursorPosition()'s return value directly.
+	IC BOOL in(const Tvector& p) const { return (p.x >= x1) && (p.x <= x2) && (p.y >= y1) && (p.y <= y2); };
 	IC BOOL cmp(_rect<int>& r) { return x1 == r.x1 && y1 == r.y1 && x2 == r.x2 && y2 == r.y2; };
 	IC BOOL cmp(_rect<float>& r)
 	{
