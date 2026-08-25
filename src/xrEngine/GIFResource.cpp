@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "../xrCore/Stream_Reader.h"
+#include "../xrCore/stream_reader.h"
 
 #include "GIFResource.h"
 
@@ -276,7 +276,7 @@ static bool decode_gif(GifFileType* gif, u8* tempImage, u8* tempLine,
 
                 if (!done)
                 {
-                    u8* const imgData = static_cast<u8*>(Memory.mem_alloc(imageSize));
+                    u8* const imgData = static_cast<u8*>(xr_malloc(imageSize));
                     CopyMemory(imgData, tempImage, imageSize);
                     CGIFResource::Image& newImage = out.emplace_back();
                     newImage.data = imgData;
@@ -341,7 +341,7 @@ bool CGIFResource::Load(const char* fname)
     m_ImageSize = m_Width * m_Height * 4;
 
     const u32 tempMemSize = m_Width + m_ImageSize;
-    void* const tempMem = Memory.mem_alloc(tempMemSize);
+    void* const tempMem = xr_malloc(tempMemSize);
     u8* const tempImage = static_cast<u8*>(tempMem);
     u8* const tempLine = static_cast<u8*>(tempMem) + m_ImageSize;
 

@@ -1,9 +1,9 @@
 #include "stdafx.h"
-#include "igame_level.h"
+#include "IGame_Level.h"
 
 #include "xr_object.h"
-#include "../xrcdb/xr_area.h"
-#include "render.h"
+#include "../xrCDB/xr_area.h"
+#include "Render.h"
 #include "xrLevel.h"
 //#include "fbasicvisual.h"
 #include "../Include/xrRender/RenderVisual.h"
@@ -17,7 +17,12 @@
 
 #pragma warning(push)
 #pragma warning(disable:4995)
+// <intrin.h> only declares _InterlockedCompareExchange on MSVC - the
+// portable equivalent (via GCC/Clang's __sync_val_compare_and_swap) is
+// already declared unconditionally in xrCore/win32_compat.h.
+#ifdef _WIN32
 #include <intrin.h>
+#endif
 #pragma warning(pop)
 
 #pragma intrinsic(_InterlockedCompareExchange)

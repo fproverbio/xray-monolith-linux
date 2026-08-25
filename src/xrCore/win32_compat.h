@@ -737,6 +737,17 @@ inline void TerminateProcess(void* /*process*/, unsigned exitCode)
 	_exit(static_cast<int>(exitCode));
 }
 
+// _InterlockedCompareExchange: real MSVC <intrin.h> intrinsic (xr_object.cpp
+// uses it for a lock-free "already processed this frame" check on
+// CObject::dwFrame_AsCrow) - GCC/Clang's __sync_val_compare_and_swap
+// builtin has identical semantics (full memory barrier, atomic CAS,
+// returns the value that was at *dest before the exchange), just with
+// comparand/exchange swapped in argument order.
+inline long _InterlockedCompareExchange(volatile long* dest, long exchange, long comparand)
+{
+	return __sync_val_compare_and_swap(dest, comparand, exchange);
+}
+
 // Keyboard-layout/toggle-key-state queries (line_edit_control.cpp's
 // caps-lock/num-lock display and layout-switch hotkey) - real values (the
 // documented winuser.h virtual-key codes / HKL_NEXT), but no live

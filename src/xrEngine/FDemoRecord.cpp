@@ -1,9 +1,9 @@
 #include "stdafx.h"
-#include "igame_level.h"
+#include "IGame_Level.h"
 #include "x_ray.h"
 
-#include "gamefont.h"
-#include "fDemoRecord.h"
+#include "GameFont.h"
+#include "FDemoRecord.h"
 #include "xr_ioconsole.h"
 #include "xr_input.h"
 #include "xr_object.h"

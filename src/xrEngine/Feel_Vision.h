@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../xrcdb/xr_collide_defs.h"
-#include "render.h"
+#include "../xrCDB/xr_collide_defs.h"
+#include "Render.h"
 #include "pure_relcase.h"
 
 class IRender_Sector;
@@ -17,6 +17,11 @@ namespace Feel
 
 	class ENGINE_API Vision : private pure_relcase
 	{
+		// See Feel_Touch.h's identical friend declaration for why this is
+		// needed - pure_relcase's templated constructor static_casts
+		// this to class_type*, which requires the private-inheritance
+		// relationship to be visible from pure_relcase's own code.
+		friend class pure_relcase;
 	private:
 		xr_vector<CObject*> seen;
 		xr_vector<CObject*> query;

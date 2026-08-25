@@ -2,9 +2,15 @@
 #pragma hdrstop
 
 #pragma warning(disable:4995)
+// <d3dx9.h> is only needed by ConvertVertices() below, which has been
+// entirely commented out upstream (dead code, not called anywhere) -
+// the only live code in this file (ogf_desc::Load/Save) has zero D3D
+// dependency, so this include is genuinely dead weight on non-Windows.
+#ifdef _WIN32
 #include <d3dx9.h>
+#endif
 #pragma warning(default:4995)
-#include "fmesh.h"
+#include "Fmesh.h"
 
 //BOOL ValidateIndices(u32 vCount, u32 iCount, u16* pIndices)
 //{

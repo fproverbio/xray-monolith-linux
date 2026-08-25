@@ -46,8 +46,11 @@ target_include_directories(xrEngine PUBLIC .)
 # tntQAVI.h/.cpp: Video-for-Windows AVI playback, needs a real replacement
 # codec, not a mechanical fix - deferred.
 #
-# GIFResource.h/.cpp: needs giflib vendored first - not landed as of this
-# batch, deferred to the next batch once it is.
+# imgui_base.cpp, imgui_helper.cpp (imgui_base_input.cpp already excluded
+# above for the xrGame reason): all three #include imgui.h. The real
+# Dear ImGui source is present at src/3rd party/imgui/ but has no
+# CMakeLists.txt anywhere in the tree yet - a real vendoring job (new
+# CMake target), not a mechanical per-file fix. Deferred.
 #
 # EngineAPI.cpp, Engine.cpp: the STATIC_RENDERER_R1..4 decision (notes
 # section 21a point 3 / section 24 Part B) is now made - STATIC_RENDERER_R4
@@ -150,6 +153,52 @@ target_include_directories(xrEngine PUBLIC .)
 # now-_WIN32-guarded splash dialog, so it's always NULL here on Linux -
 # nothing to destroy). HINSTANCE joined HWND/HMONITOR/HMODULE as an
 # opaque void* in win32_compat.h.
+#
+# Second-wave mechanical sweep (notes file section 24, Part C): most of
+# the remaining candidates turned out to be more case-sensitivity fixes
+# (igame_level.h -> IGame_Level.h, render.h -> Render.h, ../xrcdb/ ->
+# ../xrCDB/, a literal ..\Include\xrRender\Kinematics.h backslash path,
+# etc - the same pattern as every prior batch) plus a few real fixes:
+# Feel_Touch.h/Feel_Vision.h (private pure_relcase base classes) needed
+# `friend class pure_relcase;` - pure_relcase's templated constructor
+# does static_cast<class_type*>(this) to bind its relcase callback, a
+# base-to-derived conversion that needs the private-inheritance
+# relationship visible from pure_relcase's own code, not just the
+# derived class's; MSVC is permissive about this access check across
+# template-instantiation boundaries, GCC enforces it strictly (only
+# surfaced once each class's constructor actually instantiated
+# pure_relcase's constructor with itself as class_type - same "first
+# instantiation" pattern as this port's other MSVC-permissive template
+# bugs). Feel_Vision.cpp additionally needed IGame_Level.h reordered
+# before Feel_Vision.h in its own #include list, for the same
+# first-parse-time-non-dependent-name-lookup reason pure_relcase.cpp/
+# Feel_Touch.cpp already get right (g_pGameLevel/CObjectList::
+# relcase_register must already be declared when pure_relcase.h's
+# template is first parsed, not just by the time it's instantiated).
+# xr_object.cpp's <intrin.h>/_InterlockedCompareExchange (a real MSVC
+# intrinsic, one call site) got a portable win32_compat.h shim via GCC/
+# Clang's __sync_val_compare_and_swap builtin (identical CAS semantics).
+# GIFResource.cpp (giflib landed in an earlier commit, e1447d9e) had two
+# genuine `Memory.mem_alloc(size)` calls using the wrong overload - this
+# build defines DEBUG_MEMORY_NAME (memory_monitor.h's USE_MEMORY_MONITOR
+# is unconditional), so only the 2-arg `mem_alloc(size, name)` overload
+# exists; switched to the existing `xr_malloc(size)` wrapper that already
+# handles both branches, rather than hand-writing a name argument.
+# fmesh.cpp's `#include <d3dx9.h>` turned out to guard nothing real -
+# its one real caller (ConvertVertices, D3DXGetFVFVertexSize) is itself
+# entirely commented out upstream; guarded under _WIN32 as dead weight.
+# ai_script_lua_debug.cpp/ai_script_lua_extension.cpp stay excluded:
+# ai_script_space.h wants `luabind::functor<T>`, which genuinely does
+# not exist anywhere in the vendored luabind-deboostified fork (grep-
+# verified across src/3rd party/luabind/) - a real library API mismatch
+# between what this engine version expects and what's vendored, not a
+# mechanical fix. Text_Console.cpp/Text_Console_WndProc.cpp stay
+# excluded too: real Win32 GDI window creation (RegisterClass/
+# CreateWindow/GetDC/BitBlt/...) for the DEDICATED_SERVER-only debug
+# console (DEDICATED_SERVER itself dead code, see Text_Console.h's own
+# note above) - genuine window-creation work for a code path nothing
+# ever actually takes, not worth porting ahead of a real dedicated-
+# server pass.
 target_sources_grouped(
   TARGET xrEngine
   NAME "Engine"
@@ -224,9 +273,43 @@ target_sources_grouped(
   pure_relcase.cpp
   PS_instance.cpp
   GameMtlLib.cpp
+  GameMtlLib_Engine.cpp
   XR_IOConsole.cpp
+  XR_IOConsole_control.cpp
+  XR_IOConsole_get.cpp
   xr_ioc_cmd.cpp
   x_ray.cpp
+  Environment_render.cpp
+  thunderbolt.cpp
+  FDemoPlay.cpp
+  Feel_Touch.cpp
+  Feel_Vision.cpp
+  GameFont.cpp
+  IGame_Level_check_textures.cpp
+  IGame_ObjectPool.cpp
+  ObjectAnimator.cpp
+  Render.cpp
+  SkeletonMotions.cpp
+  Stats.cpp
+  cf_dynamic_mesh.cpp
+  fmesh.cpp
+  interp.cpp
+  xr_collide_form.cpp
+  xr_object.cpp
+  xr_object_list.cpp
+)
+
+# Theora (FMV/cutscene decode, theora landed fb77ca0f) and giflib
+# (animated-GIF UI playback, gif landed e1447d9e) - both now included per
+# the notes file section 24, Part C.
+target_sources_grouped(
+  TARGET xrEngine
+  NAME "Video"
+  FILES
+  xrTheora_Stream.cpp
+  xrTheora_Surface.cpp
+  xrTheora_Surface_mmx.cpp
+  GIFResource.cpp
 )
 
 # xrXMLParser/xrNetServer are NOT linked here - grepped the final file
@@ -247,6 +330,13 @@ target_sources_grouped(
 # volk.h/vulkan.h just to compile against xrEngine's headers.
 target_link_libraries(xrEngine PUBLIC xrCore xrCDB xrSound SDL2::SDL2)
 target_link_libraries(xrEngine PRIVATE volk::volk Vulkan::Headers)
+
+# theora/gif are PRIVATE: xrTheora_Stream.h/xrTheora_Surface.h/
+# GIFResource.h's own #includes (<theora/theora.h>, gif_lib.h) are
+# reachable via these targets' own PUBLIC include dirs, and no other
+# xrEngine header re-exposes their types, so downstream consumers of
+# xrEngine's headers don't need either just to compile against it.
+target_link_libraries(xrEngine PRIVATE theora gif)
 
 # STATIC_RENDERER_R4 - see EngineAPI.cpp's exclusion-turned-inclusion
 # comment above (notes section 24, Part B) for the full reasoning. PRIVATE:

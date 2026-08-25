@@ -1,9 +1,16 @@
 #include "stdafx.h"
-#include "feel_vision.h"
-#include "render.h"
+// IGame_Level.h must precede Feel_Vision.h here: Feel_Vision.h pulls in
+// pure_relcase.h, whose templated constructor uses the non-dependent
+// names g_pGameLevel/CObjectList::relcase_register - those need to
+// already be declared at the template's first-parse point, not just by
+// the time Vision::Vision() actually instantiates it. Feel_Touch.cpp/
+// pure_relcase.cpp already include IGame_Level.h first for the same
+// reason.
+#include "IGame_Level.h"
+#include "Feel_Vision.h"
+#include "Render.h"
 #include "xr_object.h"
 #include "xr_collide_form.h"
-#include "igame_level.h"
 #include "cl_intersect.h"
 
 namespace Feel

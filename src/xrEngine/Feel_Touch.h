@@ -8,6 +8,16 @@ namespace Feel
 {
 	class ENGINE_API Touch : private pure_relcase
 	{
+		// pure_relcase's templated constructor does static_cast<class_type*>
+		// (this) to bind the relcase callback - a base-to-derived
+		// conversion that needs the private-inheritance relationship to be
+		// visible from pure_relcase's own code, not just Touch's. MSVC is
+		// permissive about this access check across template
+		// instantiation boundaries; GCC enforces it strictly (only
+		// surfaces once Touch::Touch() actually instantiates the
+		// constructor with class_type=Touch, same "first instantiation"
+		// pattern as this port's other MSVC-permissive template bugs).
+		friend class pure_relcase;
 	public:
 		struct DenyTouch
 		{
