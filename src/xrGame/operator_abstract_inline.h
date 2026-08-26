@@ -10,10 +10,10 @@
 
 #define TEMPLATE_SPECIALIZATION template<\
 	typename _world_property,\
-	typename _edge_value_type\
+	typename _TEdgeValueType\
 >
 
-#define CAbstractOperator COperatorAbstract<_world_property,_edge_value_type>
+#define CAbstractOperator COperatorAbstract<_world_property,_TEdgeValueType>
 
 TEMPLATE_SPECIALIZATION
 IC CAbstractOperator::COperatorAbstract()

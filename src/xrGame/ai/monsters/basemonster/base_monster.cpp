@@ -225,7 +225,7 @@ bool accessible_epsilon(CBaseMonster* const object, Fvector const pos, float eps
 
 	for (u32 i = 0; i < sizeof(offsets) / sizeof(offsets[0]); ++i)
 	{
-		if (this->object->movement().restrictions().accessible(pos + offsets[i]))
+		if (object->movement().restrictions().accessible(pos + offsets[i]))
 			return true;
 	}
 
@@ -235,7 +235,7 @@ bool accessible_epsilon(CBaseMonster* const object, Fvector const pos, float eps
 static
 bool enemy_inaccessible(CBaseMonster* const object)
 {
-	CEntityAlive const* enemy = this->object->EnemyMan.get_enemy();
+	CEntityAlive const* enemy = object->EnemyMan.get_enemy();
 	if (!enemy)
 		return false;
 
@@ -251,10 +251,10 @@ bool enemy_inaccessible(CBaseMonster* const object)
 	if (xz_dist_to_vertex > 1.2f)
 		return true;
 
-	if (!this->object->Home->at_home(enemy_pos))
+	if (!object->Home->at_home(enemy_pos))
 		return true;
 
-	if (!accessible_epsilon(this->object, enemy_pos, 1.5f))
+	if (!accessible_epsilon(object, enemy_pos, 1.5f))
 		return true;
 
 	if (!ai().level_graph().valid_vertex_position(enemy_pos))
@@ -494,7 +494,7 @@ CPHDestroyable* CBaseMonster::ph_destroyable()
 
 bool CBaseMonster::useful(const CItemManager* manager, const CGameObject* object) const
 {
-	const Fvector& object_pos = this->object->Position();
+	const Fvector& object_pos = object->Position();
 	if (!movement().restrictions().accessible(object_pos))
 	{
 		return false;
@@ -504,22 +504,22 @@ bool CBaseMonster::useful(const CItemManager* manager, const CGameObject* object
 	// sometimes accessible(object->Position())) returns true
 	// but accessible(ai_location().level_vertex_id()) crashes 
 	// because level_vertex_id is not valid, so this code syncs vertex_id with position
-	if (!ai().level_graph().valid_vertex_id(this->object->ai_location().level_vertex_id()))
+	if (!ai().level_graph().valid_vertex_id(object->ai_location().level_vertex_id()))
 	{
 		u32 vertex_id = ai().level_graph().vertex_id(object_pos);
 		if (!ai().level_graph().valid_vertex_id(vertex_id))
 		{
 			return false;
 		}
-		this->object->ai_location().level_vertex(vertex_id);
+		object->ai_location().level_vertex(vertex_id);
 	}
 
-	if (!movement().restrictions().accessible(this->object->ai_location().level_vertex_id()))
+	if (!movement().restrictions().accessible(object->ai_location().level_vertex_id()))
 	{
 		return false;
 	}
 
-	const CEntityAlive* pCorpse = smart_cast<const CEntityAlive *>(this->object);
+	const CEntityAlive* pCorpse = smart_cast<const CEntityAlive *>(object);
 	if (!pCorpse)
 	{
 		return false;

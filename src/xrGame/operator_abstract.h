@@ -10,14 +10,18 @@
 
 #include "condition_state.h"
 
+// Template parameter renamed from `_edge_value_type` to `_TEdgeValueType` -
+// same self-shadowing-typedef bug class as problem_solver.h/a_star.h in
+// this same batch (notes section 30b), found while chasing the "action
+// planner" second template cycle.
 template <
 	typename _world_property,
-	typename _edge_value_type
+	typename _TEdgeValueType
 >
 class COperatorAbstract
 {
 public:
-	typedef _edge_value_type _edge_value_type;
+	typedef _TEdgeValueType _edge_value_type;
 
 protected:
 	typedef CConditionState<_world_property> inherited;

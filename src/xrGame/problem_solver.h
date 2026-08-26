@@ -10,6 +10,13 @@
 
 #include "associative_vector.h"
 
+// Template parameters renamed from `_operator_ptr`/`_condition_evaluator_ptr`
+// to `_TOperatorPtr`/`_TConditionEvaluatorPtr` - same self-shadowing-typedef
+// bug class as operator_condition.h/a_star.h/vertex_manager_fixed.h in this
+// same batch (notes section 30b), found while chasing the "action planner"
+// second template cycle (per the standing task brief). Exposed nested-
+// typedef names kept unchanged since external code (action_planner.h etc)
+// looks them up unqualified.
 template <
 	typename _operator_condition,
 	typename _condition_state,
@@ -17,8 +24,8 @@ template <
 	typename _condition_evaluator,
 	typename _operator_id_type,
 	bool _reverse_search = false,
-	typename _operator_ptr = _operator*,
-	typename _condition_evaluator_ptr = _condition_evaluator*>
+	typename _TOperatorPtr = _operator*,
+	typename _TConditionEvaluatorPtr = _condition_evaluator*>
 class CProblemSolver
 {
 public:
@@ -35,8 +42,8 @@ private:
 		_condition_evaluator,
 		_operator_id_type,
 		_reverse_search,
-		_operator_ptr,
-		_condition_evaluator_ptr
+		_TOperatorPtr,
+		_TConditionEvaluatorPtr
 	> self_type;
 
 public:
@@ -44,8 +51,8 @@ public:
 	typedef _operator COperator;
 	typedef _condition_state CState;
 	typedef _condition_evaluator CConditionEvaluator;
-	typedef _operator_ptr _operator_ptr;
-	typedef _condition_evaluator_ptr _condition_evaluator_ptr;
+	typedef _TOperatorPtr _operator_ptr;
+	typedef _TConditionEvaluatorPtr _condition_evaluator_ptr;
 	typedef typename _operator_condition::_condition_type _condition_type;
 	typedef typename _operator_condition::_value_type _value_type;
 	typedef typename _operator::_edge_value_type _edge_value_type;

@@ -763,9 +763,13 @@ ai/monsters/ai_monster_squad.cpp
 ai/monsters/ai_monster_squad_attack.cpp
 ai/monsters/ai_monster_squad_manager.cpp
 ai/monsters/ai_monster_squad_rest.cpp
+ai/monsters/ai_monster_utils.cpp
 ai/monsters/anim_triple.cpp
+ai/monsters/anomaly_detector.cpp
 ai/monsters/anti_aim_ability.cpp
+ai/monsters/basemonster/base_monster.cpp
 ai/monsters/basemonster/base_monster_anim.cpp
+ai/monsters/basemonster/base_monster_feel.cpp
 ai/monsters/basemonster/base_monster_misc.cpp
 ai/monsters/basemonster/base_monster_net.cpp
 ai/monsters/basemonster/base_monster_path.cpp
@@ -781,6 +785,7 @@ ai/monsters/control_direction.cpp
 ai/monsters/control_direction_base.cpp
 ai/monsters/control_jump.cpp
 ai/monsters/control_manager.cpp
+ai/monsters/control_manager_custom.cpp
 ai/monsters/control_melee_jump.cpp
 ai/monsters/control_movement.cpp
 ai/monsters/control_movement_base.cpp
@@ -799,6 +804,7 @@ ai/monsters/monster_aura.cpp
 ai/monsters/monster_corpse_manager.cpp
 ai/monsters/monster_corpse_memory.cpp
 ai/monsters/monster_cover_manager.cpp
+ai/monsters/monster_enemy_manager.cpp
 ai/monsters/monster_enemy_memory.cpp
 ai/monsters/monster_event_manager.cpp
 ai/monsters/monster_hit_memory.cpp
@@ -841,6 +847,7 @@ ai/monsters/controller/controller_script.cpp
 ai/monsters/controller/controller_state_manager.cpp
 ai/monsters/dog/dog.cpp
 ai/monsters/dog/dog_script.cpp
+ai/monsters/dog/dog_state_manager.cpp
 ai/monsters/flesh/flesh.cpp
 ai/monsters/flesh/flesh_script.cpp
 ai/monsters/flesh/flesh_state_manager.cpp
@@ -865,8 +872,12 @@ ai/monsters/pseudogigant/pseudo_gigant.cpp
 ai/monsters/pseudogigant/pseudo_gigant_step_effector.cpp
 ai/monsters/pseudogigant/pseudogigant_script.cpp
 ai/monsters/pseudogigant/pseudogigant_state_manager.cpp
+ai/monsters/rats/ai_rat.cpp
+ai/monsters/rats/ai_rat_animations.cpp
 ai/monsters/rats/ai_rat_behaviour.cpp
 ai/monsters/rats/ai_rat_feel.cpp
+ai/monsters/rats/ai_rat_fire.cpp
+ai/monsters/rats/ai_rat_templates.cpp
 ai/monsters/rats/rat_state_activation.cpp
 ai/monsters/rats/rat_state_initialize.cpp
 ai/monsters/rats/rat_state_switch.cpp
@@ -882,4 +893,59 @@ ai/monsters/zombie/zombie_script.cpp
 ai/monsters/zombie/zombie_state_manager.cpp
 )
 
+# ai/ still excluded (this pass) - 11 of 151 ai/*.cpp files, real per-file
+# g++ -c error counts, honestly not yet chased further:
+#
+# 9 of these 11 all cascade from ONE still-genuinely-unresolved root cause
+# in the shared A*/Dijkstra graph-pathfinding template library (a_star.h/
+# dijkstra.h/vertex_manager_fixed.h/vertex_manager_hash_fixed.h/
+# data_storage_*.h/builder_allocator_constructor.h/
+# manager_builder_allocator_constructor.h) - this pass found and fixed
+# MANY real self-shadowing-typedef bugs in that exact family (notes
+# section 30b's bug class, recurring in operator_condition.h, a_star.h
+# x2, vertex_manager_hash_fixed.h, vertex_manager_fixed.h, dijkstra.h,
+# problem_solver.h, operator_abstract.h, action_planner.h) plus several
+# missing `::template` disambiguators before dependent nested templates
+# (a_star.h, edge_path.h, vertex_manager_*.h, data_storage_bucket_list.h/
+# data_storage_double_linked_list.h/data_storage_single_linked_list.h) -
+# this genuinely unblocked most of the "action planner" second template
+# cycle the standing task brief flagged (CActionBase/CActionPlanner/
+# CProblemSolver via action_base_inline.h/action_planner.h/
+# condition_state_inline.h/graph_engine_inline.h/operator_abstract_inline.h/
+# problem_solver.h - all now compile). The one remaining root cause: one of
+# the vertex-manager family's `CDataStorage` template parameters defaults
+# to a bare `CBuilderAllocatorConstructor` (a 2-parameter template) with no
+# template arguments at all - not a lookup/shadowing bug, a genuinely
+# incomplete default that was apparently never actually relied upon by any
+# instantiation MSVC needed until this exact call chain. Fixing it needs
+# knowing what path-builder/vertex-allocator types the default *should*
+# supply, which isn't inferable from the surrounding code - guessing would
+# risk a wrong (silently different) default rather than a compile fix, so
+# left honestly unresolved rather than forced:
+#   basemonster/base_monster_script.cpp(1) control_path_builder.cpp(1)
+#   control_path_builder_base.cpp(1) control_path_builder_base_path.cpp(1)
+#   stalker/ai_stalker_cover.cpp(1) stalker/ai_stalker_script.cpp(1)
+#   basemonster/base_monster_debug.cpp(2) stalker/ai_stalker.cpp(2)
+#   stalker/ai_stalker_fire.cpp(2)
+# (parenthesized number = real g++ -c error count once past the shared
+# root cause above - each file's own single extra error is a different,
+# not-yet-chased issue: a `luabind::type_id` used as if it were a pointer
+# in ai_stalker.cpp, `get_operator` needing a `this->`/qualification fix
+# in ai_stalker_fire.cpp, etc.)
+#
+# 2 more are unrelated to the above and have their own real, not-yet-
+# chased issues:
+#   monsters/rats/ai_rat_fsm.cpp(42) - CAI_Rat member/method names this
+#     file references (m_thinking, vfUpdateSpawnPosition, aiRatDie,
+#     vfSetFire, ...) don't exist anywhere on the current CAI_Rat/rat
+#     state-manager classes - looks like this file targets an older/
+#     different version of the class's own API, not a mechanical port
+#     bug; needs a real per-symbol audit against what CAI_Rat actually
+#     exposes today.
+#   stalker/ai_stalker_debug.cpp(46) - hits the same shared graph-engine
+#     root cause above, plus its own independent issues (missing
+#     `psAI_Flags` extern, several `CDebugRenderer::draw_line`/
+#     `draw_aabb`/`draw_ellipse` calls missing the `bool bHud` parameter
+#     added since this file was last touched - same shape as the fix
+#     already applied to rats/ai_rat_templates.cpp).
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

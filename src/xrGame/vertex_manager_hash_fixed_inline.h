@@ -10,8 +10,8 @@
 
 #define TEMPLATE_SPECIALIZATION \
 	template <\
-		typename _path_id_type,\
-		typename _index_type,\
+		typename _TPathIdType,\
+		typename _TIndexType,\
 		u32		 hash_size,\
 		u32		 fix_size\
 	>\
@@ -21,7 +21,7 @@
 		typename _data_storage\
 	>
 
-#define CHashFixedVertexManager	CVertexManagerHashFixed<_path_id_type,_index_type,hash_size,fix_size>::CDataStorage<_vertex,_index_vertex,_data_storage>
+#define CHashFixedVertexManager	CVertexManagerHashFixed<_TPathIdType,_TIndexType,hash_size,fix_size>::CDataStorage<_vertex,_index_vertex,_data_storage>
 
 TEMPLATE_SPECIALIZATION
 IC CHashFixedVertexManager::CDataStorage(const u32 vertex_count) :

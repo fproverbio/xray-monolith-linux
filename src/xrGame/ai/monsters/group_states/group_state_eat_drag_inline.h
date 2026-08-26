@@ -3,7 +3,7 @@
 //#include "../../../PHCharacter.h"
 #include "../../../../xrPhysics/IPHCapture.h"
 #include "../../../CaptureBoneCallback.h"
-#include "../../../../include/xrrender/Kinematics.h"
+#include "../../../../Include/xrRender/Kinematics.h"
 
 
 #define TEMPLATE_SPECIALIZATION template <\

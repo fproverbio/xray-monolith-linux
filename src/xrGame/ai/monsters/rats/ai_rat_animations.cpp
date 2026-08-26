@@ -7,6 +7,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "../../../StdAfx.h"
+// psAI_Flags - see ai_monsters_misc.cpp's comment; same established fix.
+extern Flags32 psAI_Flags;
 #include "ai_rat.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
 #include "../../../ai_debug.h"

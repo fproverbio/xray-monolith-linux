@@ -25,6 +25,17 @@ protected:
 	typedef GraphEngineSpace::_solver_condition_type _condition_type;
 	typedef GraphEngineSpace::_solver_value_type _value_type;
 
+public:
+	// _edge_value_type was used bare below (m_weight, weight(), set_weight())
+	// with no declaration of its own anywhere in this class - relied on
+	// MSVC's more permissive lookup finding it via the dependent base
+	// `inherited` (COperatorAbstract<...>::_edge_value_type) without an
+	// explicit typedef; GCC's real two-phase lookup needs it spelled out.
+	// Public (not alongside the other protected typedefs above) since
+	// external code (problem_solver.h's own `typename _operator::
+	// _edge_value_type`) needs to name it from outside the class.
+	typedef typename inherited::_edge_value_type _edge_value_type;
+
 protected:
 	enum EActionStates
 	{

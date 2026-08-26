@@ -15,8 +15,8 @@
 	typename _condition_evaluator,\
 	typename _operator_id_type,\
 	bool	 _reverse_search,\
-	typename _operator_ptr,\
-	typename _condition_evaluator_ptr\
+	typename _TOperatorPtr,\
+	typename _TConditionEvaluatorPtr\
 >
 
 #define CProblemSolverAbstract \
@@ -27,8 +27,8 @@
 		_condition_evaluator,\
 		_operator_id_type,\
 		_reverse_search,\
-		_operator_ptr,\
-		_condition_evaluator_ptr\
+		_TOperatorPtr,\
+		_TConditionEvaluatorPtr\
 	>
 
 TEMPLATE_SPECIALIZATION
@@ -94,7 +94,7 @@ IC bool CProblemSolverAbstract::actual() const
 }
 
 TEMPLATE_SPECIALIZATION
-IC void CProblemSolverAbstract::add_operator(const _edge_type& operator_id, _operator_ptr _operator)
+IC void CProblemSolverAbstract::add_operator(const _edge_type& operator_id, _TOperatorPtr _operator)
 {
 	OPERATOR_VECTOR::iterator I = std::lower_bound(m_operators.begin(), m_operators.end(), operator_id);
 	THROW((I == m_operators.end()) || ((*I).m_operator_id != operator_id));
@@ -165,7 +165,7 @@ IC const typename CProblemSolverAbstract::CState&CProblemSolverAbstract::target_
 }
 
 TEMPLATE_SPECIALIZATION
-IC void CProblemSolverAbstract::add_evaluator(const _condition_type& condition_id, _condition_evaluator_ptr evaluator)
+IC void CProblemSolverAbstract::add_evaluator(const _condition_type& condition_id, _TConditionEvaluatorPtr evaluator)
 {
 	THROW(evaluators().end() == evaluators().find(condition_id));
 	m_evaluators.insert(std::make_pair(condition_id, evaluator));

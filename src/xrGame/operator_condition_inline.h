@@ -11,14 +11,14 @@
 #include "random32.h"
 
 #define TEMPLATE_SPECIALIZATION template<\
-	typename _condition_type,\
-	typename _value_type\
+	typename _TConditionType,\
+	typename _TValueType\
 >
 
-#define CAbstractOperatorCondition COperatorConditionAbstract<_condition_type,_value_type>
+#define CAbstractOperatorCondition COperatorConditionAbstract<_TConditionType,_TValueType>
 
 TEMPLATE_SPECIALIZATION
-IC CAbstractOperatorCondition::COperatorConditionAbstract(const _condition_type condition, const _value_type value) :
+IC CAbstractOperatorCondition::COperatorConditionAbstract(const _TConditionType condition, const _TValueType value) :
 	m_condition(condition),
 	m_value(value)
 {
@@ -31,13 +31,13 @@ IC CAbstractOperatorCondition::COperatorConditionAbstract(const _condition_type 
 }
 
 TEMPLATE_SPECIALIZATION
-IC const _condition_type&CAbstractOperatorCondition::condition() const
+IC const _TConditionType&CAbstractOperatorCondition::condition() const
 {
 	return (m_condition);
 }
 
 TEMPLATE_SPECIALIZATION
-IC const _value_type&CAbstractOperatorCondition::value() const
+IC const _TValueType&CAbstractOperatorCondition::value() const
 {
 	return (m_value);
 }

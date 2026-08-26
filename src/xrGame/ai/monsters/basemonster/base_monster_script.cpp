@@ -1,4 +1,6 @@
 #include "pch_script.h"
+// psAI_Flags - see ai_monsters_misc.cpp's comment; same established fix.
+extern Flags32 psAI_Flags;
 #include "base_monster.h"
 #include "../../../script_entity_action.h"
 #include "../../../PHMovementControl.h"

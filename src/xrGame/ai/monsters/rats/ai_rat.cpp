@@ -682,8 +682,8 @@ void CAI_Rat::activate_physic_shell()
 void CAI_Rat::on_activate_physic_shell()
 {
 	CObject* object = smart_cast<CObject*>(H_Parent());
-	R_ASSERT(this->object);
-	XFORM().set(this->object->XFORM());
+	R_ASSERT(object);
+	XFORM().set(object->XFORM());
 	inherited::activate_physic_shell();
 }
 

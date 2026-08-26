@@ -9,6 +9,7 @@
 #pragma once
 
 #include "space_restriction_holder.h"
+#include "space_restriction.h"
 #include "alife_space.h"
 
 namespace RestrictionSpace

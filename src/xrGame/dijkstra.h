@@ -22,8 +22,16 @@
 // never referenced anywhere by name) - same bug class/fix as
 // data_storage_constructor.h/manager_builder_allocator_constructor.h in
 // this same batch.
+//
+// CDijkstra's own outer `_dist_type` parameter renamed to `_TDistType` -
+// separately, it was ALSO re-typedef'd right back to the same name twice
+// (once in the nested `_Vertex<T1>` below, once at class scope from
+// `CGraphVertex::_dist_type`) - the self-shadowing-typedef bug class
+// (notes section 30b), not the template-template-parameter one the
+// comment above describes. Exposed member-typedef name kept as
+// `_dist_type` both places.
 template <
-	typename _dist_type,
+	typename _TDistType,
 	typename _priority_queue,
 	typename _vertex_manager,
 	typename _vertex_allocator,
@@ -78,7 +86,7 @@ public:
 	template <typename T1>
 	struct _Vertex : public _vertex<T1>
 	{
-		typedef _dist_type _dist_type;
+		typedef _TDistType _dist_type;
 
 		_dist_type _f;
 		T1* _back;

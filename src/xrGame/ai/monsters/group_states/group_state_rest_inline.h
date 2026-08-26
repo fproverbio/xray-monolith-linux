@@ -38,7 +38,7 @@ void CStateGroupRestAbstract::initialize()
 {
 	inherited::initialize();
 	time_for_sleep = 0;
-	time_for_life = time() + this->object->m_min_life_time + Random.randI(10) * object->m_min_life_time;
+	time_for_life = time() + this->object->m_min_life_time + Random.randI(10) * this->object->m_min_life_time;
 	this->object->anomaly_detector().activate();
 }
 
@@ -148,7 +148,7 @@ void CStateGroupRestAbstract::execute()
 					}
 					else
 					{
-						time_for_life = time() + this->object->m_min_life_time + Random.randI(10) * object->m_min_life_time;
+						time_for_life = time() + this->object->m_min_life_time + Random.randI(10) * this->object->m_min_life_time;
 						this->object->set_current_animation(14);
 						this->select_state(eStateCustom);
 						this->object->b_state_check = false;
@@ -164,7 +164,7 @@ void CStateGroupRestAbstract::execute()
 						this->object->set_current_animation(8);
 						this->select_state(eStateCustom);
 						this->object->saved_state = eStateRest_Sleep;
-						time_for_sleep = time() + this->object->m_min_sleep_time + Random.randI(5) * object->m_min_sleep_time;
+						time_for_sleep = time() + this->object->m_min_sleep_time + Random.randI(5) * this->object->m_min_sleep_time;
 						use_to_do = true;
 						this->object->b_state_check = false;
 						this->get_state_current()->execute();

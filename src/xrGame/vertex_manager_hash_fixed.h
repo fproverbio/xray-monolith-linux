@@ -8,9 +8,17 @@
 
 #pragma once
 
+// Template parameters renamed from `_path_id_type`/`_index_type` to
+// `_TPathIdType`/`_TIndexType` - same self-shadowing-typedef bug class as
+// operator_condition.h/a_star.h in this same batch (notes section 30b):
+// `_vertex<T2>` below used to `typedef _index_type _index_type;`
+// (shadowing this struct's own outer parameter), and further down this
+// class also had `typedef _path_id_type _path_id_type;` doing the same for
+// the other parameter. Exposed nested-typedef names kept unchanged since
+// external code looks them up unqualified.
 template <
-	typename _path_id_type,
-	typename _index_type,
+	typename _TPathIdType,
+	typename _TIndexType,
 	u32 hash_size,
 	u32 fix_size
 >
@@ -22,7 +30,7 @@ struct CVertexManagerHashFixed
 		template <typename T2>
 		struct _vertex : public T1<T2>
 		{
-			typedef _index_type _index_type;
+			typedef _TIndexType _index_type;
 			_index_type _index;
 			bool _opened;
 
@@ -53,13 +61,13 @@ struct CVertexManagerHashFixed
 		template <typename _T1, typename _T2> class _index_vertex = CEmptyClassTemplate2,
 		typename _data_storage = CBuilderAllocatorConstructor
 	>
-	class CDataStorage : public _data_storage::template CDataStorage<VertexManager<_vertex>::_vertex>
+	class CDataStorage : public _data_storage::template CDataStorage<VertexManager<_vertex>::template _vertex>
 	{
 	public:
 		typedef typename _data_storage::template CDataStorage<
 			VertexManager<
 				_vertex
-			>::_vertex
+			>::template _vertex
 		> inherited;
 		typedef typename inherited::CGraphVertex CGraphVertex;
 		typedef typename CGraphVertex::_index_type _index_type;
@@ -76,7 +84,7 @@ struct CVertexManagerHashFixed
 		};
 #pragma pack(pop)
 
-		typedef _path_id_type _path_id_type;
+		typedef _TPathIdType _path_id_type;
 		typedef SGraphIndexVertex<_path_id_type> CGraphIndexVertex;
 
 	protected:
