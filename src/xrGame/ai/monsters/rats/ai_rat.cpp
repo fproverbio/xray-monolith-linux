@@ -6,13 +6,13 @@
 //	Description : AI Behaviour for monster "Rat"
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "ai_rat.h"
 #include "../../ai_monsters_misc.h"
-#include "../../../../xrphysics/PhysicsShell.h"
+#include "../../../../xrPhysics/PhysicsShell.h"
 #include "../../../game_graph.h"
 #include "../../../game_level_cross_table.h"
-#include "../../../../xrServerEntities/xrserver_objects_alife_monsters.h"
+#include "../../../../xrServerEntities/xrServer_Objects_ALife_Monsters.h"
 
 #include "ai_rat_space.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
@@ -682,8 +682,8 @@ void CAI_Rat::activate_physic_shell()
 void CAI_Rat::on_activate_physic_shell()
 {
 	CObject* object = smart_cast<CObject*>(H_Parent());
-	R_ASSERT(object);
-	XFORM().set(object->XFORM());
+	R_ASSERT(this->object);
+	XFORM().set(this->object->XFORM());
 	inherited::activate_physic_shell();
 }
 

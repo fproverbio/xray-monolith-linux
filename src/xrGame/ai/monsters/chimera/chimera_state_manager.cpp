@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "chimera.h"
 #include "chimera_state_manager.h"
 
@@ -21,12 +21,12 @@
 
 CStateManagerChimera::CStateManagerChimera(CChimera* obj) : inherited(obj)
 {
-	add_state(eStateRest, xr_new<CStateMonsterRest<CChimera>>(obj));
-	add_state(eStatePanic, xr_new<CStateMonsterPanic<CChimera>>(obj));
-	add_state(eStateAttack, xr_new<ChimeraAttackState<CChimera>>(obj));
-	add_state(eStateEat, xr_new<CStateMonsterEat<CChimera>>(obj));
-	add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CChimera>>(obj));
-	add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CChimera>>(obj));
+	this->add_state(eStateRest, xr_new<CStateMonsterRest<CChimera>>(obj));
+	this->add_state(eStatePanic, xr_new<CStateMonsterPanic<CChimera>>(obj));
+	this->add_state(eStateAttack, xr_new<ChimeraAttackState<CChimera>>(obj));
+	this->add_state(eStateEat, xr_new<CStateMonsterEat<CChimera>>(obj));
+	this->add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CChimera>>(obj));
+	this->add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CChimera>>(obj));
 	// 	add_state(eStateHitted,					xr_new<CStateMonsterHitted<CChimera> >					(obj));
 	// 	add_state(eStateThreaten,				xr_new<CStateChimeraThreaten<CChimera> >				(obj));
 	// 	add_state(eStateCustom,					xr_new<CStateMonsterTestState<CChimera> >				(obj));
@@ -40,12 +40,12 @@ void CStateManagerChimera::execute()
 {
 	u32 state_id = u32(-1);
 
-	const CEntityAlive* enemy = object->EnemyMan.get_enemy();
+	const CEntityAlive* enemy = this->object->EnemyMan.get_enemy();
 
 	if (enemy)
 	{
 		//if (check_state(eStateThreaten)) state_id = eStateThreaten;
-		switch (object->EnemyMan.get_danger_type())
+		switch (this->object->EnemyMan.get_danger_type())
 		{
 		case eStrong: state_id = eStatePanic;
 			break;
@@ -55,11 +55,11 @@ void CStateManagerChimera::execute()
 		// 	else if (object->HitMemory.is_hit()) {
 		// 		state_id = eStateHitted;
 	}
-	else if (object->hear_dangerous_sound)
+	else if (this->object->hear_dangerous_sound)
 	{
 		state_id = eStateHearDangerousSound;
 	}
-	else if (object->hear_interesting_sound)
+	else if (this->object->hear_interesting_sound)
 	{
 		state_id = eStateHearInterestingSound;
 	}
@@ -71,10 +71,10 @@ void CStateManagerChimera::execute()
 
 	//state_id = eStateCustom;
 
-	select_state(state_id);
+	this->select_state(state_id);
 
 	// выполнить текущее состояние
-	get_state_current()->execute();
+	this->get_state_current()->execute();
 
-	prev_substate = current_substate;
+	this->prev_substate = this->current_substate;
 }

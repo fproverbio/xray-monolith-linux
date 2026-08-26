@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "zombie.h"
 #include "zombie_state_manager.h"
 
@@ -12,25 +12,25 @@
 #include "../states/monster_state_eat.h"
 #include "../states/monster_state_hear_int_sound.h"
 #include "zombie_state_attack_run.h"
-#include "../../../entitycondition.h"
+#include "../../../EntityCondition.h"
 #include "../../../detail_path_manager.h"
 #include "../states/monster_state_controlled.h"
 #include "../states/monster_state_help_sound.h"
 
 CStateManagerZombie::CStateManagerZombie(CZombie* obj) : inherited(obj)
 {
-	add_state(eStateRest, xr_new<CStateMonsterRest<CZombie>>(obj));
-	add_state(
+	this->add_state(eStateRest, xr_new<CStateMonsterRest<CZombie>>(obj));
+	this->add_state(
 		eStateAttack,
 		xr_new<CStateMonsterAttack<CZombie>>(obj,
 		                                     xr_new<CStateZombieAttackRun<CZombie>>(obj),
 		                                     xr_new<CStateMonsterAttackMelee<CZombie>>(obj)
 		)
 	);
-	add_state(eStateEat, xr_new<CStateMonsterEat<CZombie>>(obj));
-	add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CZombie>>(obj));
-	add_state(eStateControlled, xr_new<CStateMonsterControlled<CZombie>>(obj));
-	add_state(eStateHearHelpSound, xr_new<CStateMonsterHearHelpSound<CZombie>>(obj));
+	this->add_state(eStateEat, xr_new<CStateMonsterEat<CZombie>>(obj));
+	this->add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CZombie>>(obj));
+	this->add_state(eStateControlled, xr_new<CStateMonsterControlled<CZombie>>(obj));
+	this->add_state(eStateHearHelpSound, xr_new<CStateMonsterHearHelpSound<CZombie>>(obj));
 }
 
 CStateManagerZombie::~CStateManagerZombie()
@@ -39,13 +39,13 @@ CStateManagerZombie::~CStateManagerZombie()
 
 void CStateManagerZombie::execute()
 {
-	if (object->com_man().ta_is_active()) return;
+	if (this->object->com_man().ta_is_active()) return;
 
 	u32 state_id = u32(-1);
 
-	if (!object->is_under_control())
+	if (!this->object->is_under_control())
 	{
-		const CEntityAlive* enemy = object->EnemyMan.get_enemy();
+		const CEntityAlive* enemy = this->object->EnemyMan.get_enemy();
 
 		if (enemy)
 		{
@@ -55,7 +55,7 @@ void CStateManagerZombie::execute()
 		{
 			state_id = eStateHearHelpSound;
 		}
-		else if (object->hear_interesting_sound || object->hear_dangerous_sound)
+		else if (this->object->hear_interesting_sound || this->object->hear_dangerous_sound)
 		{
 			state_id = eStateHearInterestingSound;
 		}
@@ -68,10 +68,10 @@ void CStateManagerZombie::execute()
 	else state_id = eStateControlled;
 
 	// установить текущее состояние
-	select_state(state_id);
+	this->select_state(state_id);
 
 	// выполнить текущее состояние
-	get_state_current()->execute();
+	this->get_state_current()->execute();
 
-	prev_substate = current_substate;
+	this->prev_substate = this->current_substate;
 }

@@ -61,8 +61,17 @@ public:
 		}
 		IC	void	clear			() {m_data.clear	();}
 
-		template<class T>
-		IC	void	process			(T &process_pred) {
+		// Renamed from `template<class T>` - that name shadowed the enclosing
+		// CItemBase<T>'s own template parameter. Legal C++ (nested template
+		// parameters may shadow an outer one), but GCC's -Wtemplate-body
+		// diagnostic flags the shadow and poisons the whole template, so any
+		// real instantiation (e.g. CObjectInfo : CItemBase<SInfoItem>) then
+		// hard-errors with "instantiating erroneous template" - same
+		// diagnostic-poisoning shape as the self-shadowing-typedef bug class
+		// elsewhere in this port, just on a template parameter instead of a
+		// typedef. MSVC never seems to have minded.
+		template<class TProc>
+		IC	void	process			(TProc &process_pred) {
 			for (ITEM_STORAGE_VEC_IT it=m_data.begin(); it != m_data.end(); ++it) {
 				process_pred(*it);
 			}

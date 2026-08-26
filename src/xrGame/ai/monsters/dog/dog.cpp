@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "dog.h"
 #include "dog_state_manager.h"
 #include "../monster_velocity_space.h"
@@ -14,9 +14,9 @@
 #include "../../../level_graph.h"
 #include "../../../ai_space.h"
 #include "../../../ai_object_location.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 
-#ifdef _DEBUG
+#ifdef _WIN32
 #	include <dinput.h>
 #endif
 

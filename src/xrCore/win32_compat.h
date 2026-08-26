@@ -48,6 +48,20 @@ using DWORD = unsigned int;
 // ph_shell_interface.h). Never previously needed since no earlier module
 // used the convention.
 #define interface struct
+// `IN`/`OUT` - Windows SDK <windef.h> parameter-direction annotation macros,
+// both defined to expand to nothing (pure documentation, no semantic effect).
+// First hit: xrGame's ai/monsters/basemonster/base_monster.h's
+// `get_debug_var(pcstr var_name, OUT Type& result)` - genuinely relied on
+// this expanding to nothing (MSVC's real <windef.h> is transitively visible
+// there via the Windows SDK headers this codebase's PCH otherwise pulls in);
+// GCC has no such macro at all, so it parsed `OUT Type& result` as two
+// separate declarators instead of one, both nonsensical.
+#ifndef IN
+#define IN
+#endif
+#ifndef OUT
+#define OUT
+#endif
 // DllMain() reason-for-call codes. Only ever reach a switch() body that's
 // unreachable dead code on a static (non-DLL) build, but the constants
 // themselves still need to exist for such code to compile at all.

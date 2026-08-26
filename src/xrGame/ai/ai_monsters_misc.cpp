@@ -8,8 +8,14 @@
 
 #include "pch_script.h"
 #include "ai_monsters_misc.h"
+// psAI_Flags - real global debug-flags declared in ai_debug.h, used here
+// without including it (same gap already fixed elsewhere - see
+// alife_level_registry_inline.h's comment for the full explanation of why
+// a local `extern` declaration is the established fix, not a real #include
+// of ai_debug.h's own MASTER_GOLD-guarded declaration).
+extern Flags32 psAI_Flags;
 #include "../ai_space.h"
-#include "../custommonster.h"
+#include "../CustomMonster.h"
 #include "../ef_storage.h"
 #include "../seniority_hierarchy_holder.h"
 #include "../team_hierarchy_holder.h"
@@ -21,7 +27,7 @@
 #include "../ef_pattern.h"
 #include "../memory_manager.h"
 #include "../enemy_manager.h"
-#include "../level.h"
+#include "../Level.h"
 #include "../agent_manager.h"
 #include "../agent_member_manager.h"
 #include "stalker/ai_stalker.h"

@@ -23,15 +23,15 @@ void CStateMonsterHitObjectAbstract::initialize()
 TEMPLATE_SPECIALIZATION
 void CStateMonsterHitObjectAbstract::execute()
 {
-	object->set_action(ACT_STAND_IDLE);
-	object->anim().SetSpecParams(ASP_CHECK_CORPSE);
+	this->object->set_action(ACT_STAND_IDLE);
+	this->object->anim().SetSpecParams(ASP_CHECK_CORPSE);
 
-	if (!m_hitted && (time_state_started + TIME_POINTBREAK < Device.dwTimeGlobal))
+	if (!m_hitted && (this->time_state_started + TIME_POINTBREAK < Device.dwTimeGlobal))
 	{
 		m_hitted = true;
 
 		Fvector dir;
-		dir.add(Fvector().sub(target->Position(), object->Position()), object->Direction());
+		dir.add(Fvector().sub(target->Position(), this->object->Position()), this->object->Direction());
 		dir.normalize();
 		target->m_pPhysicsShell->applyImpulse(dir,IMPULSE * target->m_pPhysicsShell->getMass());
 	}
@@ -44,7 +44,7 @@ bool CStateMonsterHitObjectAbstract::check_start_conditions()
 
 	// получить физ. объекты в радиусе
 	m_nearest_objects.clear_not_free();
-	Level().ObjectSpace.GetNearest(m_nearest_objects, object->Position(), object->Radius() - 0.5f, object());
+	Level().ObjectSpace.GetNearest(m_nearest_objects, this->object->Position(), this->object->Radius() - 0.5f, this->object());
 
 	xr_vector<CObject*>::iterator B = m_nearest_objects.begin();
 	xr_vector<CObject*>::iterator E = m_nearest_objects.end();
@@ -56,13 +56,13 @@ bool CStateMonsterHitObjectAbstract::check_start_conditions()
 
 		// определить дистанцию до врага
 		Fvector d;
-		d.sub(obj->Position(), object->Position());
+		d.sub(obj->Position(), this->object->Position());
 
 		// проверка на  Field-Of-Hit
 		float my_h, my_p;
 		float h, p;
 
-		object->Direction().getHP(my_h, my_p);
+		this->object->Direction().getHP(my_h, my_p);
 		d.getHP(h, p);
 
 		float from = angle_normalize(my_h - TEST_ANGLE);
@@ -85,7 +85,7 @@ bool CStateMonsterHitObjectAbstract::check_start_conditions()
 TEMPLATE_SPECIALIZATION
 bool CStateMonsterHitObjectAbstract::check_completion()
 {
-	if (time_state_started + TIME_OUT_STATE < Device.dwTimeGlobal) return true;
+	if (this->time_state_started + TIME_OUT_STATE < Device.dwTimeGlobal) return true;
 	return false;
 }
 

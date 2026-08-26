@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "dog.h"
 #include "dog_state_manager.h"
 #include "../control_animation_base.h"
@@ -25,25 +25,25 @@ namespace detail
 
 CStateManagerDog::CStateManagerDog(CAI_Dog* monster) : inherited(monster)
 {
-	add_state(eStateRest, xr_new<CStateGroupRest<CAI_Dog>>(monster));
-	add_state(eStatePanic, xr_new<CStateGroupPanic<CAI_Dog>>(monster));
-	add_state(eStateAttack, xr_new<CStateGroupAttack<CAI_Dog>>(monster));
-	add_state(eStateEat, xr_new<CStateGroupEat<CAI_Dog>>(monster));
-	add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CAI_Dog>>(monster));
-	add_state(eStateHearDangerousSound, xr_new<CStateGroupHearDangerousSound<CAI_Dog>>(monster));
-	add_state(eStateHitted, xr_new<CStateMonsterHitted<CAI_Dog>>(monster));
-	add_state(eStateControlled, xr_new<CStateMonsterControlled<CAI_Dog>>(monster));
-	add_state(eStateHearHelpSound, xr_new<CStateMonsterHearHelpSound<CAI_Dog>>(monster));
-	object->EatedCorpse = NULL;
+	this->add_state(eStateRest, xr_new<CStateGroupRest<CAI_Dog>>(monster));
+	this->add_state(eStatePanic, xr_new<CStateGroupPanic<CAI_Dog>>(monster));
+	this->add_state(eStateAttack, xr_new<CStateGroupAttack<CAI_Dog>>(monster));
+	this->add_state(eStateEat, xr_new<CStateGroupEat<CAI_Dog>>(monster));
+	this->add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CAI_Dog>>(monster));
+	this->add_state(eStateHearDangerousSound, xr_new<CStateGroupHearDangerousSound<CAI_Dog>>(monster));
+	this->add_state(eStateHitted, xr_new<CStateMonsterHitted<CAI_Dog>>(monster));
+	this->add_state(eStateControlled, xr_new<CStateMonsterControlled<CAI_Dog>>(monster));
+	this->add_state(eStateHearHelpSound, xr_new<CStateMonsterHearHelpSound<CAI_Dog>>(monster));
+	this->object->EatedCorpse = NULL;
 }
 
 void CStateManagerDog::execute()
 {
 	u32 state_id = u32(-1);
 
-	CMonsterSquad* squad = monster_squad().get_squad(object);
+	CMonsterSquad* squad = monster_squad().get_squad(this->object);
 
-	const CEntityAlive* enemy = object->EnemyMan.get_enemy();
+	const CEntityAlive* enemy = this->object->EnemyMan.get_enemy();
 
 	bool atack = false;
 	if (enemy)
@@ -52,12 +52,12 @@ void CStateManagerDog::execute()
 
 		if (squad)
 		{
-			if (object->Home->at_min_home(enemy_pos))
+			if (this->object->Home->at_min_home(enemy_pos))
 			{
 				squad->set_home_in_danger();
 			}
 
-			if (object->Position().distance_to(enemy_pos) < detail::dog::atack_decision_maxdist)
+			if (this->object->Position().distance_to(enemy_pos) < detail::dog::atack_decision_maxdist)
 			{
 				squad->set_home_in_danger();
 			}
@@ -68,18 +68,18 @@ void CStateManagerDog::execute()
 			}
 		}
 
-		if (object->Home->at_mid_home(enemy_pos))
+		if (this->object->Home->at_mid_home(enemy_pos))
 		{
 			atack = true;
 		}
 	}
 
-	if (!object->is_under_control())
+	if (!this->object->is_under_control())
 	{
 		if (atack)
 		{
-			CMonsterSquad* squad = monster_squad().get_squad(object);
-			switch (object->EnemyMan.get_danger_type())
+			CMonsterSquad* squad = monster_squad().get_squad(this->object);
+			switch (this->object->EnemyMan.get_danger_type())
 			{
 			case eStrong: state_id = eStatePanic;
 				break;
@@ -91,11 +91,11 @@ void CStateManagerDog::execute()
 				state_id = eStateAttack;
 			}
 		}
-		else if (object->HitMemory.is_hit())
+		else if (this->object->HitMemory.is_hit())
 		{
 			// only inform squad of new hit (made not later then after 1 sec)
-			if (current_substate != eStateHitted &&
-				time() < object->HitMemory.get_last_hit_time() + 1000)
+			if (this->current_substate != eStateHitted &&
+				time() < this->object->HitMemory.get_last_hit_time() + 1000)
 			{
 				if (squad)
 				{
@@ -109,18 +109,18 @@ void CStateManagerDog::execute()
 		{
 			state_id = eStateHearHelpSound;
 		}
-		else if (object->hear_interesting_sound)
+		else if (this->object->hear_interesting_sound)
 		{
 			state_id = eStateHearInterestingSound;
 		}
-		else if (object->hear_dangerous_sound)
+		else if (this->object->hear_dangerous_sound)
 		{
 			//comment by Lain: || monster_squad().get_squad(object)->GetCommand(object).type == SC_REST) {
 			state_id = eStateHearDangerousSound;
 		}
 		else
 		{
-			if (object->get_custom_anim_state())
+			if (this->object->get_custom_anim_state())
 			{
 				return;
 			}
@@ -128,10 +128,10 @@ void CStateManagerDog::execute()
 			if (check_eat())
 			{
 				state_id = eStateEat;
-				if (!object->EatedCorpse)
+				if (!this->object->EatedCorpse)
 				{
-					object->EatedCorpse = object->CorpseMan.get_corpse();
-					const_cast<CEntityAlive *>(object->EatedCorpse)->set_lock_corpse(true);
+					this->object->EatedCorpse = this->object->CorpseMan.get_corpse();
+					const_cast<CEntityAlive *>(this->object->EatedCorpse)->set_lock_corpse(true);
 				}
 			}
 			else
@@ -145,32 +145,32 @@ void CStateManagerDog::execute()
 		state_id = eStateControlled;
 	}
 
-	select_state(state_id);
+	this->select_state(state_id);
 
-	if (prev_substate != current_substate && object->get_custom_anim_state())
+	if (this->prev_substate != this->current_substate && this->object->get_custom_anim_state())
 	{
-		object->anim_end_reinit();
+		this->object->anim_end_reinit();
 	}
 
-	if (prev_substate == eStateEat && current_substate != eStateEat)
+	if (this->prev_substate == eStateEat && this->current_substate != eStateEat)
 	{
-		if (object->character_physics_support()->movement()->PHCapture())
+		if (this->object->character_physics_support()->movement()->PHCapture())
 		{
-			object->character_physics_support()->movement()->PHReleaseObject();
+			this->object->character_physics_support()->movement()->PHReleaseObject();
 		}
 	}
 
 	// выполнить текущее состояние
-	get_state_current()->execute();
+	this->get_state_current()->execute();
 
-	prev_substate = current_substate;
+	this->prev_substate = this->current_substate;
 }
 
 bool CStateManagerDog::check_eat()
 {
-	if (!object->CorpseMan.get_corpse())
+	if (!this->object->CorpseMan.get_corpse())
 	{
-		if (!object->EatedCorpse)
+		if (!this->object->EatedCorpse)
 		{
 			return false;
 		}

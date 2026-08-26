@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "snork.h"
 #include "snork_state_manager.h"
 
@@ -7,7 +7,7 @@
 #include "../control_movement_base.h"
 #include "../control_path_builder_base.h"
 
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../level_debug.h"
 #include "../states/monster_state_rest.h"
 #include "../states/monster_state_attack.h"
@@ -21,20 +21,20 @@
 #include "../states/state_test_state.h"
 #include "../states/monster_state_help_sound.h"
 
-#include "../../../entitycondition.h"
+#include "../../../EntityCondition.h"
 
 CStateManagerSnork::CStateManagerSnork(CSnork* obj) : inherited(obj)
 {
-	add_state(eStateRest, xr_new<CStateMonsterRest<CSnork>>(obj));
-	add_state(eStatePanic, xr_new<CStateMonsterPanic<CSnork>>(obj));
-	add_state(eStateAttack, xr_new<CStateMonsterAttack<CSnork>>(obj));
-	add_state(eStateEat, xr_new<CStateMonsterEat<CSnork>>(obj));
-	add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CSnork>>(obj));
-	add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CSnork>>(obj));
-	add_state(eStateHitted, xr_new<CStateMonsterHitted<CSnork>>(obj));
+	this->add_state(eStateRest, xr_new<CStateMonsterRest<CSnork>>(obj));
+	this->add_state(eStatePanic, xr_new<CStateMonsterPanic<CSnork>>(obj));
+	this->add_state(eStateAttack, xr_new<CStateMonsterAttack<CSnork>>(obj));
+	this->add_state(eStateEat, xr_new<CStateMonsterEat<CSnork>>(obj));
+	this->add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CSnork>>(obj));
+	this->add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CSnork>>(obj));
+	this->add_state(eStateHitted, xr_new<CStateMonsterHitted<CSnork>>(obj));
 
-	add_state(eStateFindEnemy, xr_new<CStateMonsterTestCover<CSnork>>(obj));
-	add_state(eStateHearHelpSound, xr_new<CStateMonsterHearHelpSound<CSnork>>(obj));
+	this->add_state(eStateFindEnemy, xr_new<CStateMonsterTestCover<CSnork>>(obj));
+	this->add_state(eStateHearHelpSound, xr_new<CStateMonsterHearHelpSound<CSnork>>(obj));
 }
 
 CStateManagerSnork::~CStateManagerSnork()
@@ -45,11 +45,11 @@ void CStateManagerSnork::execute()
 {
 	u32 state_id = u32(-1);
 
-	const CEntityAlive* enemy = object->EnemyMan.get_enemy();
+	const CEntityAlive* enemy = this->object->EnemyMan.get_enemy();
 
 	if (enemy)
 	{
-		switch (object->EnemyMan.get_danger_type())
+		switch (this->object->EnemyMan.get_danger_type())
 		{
 		case eStrong: state_id = eStatePanic;
 			break;
@@ -57,7 +57,7 @@ void CStateManagerSnork::execute()
 			break;
 		}
 	}
-	else if (object->HitMemory.is_hit())
+	else if (this->object->HitMemory.is_hit())
 	{
 		state_id = eStateHitted;
 	}
@@ -65,11 +65,11 @@ void CStateManagerSnork::execute()
 	{
 		state_id = eStateHearHelpSound;
 	}
-	else if (object->hear_dangerous_sound)
+	else if (this->object->hear_dangerous_sound)
 	{
 		state_id = eStateHearDangerousSound;
 	}
-	else if (object->hear_interesting_sound)
+	else if (this->object->hear_interesting_sound)
 	{
 		state_id = eStateHearInterestingSound;
 	}
@@ -82,15 +82,15 @@ void CStateManagerSnork::execute()
 
 	//state_id = eStateFindEnemy;
 
-	select_state(state_id);
+	this->select_state(state_id);
 
-	if ((current_substate == eStateAttack) && (current_substate != prev_substate))
+	if ((this->current_substate == eStateAttack) && (this->current_substate != this->prev_substate))
 	{
-		object->start_threaten = true;
+		this->object->start_threaten = true;
 	}
 
 	// выполнить текущее состояние
-	get_state_current()->execute();
+	this->get_state_current()->execute();
 
-	prev_substate = current_substate;
+	this->prev_substate = this->current_substate;
 }

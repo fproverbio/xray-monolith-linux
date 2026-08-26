@@ -34,7 +34,7 @@ class CScanningAbility
 	bool m_this_scan;
 
 public:
-	void init_external(_Object* obj) { object = obj; }
+	void init_external(_Object* obj) { this->object = obj; }
 	void on_destroy();
 
 	void load(LPCSTR section);

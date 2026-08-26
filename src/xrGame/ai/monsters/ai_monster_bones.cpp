@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../../StdAfx.h"
 #include "ai_monster_bones.h"
 #include "../../../Include/xrRender/Kinematics.h"
 #include "../../../xrEngine/bone.h"
@@ -60,7 +60,7 @@ void bonesBone::Apply()
 
 void bonesManipulation::Reset()
 {
-	time_started = 0;
+	this->time_started = 0;
 	time_last_update = 0;
 	in_return_state = false;
 	bActive = false;
@@ -98,7 +98,7 @@ void bonesManipulation::SetMotion(CBoneInstance* bone, u8 axis, float target_yaw
 
 	bActive = true;
 	in_return_state = false;
-	time_started = 0;
+	this->time_started = 0;
 }
 
 
@@ -139,16 +139,16 @@ void bonesManipulation::Update(CBoneInstance* bone, u32 cur_time)
 	// если выполняется наращивание угла и ни одна кость не повернулась (достигли таргета...)
 	if (!bones_were_turned && !in_return_state)
 	{
-		if ((0 == time_started) && (freeze_time > 0))
+		if ((0 == this->time_started) && (freeze_time > 0))
 		{
 			// начинаем ждать
-			time_started = cur_time;
+			this->time_started = cur_time;
 		}
 
-		if ((0 != time_started) && (time_started + freeze_time < cur_time))
+		if ((0 != this->time_started) && (this->time_started + freeze_time < cur_time))
 		{
 			// время вышло?
-			time_started = 0;
+			this->time_started = 0;
 
 			// делаем возврат
 			in_return_state = true;

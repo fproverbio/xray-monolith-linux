@@ -9,23 +9,16 @@
 #ifndef STALKER_MOVEMENT_PARAMS_H_INCLUDED
 #define STALKER_MOVEMENT_PARAMS_H_INCLUDED
 
-namespace MonsterSpace
-{
-	enum EBodyState;
-	enum EMovementType;
-	enum EMentalState;
-	enum EPathType;
-};
-
-namespace MovementManager
-{
-	enum EPathType;
-};
-
-namespace DetailPathManager
-{
-	enum EDetailPathType;
-};
+// Illegal unscoped-enum forward declarations with no fixed underlying type
+// (MSVC-permissive/GCC-illegal, same bug class as PHCharacter.h's EHitType
+// and ai_stalker.h's EBodyAction/ECriticalWoundType - see notes section
+// 26b/30b) - replaced with real #includes of the actual defining headers.
+// `MonsterSpace::EPathType` itself was dead - forward-declared here but
+// never actually used anywhere (no typedef, no reference) - dropped
+// outright rather than given a real include.
+#include "ai_monster_space.h"
+#include "movement_manager_space.h"
+#include "detail_path_manager_space.h"
 
 namespace smart_cover
 {

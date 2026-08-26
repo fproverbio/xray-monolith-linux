@@ -1,8 +1,8 @@
 #pragma once
 #include "../state.h"
-#include "../../../grenade.h"
-#include "../../../../xrPhysics/iphysicsshellholder.h"
-#include "../../../../xrPhysics/icolisiondamageinfo.h"
+#include "../../../Grenade.h"
+#include "../../../../xrPhysics/IPhysicsShellHolder.h"
+#include "../../../../xrPhysics/IColisiondamageInfo.h"
 
 
 template <typename Object>

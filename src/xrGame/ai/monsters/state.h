@@ -8,6 +8,8 @@
 #include "debug_text_tree.h"
 #endif
 
+class CBaseMonster;
+
 template <typename _Object>
 class CState
 {
@@ -96,7 +98,7 @@ public:
 	virtual void initialize()
 	{
 		inherited::initialize();
-		object->path().prepare_builder();
+		this->object->path().prepare_builder();
 	}
 };
 

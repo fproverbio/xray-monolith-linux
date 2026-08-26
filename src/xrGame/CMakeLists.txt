@@ -706,4 +706,180 @@ target_sources_grouped(
 # already-ported territory (notes section 12/13/18/19). xrParticles is NOT
 # linked - zero #include from this batch's files, matching section 26's
 # finding that xrGame -> xrParticles is genuinely zero real includes.
+# ai/ - first real batch (see playground/xray-monolith-vulkan-port-notes.md,
+# the ai/monsters port). Previous agent's uncommitted first pass fixed the
+# systemic lowercase-stdafx.h case bug across ~142 files and a real
+# illegal-pure-virtual-with-body bug in monster_state_manager.h. This pass
+# found and fixed a major NEW bug class affecting nearly the entire
+# ai/monsters/states/ + per-monster-manager family: unqualified access to
+# CState<T>/CMonsterStateManager<T> dependent-base members (object,
+# add_state, get_state, select_state, current_substate, prev_substate,
+# time_state_started, etc.) - GCC's real two-phase lookup requires
+# this-> qualification that MSVC never needed. Fixed via an automated
+# GCC-diagnostic-driven sweep (not hand-editing each of the ~2800 call
+# sites individually), verified by full recompilation, with a second
+# pass to catch corruption where the same bare names collided with
+# unrelated local variables/parameters/members in non-CState-family code
+# (see notes for the full bug catalog: pure-virtual-with-body,
+# make_xrstr overload-visibility-order, friend-class-only-forward-decl,
+# ctor-mem-initializer-list this-> illegality, and more).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "AI_Common"
+  FILES
+ai/ai_monsters_misc.cpp
+ai/crow/ai_crow.cpp
+ai/phantom/phantom.cpp
+ai/weighted_random.cpp
+)
+
+target_sources_grouped(
+  TARGET xrGame
+  NAME "AI_Stalker"
+  FILES
+ai/stalker/ai_stalker_events.cpp
+ai/stalker/ai_stalker_feel.cpp
+ai/stalker/ai_stalker_misc.cpp
+ai/stalker/ai_stalker_script_entity.cpp
+)
+
+target_sources_grouped(
+  TARGET xrGame
+  NAME "AI_Trader"
+  FILES
+ai/trader/ai_trader.cpp
+ai/trader/ai_trader_script.cpp
+ai/trader/trader_animation.cpp
+)
+
+target_sources_grouped(
+  TARGET xrGame
+  NAME "AI_Monsters_Core"
+  FILES
+ai/monsters/ai_monster_bones.cpp
+ai/monsters/ai_monster_effector.cpp
+ai/monsters/ai_monster_motion_stats.cpp
+ai/monsters/ai_monster_squad.cpp
+ai/monsters/ai_monster_squad_attack.cpp
+ai/monsters/ai_monster_squad_manager.cpp
+ai/monsters/ai_monster_squad_rest.cpp
+ai/monsters/anim_triple.cpp
+ai/monsters/anti_aim_ability.cpp
+ai/monsters/basemonster/base_monster_anim.cpp
+ai/monsters/basemonster/base_monster_misc.cpp
+ai/monsters/basemonster/base_monster_net.cpp
+ai/monsters/basemonster/base_monster_path.cpp
+ai/monsters/basemonster/base_monster_startup.cpp
+ai/monsters/basemonster/base_monster_think.cpp
+ai/monsters/control_animation.cpp
+ai/monsters/control_animation_base.cpp
+ai/monsters/control_animation_base_accel.cpp
+ai/monsters/control_animation_base_load.cpp
+ai/monsters/control_animation_base_update.cpp
+ai/monsters/control_critical_wound.cpp
+ai/monsters/control_direction.cpp
+ai/monsters/control_direction_base.cpp
+ai/monsters/control_jump.cpp
+ai/monsters/control_manager.cpp
+ai/monsters/control_melee_jump.cpp
+ai/monsters/control_movement.cpp
+ai/monsters/control_movement_base.cpp
+ai/monsters/control_path_builder_base_set.cpp
+ai/monsters/control_path_builder_base_update.cpp
+ai/monsters/control_rotation_jump.cpp
+ai/monsters/control_run_attack.cpp
+ai/monsters/control_sequencer.cpp
+ai/monsters/control_threaten.cpp
+ai/monsters/controlled_actor.cpp
+ai/monsters/corpse_cover.cpp
+ai/monsters/energy_holder.cpp
+ai/monsters/invisibility.cpp
+ai/monsters/melee_checker.cpp
+ai/monsters/monster_aura.cpp
+ai/monsters/monster_corpse_manager.cpp
+ai/monsters/monster_corpse_memory.cpp
+ai/monsters/monster_cover_manager.cpp
+ai/monsters/monster_enemy_memory.cpp
+ai/monsters/monster_event_manager.cpp
+ai/monsters/monster_hit_memory.cpp
+ai/monsters/monster_home.cpp
+ai/monsters/monster_morale.cpp
+ai/monsters/monster_sound_memory.cpp
+ai/monsters/psy_aura.cpp
+ai/monsters/telekinesis.cpp
+ai/monsters/telekinetic_object.cpp
+)
+
+target_sources_grouped(
+  TARGET xrGame
+  NAME "AI_Monsters_Creatures"
+  FILES
+ai/monsters/bloodsucker/bloodsucker.cpp
+ai/monsters/bloodsucker/bloodsucker_alien.cpp
+ai/monsters/bloodsucker/bloodsucker_script.cpp
+ai/monsters/bloodsucker/bloodsucker_state_manager.cpp
+ai/monsters/bloodsucker/bloodsucker_vampire_effector.cpp
+ai/monsters/boar/boar.cpp
+ai/monsters/boar/boar_script.cpp
+ai/monsters/boar/boar_state_manager.cpp
+ai/monsters/burer/burer.cpp
+ai/monsters/burer/burer_fast_gravi.cpp
+ai/monsters/burer/burer_script.cpp
+ai/monsters/burer/burer_state_manager.cpp
+ai/monsters/cat/cat.cpp
+ai/monsters/cat/cat_script.cpp
+ai/monsters/cat/cat_state_manager.cpp
+ai/monsters/chimera/chimera.cpp
+ai/monsters/chimera/chimera_script.cpp
+ai/monsters/chimera/chimera_state_manager.cpp
+ai/monsters/controller/controller.cpp
+ai/monsters/controller/controller_animation.cpp
+ai/monsters/controller/controller_direction.cpp
+ai/monsters/controller/controller_psy_hit.cpp
+ai/monsters/controller/controller_psy_hit_effector.cpp
+ai/monsters/controller/controller_script.cpp
+ai/monsters/controller/controller_state_manager.cpp
+ai/monsters/dog/dog.cpp
+ai/monsters/dog/dog_script.cpp
+ai/monsters/flesh/flesh.cpp
+ai/monsters/flesh/flesh_script.cpp
+ai/monsters/flesh/flesh_state_manager.cpp
+ai/monsters/fracture/fracture.cpp
+ai/monsters/fracture/fracture_script.cpp
+ai/monsters/fracture/fracture_state_manager.cpp
+ai/monsters/poltergeist/poltergeist.cpp
+ai/monsters/poltergeist/poltergeist_ability.cpp
+ai/monsters/poltergeist/poltergeist_flame_thrower.cpp
+ai/monsters/poltergeist/poltergeist_movement.cpp
+ai/monsters/poltergeist/poltergeist_script.cpp
+ai/monsters/poltergeist/poltergeist_state_manager.cpp
+ai/monsters/poltergeist/poltergeist_telekinesis.cpp
+ai/monsters/pseudodog/pseudodog.cpp
+ai/monsters/pseudodog/pseudodog_psi_effector.cpp
+ai/monsters/pseudodog/pseudodog_script.cpp
+ai/monsters/pseudodog/pseudodog_state_manager.cpp
+ai/monsters/pseudodog/psy_dog.cpp
+ai/monsters/pseudodog/psy_dog_aura.cpp
+ai/monsters/pseudodog/psy_dog_state_manager.cpp
+ai/monsters/pseudogigant/pseudo_gigant.cpp
+ai/monsters/pseudogigant/pseudo_gigant_step_effector.cpp
+ai/monsters/pseudogigant/pseudogigant_script.cpp
+ai/monsters/pseudogigant/pseudogigant_state_manager.cpp
+ai/monsters/rats/ai_rat_behaviour.cpp
+ai/monsters/rats/ai_rat_feel.cpp
+ai/monsters/rats/rat_state_activation.cpp
+ai/monsters/rats/rat_state_initialize.cpp
+ai/monsters/rats/rat_state_switch.cpp
+ai/monsters/snork/snork.cpp
+ai/monsters/snork/snork_jump.cpp
+ai/monsters/snork/snork_script.cpp
+ai/monsters/snork/snork_state_manager.cpp
+ai/monsters/tushkano/tushkano.cpp
+ai/monsters/tushkano/tushkano_script.cpp
+ai/monsters/tushkano/tushkano_state_manager.cpp
+ai/monsters/zombie/zombie.cpp
+ai/monsters/zombie/zombie_script.cpp
+ai/monsters/zombie/zombie_state_manager.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

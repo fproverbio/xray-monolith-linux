@@ -1,29 +1,29 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "base_monster.h"
-#include "../../../../xrphysics/PhysicsShell.h"
-#include "../../../hit.h"
+#include "../../../../xrPhysics/PhysicsShell.h"
+#include "../../../Hit.h"
 #include "../../../PHDestroyable.h"
 #include "../../../CharacterPhysicsSupport.h"
 #include "../../../game_level_cross_table.h"
 #include "../../../game_graph.h"
-#include "../../../phmovementcontrol.h"
+#include "../../../PHMovementControl.h"
 #include "../ai_monster_squad_manager.h"
-#include "../../../../xrServerEntities/xrserver_objects_alife_monsters.h"
+#include "../../../../xrServerEntities/xrServer_Objects_ALife_Monsters.h"
 #include "../corpse_cover.h"
 #include "../../../cover_evaluators.h"
 #include "../../../seniority_hierarchy_holder.h"
 #include "../../../team_hierarchy_holder.h"
 #include "../../../squad_hierarchy_holder.h"
 #include "../../../group_hierarchy_holder.h"
-#include "../../../phdestroyable.h"
+#include "../../../PHDestroyable.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
 #include "../../../detail_path_manager.h"
 #include "../../../memory_manager.h"
 #include "../../../visual_memory_manager.h"
 #include "../monster_velocity_space.h"
-#include "../../../entitycondition.h"
+#include "../../../EntityCondition.h"
 #include "../../../sound_player.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../state_manager.h"
 #include "../controlled_entity.h"
 #include "../control_animation_base.h"
@@ -33,10 +33,10 @@
 #include "../anomaly_detector.h"
 #include "../monster_cover_manager.h"
 #include "../monster_home.h"
-#include "../../../inventory.h"
-#include "../../../xrserver.h"
+#include "../../../Inventory.h"
+#include "../../../xrServer.h"
 #include "../ai_monster_squad.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../ai_object_location.h"
 #include "../../../ai_space.h"
 #include "../../../../xrServerEntities/script_engine.h"
@@ -225,7 +225,7 @@ bool accessible_epsilon(CBaseMonster* const object, Fvector const pos, float eps
 
 	for (u32 i = 0; i < sizeof(offsets) / sizeof(offsets[0]); ++i)
 	{
-		if (object->movement().restrictions().accessible(pos + offsets[i]))
+		if (this->object->movement().restrictions().accessible(pos + offsets[i]))
 			return true;
 	}
 
@@ -235,7 +235,7 @@ bool accessible_epsilon(CBaseMonster* const object, Fvector const pos, float eps
 static
 bool enemy_inaccessible(CBaseMonster* const object)
 {
-	CEntityAlive const* enemy = object->EnemyMan.get_enemy();
+	CEntityAlive const* enemy = this->object->EnemyMan.get_enemy();
 	if (!enemy)
 		return false;
 
@@ -251,10 +251,10 @@ bool enemy_inaccessible(CBaseMonster* const object)
 	if (xz_dist_to_vertex > 1.2f)
 		return true;
 
-	if (!object->Home->at_home(enemy_pos))
+	if (!this->object->Home->at_home(enemy_pos))
 		return true;
 
-	if (!accessible_epsilon(object, enemy_pos, 1.5f))
+	if (!accessible_epsilon(this->object, enemy_pos, 1.5f))
 		return true;
 
 	if (!ai().level_graph().valid_vertex_position(enemy_pos))
@@ -494,7 +494,7 @@ CPHDestroyable* CBaseMonster::ph_destroyable()
 
 bool CBaseMonster::useful(const CItemManager* manager, const CGameObject* object) const
 {
-	const Fvector& object_pos = object->Position();
+	const Fvector& object_pos = this->object->Position();
 	if (!movement().restrictions().accessible(object_pos))
 	{
 		return false;
@@ -504,22 +504,22 @@ bool CBaseMonster::useful(const CItemManager* manager, const CGameObject* object
 	// sometimes accessible(object->Position())) returns true
 	// but accessible(ai_location().level_vertex_id()) crashes 
 	// because level_vertex_id is not valid, so this code syncs vertex_id with position
-	if (!ai().level_graph().valid_vertex_id(object->ai_location().level_vertex_id()))
+	if (!ai().level_graph().valid_vertex_id(this->object->ai_location().level_vertex_id()))
 	{
 		u32 vertex_id = ai().level_graph().vertex_id(object_pos);
 		if (!ai().level_graph().valid_vertex_id(vertex_id))
 		{
 			return false;
 		}
-		object->ai_location().level_vertex(vertex_id);
+		this->object->ai_location().level_vertex(vertex_id);
 	}
 
-	if (!movement().restrictions().accessible(object->ai_location().level_vertex_id()))
+	if (!movement().restrictions().accessible(this->object->ai_location().level_vertex_id()))
 	{
 		return false;
 	}
 
-	const CEntityAlive* pCorpse = smart_cast<const CEntityAlive *>(object);
+	const CEntityAlive* pCorpse = smart_cast<const CEntityAlive *>(this->object);
 	if (!pCorpse)
 	{
 		return false;

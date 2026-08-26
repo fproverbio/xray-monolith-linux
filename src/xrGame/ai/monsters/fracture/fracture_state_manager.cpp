@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "fracture.h"
 #include "fracture_state_manager.h"
 
@@ -14,16 +14,16 @@
 #include "../states/monster_state_hear_danger_sound.h"
 #include "../states/monster_state_hitted.h"
 
-#include "../../../entitycondition.h"
+#include "../../../EntityCondition.h"
 
 CStateManagerFracture::CStateManagerFracture(CFracture* obj) : inherited(obj)
 {
-	add_state(eStateRest, xr_new<CStateMonsterRest<CFracture>>(obj));
-	add_state(eStateAttack, xr_new<CStateMonsterAttack<CFracture>>(obj));
-	add_state(eStateEat, xr_new<CStateMonsterEat<CFracture>>(obj));
-	add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CFracture>>(obj));
-	add_state(eStatePanic, xr_new<CStateMonsterPanic<CFracture>>(obj));
-	add_state(eStateHitted, xr_new<CStateMonsterHitted<CFracture>>(obj));
+	this->add_state(eStateRest, xr_new<CStateMonsterRest<CFracture>>(obj));
+	this->add_state(eStateAttack, xr_new<CStateMonsterAttack<CFracture>>(obj));
+	this->add_state(eStateEat, xr_new<CStateMonsterEat<CFracture>>(obj));
+	this->add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CFracture>>(obj));
+	this->add_state(eStatePanic, xr_new<CStateMonsterPanic<CFracture>>(obj));
+	this->add_state(eStateHitted, xr_new<CStateMonsterHitted<CFracture>>(obj));
 }
 
 CStateManagerFracture::~CStateManagerFracture()
@@ -33,11 +33,11 @@ CStateManagerFracture::~CStateManagerFracture()
 void CStateManagerFracture::execute()
 {
 	u32 state_id = u32(-1);
-	const CEntityAlive* enemy = object->EnemyMan.get_enemy();
+	const CEntityAlive* enemy = this->object->EnemyMan.get_enemy();
 
 	if (enemy)
 	{
-		switch (object->EnemyMan.get_danger_type())
+		switch (this->object->EnemyMan.get_danger_type())
 		{
 		case eStrong: state_id = eStatePanic;
 			break;
@@ -45,11 +45,11 @@ void CStateManagerFracture::execute()
 			break;
 		}
 	}
-	else if (object->HitMemory.is_hit())
+	else if (this->object->HitMemory.is_hit())
 	{
 		state_id = eStateHitted;
 	}
-	else if (object->hear_interesting_sound || object->hear_dangerous_sound)
+	else if (this->object->hear_interesting_sound || this->object->hear_dangerous_sound)
 	{
 		state_id = eStateHearDangerousSound;
 	}
@@ -64,10 +64,10 @@ void CStateManagerFracture::execute()
 	}
 
 	// установить текущее состояние
-	select_state(state_id);
+	this->select_state(state_id);
 
 	// выполнить текущее состояние
-	get_state_current()->execute();
+	this->get_state_current()->execute();
 
-	prev_substate = current_substate;
+	this->prev_substate = this->current_substate;
 }

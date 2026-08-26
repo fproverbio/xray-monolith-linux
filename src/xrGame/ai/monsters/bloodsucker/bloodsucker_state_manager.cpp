@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "bloodsucker_state_manager.h"
 #include "bloodsucker.h"
 
@@ -23,22 +23,22 @@
 
 CStateManagerBloodsucker::CStateManagerBloodsucker(CAI_Bloodsucker* monster) : inherited(monster)
 {
-	add_state(eStateRest, xr_new<CStateMonsterRest<CAI_Bloodsucker>>(monster));
-	add_state(eStatePanic, xr_new<CStateMonsterPanic<CAI_Bloodsucker>>(monster));
+	this->add_state(eStateRest, xr_new<CStateMonsterRest<CAI_Bloodsucker>>(monster));
+	this->add_state(eStatePanic, xr_new<CStateMonsterPanic<CAI_Bloodsucker>>(monster));
 
-	add_state(eStateAttack, xr_new<CStateMonsterAttack<CAI_Bloodsucker>>(monster));
+	this->add_state(eStateAttack, xr_new<CStateMonsterAttack<CAI_Bloodsucker>>(monster));
 	//add_state(eStateAttack,				xr_new<CBloodsuckerStateAttack<CAI_Bloodsucker> >			(monster));
 
-	add_state(eStateEat, xr_new<CStateMonsterEat<CAI_Bloodsucker>>(monster));
-	add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CAI_Bloodsucker>>(monster));
-	add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CAI_Bloodsucker>>(monster));
-	add_state(eStateHitted, xr_new<CStateMonsterHitted<CAI_Bloodsucker>>(monster));
-	add_state(eStateVampire_Execute, xr_new<CStateBloodsuckerVampireExecute<CAI_Bloodsucker>>(monster));
+	this->add_state(eStateEat, xr_new<CStateMonsterEat<CAI_Bloodsucker>>(monster));
+	this->add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CAI_Bloodsucker>>(monster));
+	this->add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CAI_Bloodsucker>>(monster));
+	this->add_state(eStateHitted, xr_new<CStateMonsterHitted<CAI_Bloodsucker>>(monster));
+	this->add_state(eStateVampire_Execute, xr_new<CStateBloodsuckerVampireExecute<CAI_Bloodsucker>>(monster));
 }
 
 void CStateManagerBloodsucker::drag_object()
 {
-	CEntityAlive* const ph_obj = object->m_cob;
+	CEntityAlive* const ph_obj = this->object->m_cob;
 	if (!ph_obj)
 	{
 		return;
@@ -50,22 +50,22 @@ void CStateManagerBloodsucker::drag_object()
 		return;
 	}
 
-	CMonsterSquad* const squad = monster_squad().get_squad(object);
+	CMonsterSquad* const squad = monster_squad().get_squad(this->object);
 	if (squad)
 	{
 		squad->lock_corpse(ph_obj);
 	}
 
 	{
-		const u16 drag_bone = kinematics->LL_BoneID(object->m_str_cel);
-		object->character_physics_support()->movement()->PHCaptureObject(ph_obj, drag_bone);
+		const u16 drag_bone = kinematics->LL_BoneID(this->object->m_str_cel);
+		this->object->character_physics_support()->movement()->PHCaptureObject(ph_obj, drag_bone);
 	}
 
-	IPHCapture* const capture = object->character_physics_support()->movement()->PHCapture();
+	IPHCapture* const capture = this->object->character_physics_support()->movement()->PHCapture();
 
-	if (capture && !capture->Failed() && object->is_animated())
+	if (capture && !capture->Failed() && this->object->is_animated())
 	{
-		object->start_drag();
+		this->object->start_drag();
 	}
 }
 
@@ -76,13 +76,13 @@ void CStateManagerBloodsucker::update()
 
 bool CStateManagerBloodsucker::check_vampire()
 {
-	if (prev_substate != eStateVampire_Execute)
+	if (this->prev_substate != eStateVampire_Execute)
 	{
-		if (get_state(eStateVampire_Execute)->check_start_conditions()) return true;
+		if (this->get_state(eStateVampire_Execute)->check_start_conditions()) return true;
 	}
 	else
 	{
-		if (!get_state(eStateVampire_Execute)->check_completion()) return true;
+		if (!this->get_state(eStateVampire_Execute)->check_completion()) return true;
 	}
 	return false;
 }
@@ -91,7 +91,7 @@ void CStateManagerBloodsucker::execute()
 {
 	u32 state_id = u32(-1);
 
-	const CEntityAlive* enemy = object->EnemyMan.get_enemy();
+	const CEntityAlive* enemy = this->object->EnemyMan.get_enemy();
 
 	if (enemy)
 	{
@@ -101,7 +101,7 @@ void CStateManagerBloodsucker::execute()
 		}
 		else
 		{
-			switch (object->EnemyMan.get_danger_type())
+			switch (this->object->EnemyMan.get_danger_type())
 			{
 			case eStrong: state_id = eStatePanic;
 				break;
@@ -110,15 +110,15 @@ void CStateManagerBloodsucker::execute()
 			}
 		}
 	}
-	else if (object->HitMemory.is_hit())
+	else if (this->object->HitMemory.is_hit())
 	{
 		state_id = eStateHitted;
 	}
-	else if (object->hear_interesting_sound)
+	else if (this->object->hear_interesting_sound)
 	{
 		state_id = eStateHearInterestingSound;
 	}
-	else if (object->hear_dangerous_sound)
+	else if (this->object->hear_dangerous_sound)
 	{
 		state_id = eStateHearDangerousSound;
 	}
@@ -140,10 +140,10 @@ void CStateManagerBloodsucker::execute()
 	// 		object->stop_invisible_predator();
 	// 	}
 
-	select_state(state_id);
+	this->select_state(state_id);
 
 	// выполнить текущее состояние
-	get_state_current()->execute();
+	this->get_state_current()->execute();
 
-	prev_substate = current_substate;
+	this->prev_substate = this->current_substate;
 }

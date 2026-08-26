@@ -177,12 +177,12 @@ public:
 
 	void clear_and_reserve()
 	{
-		if (capacity() <= (size() + size() / 4)) clear_not_free();
+		if (this->capacity() <= (this->size() + this->size() / 4)) clear_not_free();
 		else
 		{
-			u32 old = size();
+			u32 old = this->size();
 			clear_and_free();
-			reserve(old);
+			this->reserve(old);
 		}
 	}
 

@@ -1,16 +1,16 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "bloodsucker.h"
 #include "bloodsucker_state_manager.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../ActorEffector.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../material_manager.h"
 #include "bloodsucker_vampire_effector.h"
 #include "../../../detail_path_manager.h"
 #include "../../../level_debug.h"
 #include "../monster_velocity_space.h"
-#include "../../../gamepersistent.h"
+#include "../../../GamePersistent.h"
 #include "../../../game_object_space.h"
 
 #include "../control_animation_base.h"
@@ -18,16 +18,19 @@
 #include "../control_rotation_jump.h"
 
 #include "../../../sound_player.h"
-#include "../../../../xrEngine/camerabase.h"
+#include "../../../../xrEngine/CameraBase.h"
 #include "../../../xr_level_controller.h"
 #include "../../../ActorCondition.h"
 
 #include "../../../PHDestroyable.h"
 #include "../../../CharacterPhysicsSupport.h"
 
-#ifdef DEBUG
+// <dinput.h> only exists on Windows - DIK_* stand-ins come from
+// win32_compat.h instead (same established guard as UIEditBox.cpp etc,
+// see notes section 21a/32).
+#ifdef _WIN32
 #	include <dinput.h>
-#endif // DEBUG
+#endif
 
 
 namespace detail

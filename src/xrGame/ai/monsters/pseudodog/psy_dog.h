@@ -3,6 +3,12 @@
 #include "../../../../xrServerEntities/script_export_space.h"
 
 class CPsyDogPhantom;
+// A bare `friend class X;` only introduces X for the friend relationship -
+// it isn't reliably usable as an ordinary type name within the *same*
+// class body afterwards (confirmed via isolated repro: MSVC tolerates it,
+// GCC rejects `CBar* m_bar;` right after `friend class CBar;` with "does
+// not name a type"). Needs its own real forward declaration too.
+class CPsyDogAura;
 
 class CPsyDog : public CAI_PseudoDog
 {

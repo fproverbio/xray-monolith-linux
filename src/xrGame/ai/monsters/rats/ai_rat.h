@@ -18,7 +18,9 @@
 
 class CBlend;
 class CPatrolPath;
-enum ESoundTypes;
+// Illegal unscoped-enum forward declaration with no fixed underlying type -
+// same bug class as stalker_movement_params.h/PHCharacter.h/ai_stalker.h.
+#include "../../../sound_memory_manager.h"
 class rat_state_manager;
 
 namespace steering_behaviour

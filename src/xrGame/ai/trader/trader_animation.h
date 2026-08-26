@@ -4,10 +4,9 @@
 
 class CAI_Trader;
 
-namespace MonsterSpace
-{
-	enum EMonsterHeadAnimType;
-};
+// Illegal unscoped-enum forward declaration with no fixed underlying type -
+// same bug class as stalker_movement_params.h/PHCharacter.h/ai_stalker.h.
+#include "../../ai_monster_space.h"
 
 class CTraderAnimation
 {

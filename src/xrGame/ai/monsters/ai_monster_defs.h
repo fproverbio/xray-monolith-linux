@@ -541,7 +541,7 @@ struct SMonsterHit
 
 	bool operator==(const CObject* obj)
 	{
-		return (object == obj);
+		return (this->object == obj);
 	}
 };
 

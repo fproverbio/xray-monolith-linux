@@ -1,13 +1,13 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "poltergeist.h"
-#include "../../../../xrServerEntities/xrmessages.h"
+#include "../../../../xrServerEntities/xrMessages.h"
 #include "../../../ai_object_location.h"
 #include "../../../level_graph.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../ai_space.h"
 #include "../../../restricted_object.h"
-#include "../../../actor.h"
-#include "../../../actorEffector.h"
+#include "../../../Actor.h"
+#include "../../../ActorEffector.h"
 #include "../ai_monster_effector.h"
 
 CPolterFlame::CPolterFlame(CPoltergeist* polter) : inherited(polter)
@@ -103,7 +103,7 @@ void CPolterFlame::create_flame(const CObject* target_object)
 	element->target_dir.normalize();
 
 	m_flames.push_back(element);
-	select_state(element, ePrepare);
+	this->select_state(element, ePrepare);
 
 	m_time_flame_started = time();
 }
@@ -157,10 +157,10 @@ void CPolterFlame::update_schedule()
 		{
 		case ePrepare:
 			// check if time_out
-			if (elem->time_started + m_time_fire_delay < time()) select_state(elem, eFire);
+			if (elem->time_started + m_time_fire_delay < time()) this->select_state(elem, eFire);
 			break;
 		case eFire:
-			if (elem->time_started + m_time_fire_play < time()) select_state(elem, eStop);
+			if (elem->time_started + m_time_fire_play < time()) this->select_state(elem, eStop);
 			else
 			{
 				// check if we need test hit to enemy

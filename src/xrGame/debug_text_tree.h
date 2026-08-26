@@ -9,6 +9,40 @@
 #ifndef AI_DEBUG_TEXT_TREE_H_INCLUDED
 #define AI_DEBUG_TEXT_TREE_H_INCLUDED
 
+// These overloads used to live *below* the `namespace debug{...}` block that
+// #includes debug_text_tree_inline.h (the add_text<T>/add_line<T> template
+// bodies, which call make_xrstr(a) unqualified). MSVC never minded - it
+// resolves such calls only at instantiation time, when the whole TU (hence
+// every overload below too) is already visible. GCC does real two-phase
+// lookup: ordinary (non-ADL) lookup for a dependent call is fixed at the
+// template's *definition* point, so only names declared *before* it are
+// found. With these overloads declared after the namespace block, the only
+// overload visible from within add_text<T>'s body was
+// ai/monsters/state_defs.h's `make_xrstr(EMonsterState)` (declared earlier,
+// via state.h's own #include order) - real ADL-independent instantiations
+// like `add_text("Current")` (Type1 = char[8], no ADL contribution at all)
+// then hard-error trying to convert a `const char*` to `EMonsterState`,
+// since that was genuinely the only candidate ordinary lookup could find.
+// Fix: declare these overloads before the namespace/template that uses
+// them, exactly like the EMonsterState one already effectively is.
+IC xr_string __cdecl make_xrstr(LPCSTR format, ...)
+{
+	va_list args;
+	va_start(args, format);
+
+	char temp[4096];
+	vsprintf(temp, format, args);
+
+	return xr_string(temp);
+}
+
+IC xr_string __cdecl make_xrstr(bool b) { return b ? "+" : "-"; }
+IC xr_string __cdecl make_xrstr(float f) { return make_xrstr("%f", f); }
+IC xr_string __cdecl make_xrstr(s32 d) { return make_xrstr("%i", d); }
+IC xr_string __cdecl make_xrstr(u32 d) { return make_xrstr("%u", d); }
+IC xr_string __cdecl make_xrstr(Fvector3 v) { return make_xrstr("[%f][%f][%f]", v.x, v.y, v.z); }
+IC xr_string __cdecl make_xrstr(const xr_string& s) { return s; }
+
 namespace debug
 {
 	class text_tree
@@ -85,24 +119,5 @@ namespace debug
 
 #include "debug_text_tree_inline.h"
 } // namespace debug
-
-IC xr_string __cdecl make_xrstr(LPCSTR format, ...)
-{
-	va_list args;
-	va_start(args, format);
-
-	char temp[4096];
-	vsprintf(temp, format, args);
-
-	return xr_string(temp);
-}
-
-IC xr_string __cdecl make_xrstr(bool b) { return b ? "+" : "-"; }
-IC xr_string __cdecl make_xrstr(float f) { return make_xrstr("%f", f); }
-IC xr_string __cdecl make_xrstr(s32 d) { return make_xrstr("%i", d); }
-IC xr_string __cdecl make_xrstr(u32 d) { return make_xrstr("%u", d); }
-IC xr_string __cdecl make_xrstr(Fvector3 v) { return make_xrstr("[%f][%f][%f]", v.x, v.y, v.z); }
-IC xr_string __cdecl make_xrstr(const xr_string& s) { return s; }
-
 
 #endif // defined(AI_DEBUG_TEXT_TREE_H_INCLUDED)

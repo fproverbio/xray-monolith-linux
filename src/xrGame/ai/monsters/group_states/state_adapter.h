@@ -29,7 +29,7 @@ public:
 	{
 	}
 
-	virtual void initialize() { time_state_started = Device.dwTimeGlobal; }
+	virtual void initialize() { this->time_state_started = Device.dwTimeGlobal; }
 
 	virtual void execute()
 	{

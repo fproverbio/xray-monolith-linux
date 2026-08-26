@@ -93,10 +93,10 @@ bool CAI_Rat::useful(const CItemManager* manager, const CGameObject* object) con
 	if (g_Alive())
 		return (false);
 
-	if (!memory().item().useful(object))
+	if (!memory().item().useful(this->object))
 		return (false);
 
-	const CEntityAlive* entity_alive = smart_cast<const CEntityAlive*>(object);
+	const CEntityAlive* entity_alive = smart_cast<const CEntityAlive*>(this->object);
 	if (!entity_alive)
 		return (false);
 
@@ -105,7 +105,7 @@ bool CAI_Rat::useful(const CItemManager* manager, const CGameObject* object) con
 
 float CAI_Rat::evaluate(const CItemManager* manager, const CGameObject* object) const
 {
-	const CEntityAlive* entity_alive = smart_cast<const CEntityAlive*>(object);
+	const CEntityAlive* entity_alive = smart_cast<const CEntityAlive*>(this->object);
 	VERIFY(entity_alive);
 	if (!entity_alive->g_Alive())
 	{

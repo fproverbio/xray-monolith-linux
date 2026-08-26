@@ -12,8 +12,8 @@
 TEMPLATE_SPECIALIZATION
 CStateChimeraHuntingAbstract::CStateChimeraHunting(_Object* obj) : inherited(obj)
 {
-	add_state(eStateMoveToCover, xr_new<CStateChimeraHuntingMoveToCover<_Object>>(obj));
-	add_state(eStateComeOut, xr_new<CStateChimeraHuntingComeOut<_Object>>(obj));
+	this->add_state(eStateMoveToCover, xr_new<CStateChimeraHuntingMoveToCover<_Object>>(obj));
+	this->add_state(eStateComeOut, xr_new<CStateChimeraHuntingComeOut<_Object>>(obj));
 }
 
 
@@ -32,9 +32,9 @@ bool CStateChimeraHuntingAbstract::check_completion()
 TEMPLATE_SPECIALIZATION
 void CStateChimeraHuntingAbstract::reselect_state()
 {
-	if (prev_substate == u32(-1)) select_state(eStateMoveToCover);
-	else if (prev_substate == eStateMoveToCover) select_state(eStateComeOut);
-	else select_state(eStateMoveToCover);
+	if (this->prev_substate == u32(-1)) this->select_state(eStateMoveToCover);
+	else if (this->prev_substate == eStateMoveToCover) this->select_state(eStateComeOut);
+	else this->select_state(eStateMoveToCover);
 }
 
 

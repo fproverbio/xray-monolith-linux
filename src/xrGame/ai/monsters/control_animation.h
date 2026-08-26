@@ -16,7 +16,7 @@ struct SAnimationPart
 		motion.invalidate();
 		blend = 0;
 		actual = true;
-		time_started = 0;
+		this->time_started = 0;
 	}
 
 	void set_motion(MotionID const& m);

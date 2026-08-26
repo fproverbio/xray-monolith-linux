@@ -1,9 +1,9 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "pseudo_gigant.h"
 #include "pseudo_gigant_step_effector.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../ActorEffector.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "pseudogigant_state_manager.h"
 #include "../monster_velocity_space.h"
 #include "../control_animation_base.h"
@@ -19,7 +19,7 @@
 
 #include "script_hit.h"
 #include "pch_script.h"
-#include "../../script_game_object.h"
+#include "../../../script_game_object.h"
 
 // demonized: Flag for damaging NPCs and other objects by the stomp attack
 BOOL pseudogiantCanDamageObjects = 1;

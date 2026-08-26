@@ -18,7 +18,7 @@ class CAnomalyDetector
 
 		bool operator ==(CObject* obj)
 		{
-			return (object == obj);
+			return (this->object == obj);
 		}
 	};
 

@@ -1,7 +1,7 @@
-#include "stdafx.h"
+#include "../../StdAfx.h"
 #include "control_path_builder.h"
 #include "control_manager.h"
-#include "BaseMonster/base_monster.h"
+#include "basemonster/base_monster.h"
 #include "../../game_location_selector.h"
 #include "../../level_location_selector.h"
 #include "../../detail_path_manager.h"
@@ -9,8 +9,8 @@
 #include "../../ai_space.h"
 #include "../../movement_manager_space.h"
 #include "../../level_path_manager.h"
-#include "../../actor.h"
-#include "../../Actor_Memory.h"
+#include "../../Actor.h"
+#include "../../actor_memory.h"
 #include "../../visual_memory_manager.h"
 
 #ifdef DEBUG
@@ -144,9 +144,9 @@ bool CControlPathBuilder::build_special(const Fvector& target, u32 node, u32 vel
 	if (node == u32(-1))
 	{
 		// нода в прямой видимости?
-		restrictions().add_border(object().Position(), target);
-		node = ai().level_graph().check_position_in_direction(object().ai_location().level_vertex_id(),
-		                                                      object().Position(), target);
+		restrictions().add_border(this->object().Position(), target);
+		node = ai().level_graph().check_position_in_direction(this->object().ai_location().level_vertex_id(),
+		                                                      this->object().Position(), target);
 		restrictions().remove_border();
 
 		if (!ai().level_graph().valid_vertex_id(node) || !accessible(node))
@@ -196,7 +196,7 @@ bool CControlPathBuilder::is_path_end(float dist_to_end)
 		return true;
 
 	// count distance from current object position to the path end
-	float cur_dist_to_end = object().Position().distance_to(
+	float cur_dist_to_end = this->object().Position().distance_to(
 		detail().path()[detail().curr_travel_point_index() + 1].position);
 	for (u32 i = detail().curr_travel_point_index() + 1; i < detail().path().size() - 1; i++)
 	{
@@ -244,7 +244,7 @@ void CControlPathBuilder::fix_position(const Fvector& pos, u32 node, Fvector& re
 		if (level_vertex_id != node) {
 			Msg		("! src_node[%d] res_node[%d] src_pos[%f,%f,%f] res_pos[%f,%f,%f]",node,level_vertex_id,VPUSH(pos),VPUSH(res_pos));
 		}
-		VERIFY3((level_vertex_id == node) || show_restrictions(m_restricted_object),"Invalid restrictions (see log for details) for object ",*(CControl_Com::m_object->cName()));
+		VERIFY3((level_vertex_id == node) || show_restrictions(m_restricted_object),"Invalid restrictions (see log for details) for this->object ",*(CControl_Com::m_object->cName()));
 #endif
 	}
 }

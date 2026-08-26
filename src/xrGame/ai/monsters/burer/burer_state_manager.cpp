@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "burer.h"
 #include "burer_state_manager.h"
 
@@ -20,14 +20,14 @@
 
 CStateManagerBurer::CStateManagerBurer(CBurer* monster) : inherited(monster)
 {
-	add_state(eStateRest, xr_new<CStateMonsterRest<CBurer>>(monster));
-	add_state(eStatePanic, xr_new<CStateMonsterPanic<CBurer>>(monster));
-	add_state(eStateAttack, xr_new<CStateBurerAttack<CBurer>>(monster));
-	add_state(eStateEat, xr_new<CStateMonsterEat<CBurer>>(monster));
-	add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CBurer>>(monster));
-	add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CBurer>>(monster));
-	add_state(eStateHitted, xr_new<CStateMonsterHitted<CBurer>>(monster));
-	add_state(eStateBurerScanning, xr_new<CStateMonsterCustomAction<CBurer>>(monster));
+	this->add_state(eStateRest, xr_new<CStateMonsterRest<CBurer>>(monster));
+	this->add_state(eStatePanic, xr_new<CStateMonsterPanic<CBurer>>(monster));
+	this->add_state(eStateAttack, xr_new<CStateBurerAttack<CBurer>>(monster));
+	this->add_state(eStateEat, xr_new<CStateMonsterEat<CBurer>>(monster));
+	this->add_state(eStateHearInterestingSound, xr_new<CStateMonsterHearInterestingSound<CBurer>>(monster));
+	this->add_state(eStateHearDangerousSound, xr_new<CStateMonsterHearDangerousSound<CBurer>>(monster));
+	this->add_state(eStateHitted, xr_new<CStateMonsterHitted<CBurer>>(monster));
+	this->add_state(eStateBurerScanning, xr_new<CStateMonsterCustomAction<CBurer>>(monster));
 }
 
 #define SCAN_STATE_TIME 4000
@@ -36,9 +36,9 @@ void CStateManagerBurer::execute()
 {
 	u32 state = u32(-1);
 
-	if (object->EnemyMan.get_enemy())
+	if (this->object->EnemyMan.get_enemy())
 	{
-		switch (object->EnemyMan.get_danger_type())
+		switch (this->object->EnemyMan.get_danger_type())
 		{
 		case eStrong: state = eStatePanic;
 			break;
@@ -46,37 +46,37 @@ void CStateManagerBurer::execute()
 			break;
 		}
 	}
-	else if (object->HitMemory.is_hit() && (object->HitMemory.get_last_hit_time() + 10000 > Device.dwTimeGlobal))
+	else if (this->object->HitMemory.is_hit() && (this->object->HitMemory.get_last_hit_time() + 10000 > Device.dwTimeGlobal))
 		state = eStateHitted;
-	else if (object->hear_interesting_sound)
+	else if (this->object->hear_interesting_sound)
 		state = eStateHearInterestingSound;
-	else if (object->hear_dangerous_sound)
+	else if (this->object->hear_dangerous_sound)
 		state = eStateHearDangerousSound;
-	else if (object->time_last_scan + SCAN_STATE_TIME > Device.dwTimeGlobal)
+	else if (this->object->time_last_scan + SCAN_STATE_TIME > Device.dwTimeGlobal)
 		state = eStateBurerScanning;
 	else if (can_eat())
 		state = eStateEat;
 	else state = eStateRest;
 
-	select_state(state);
+	this->select_state(state);
 
 	// выполнить текущее состояние
-	get_state_current()->execute();
+	this->get_state_current()->execute();
 
-	prev_substate = current_substate;
+	this->prev_substate = this->current_substate;
 }
 
 void CStateManagerBurer::setup_substates()
 {
-	if (current_substate == eStateBurerScanning)
+	if (this->current_substate == eStateBurerScanning)
 	{
 		SStateDataAction data;
 
 		data.action = ACT_LOOK_AROUND;
 		data.sound_type = MonsterSound::eMonsterSoundIdle;
-		data.sound_delay = object->db().m_dwIdleSndDelay;
+		data.sound_delay = this->object->db().m_dwIdleSndDelay;
 
-		get_state_current()->fill_data_with(&data, sizeof(SStateDataAction));
+		this->get_state_current()->fill_data_with(&data, sizeof(SStateDataAction));
 		return;
 	}
 }

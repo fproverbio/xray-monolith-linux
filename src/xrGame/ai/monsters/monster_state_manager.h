@@ -22,7 +22,16 @@ public:
 	virtual void force_script_state(EMonsterState state);
 	virtual void execute_script_state();
 	virtual void critical_finalize();
-	virtual void remove_links(CObject* object) = 0 { inherited::remove_links(object); }
+	// Was `virtual void remove_links(CObject* object) = 0 { ... }` - illegal
+	// combined pure-specifier+body (bug pattern #7 in the port catalog,
+	// previously only seen on destructors). MSVC accepts it as a nonstandard
+	// extension; GCC rejects it outright, and since this is a template the
+	// error poisons every instantiation ("instantiating erroneous template"
+	// at every derived monster's CMonsterStateManager<T> use). Split into a
+	// pure declaration here + an out-of-class definition below, so derived
+	// classes must still override it but can still call the default body via
+	// `CMonsterStateManager::remove_links(...)`.
+	virtual void remove_links(CObject* object) = 0;
 
 	virtual EMonsterState get_state_type();
 

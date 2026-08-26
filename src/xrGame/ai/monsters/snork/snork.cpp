@@ -1,18 +1,20 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "snork.h"
 #include "snork_state_manager.h"
 #include "../../../detail_path_manager_space.h"
 #include "../../../detail_path_manager.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../monster_velocity_space.h"
 #include "../../../sound_player.h"
 #include "../control_animation_base.h"
 #include "../control_movement_base.h"
 #include "../../../PHMovementControl.h"
 
-#ifdef _DEBUG
+#ifdef _WIN32
 #	include <dinput.h>
-#	include "../../../actor.h"
+#endif
+#ifdef _DEBUG
+#	include "../../../Actor.h"
 #	include "../../../ai_object_location.h"
 #	include "../../../level_debug.h"
 #	include "../../../cover_point.h"

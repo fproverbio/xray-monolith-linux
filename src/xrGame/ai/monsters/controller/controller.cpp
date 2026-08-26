@@ -1,13 +1,13 @@
-#include "stdafx.h"
+#include "../../../StdAfx.h"
 #include "controller.h"
 #include "controller_state_manager.h"
 #include "../controlled_entity.h"
-#include "../../../actor.h"
+#include "../../../Actor.h"
 #include "../../../ActorEffector.h"
 #include "../../../ActorCondition.h"
 #include "../ai_monster_effector.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../sound_player.h"
 #include "../../../ai_monster_space.h"
 #include "../../../UIGameCustom.h"
@@ -41,7 +41,7 @@
 #include "../monster_cover_manager.h"
 //#include "controller_psy_aura.h"
 
-#ifdef _DEBUG
+#ifdef _WIN32
 #	include <dinput.h>
 #endif
 

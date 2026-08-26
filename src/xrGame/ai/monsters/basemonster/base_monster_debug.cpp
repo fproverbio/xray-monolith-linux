@@ -1,14 +1,14 @@
 #include "pch_script.h"
 #include "base_monster.h"
-#include "../../../level.h"
+#include "../../../Level.h"
 #include "../../../level_debug.h"
-#include "../../../entitycondition.h"
+#include "../../../EntityCondition.h"
 #include "../../../ai_debug.h"
 #include "../state_defs.h"
 #include "../state_manager.h"
-#include "../../../phmovementcontrol.h"
-#include "../../../characterphysicssupport.h"
-#include "../../../actor.h"
+#include "../../../PHMovementControl.h"
+#include "../../../CharacterPhysicsSupport.h"
+#include "../../../Actor.h"
 
 // Lain: added
 #include "../../../debug_text_tree.h"
@@ -17,8 +17,8 @@
 #include "../../../sound_memory_manager.h"
 #include "../../../hit_memory_manager.h"
 #include "../../../actor_memory.h"
-#include "../../../inventory.h"
-#include "../../../weapon.h"
+#include "../../../Inventory.h"
+#include "../../../Weapon.h"
 #include "../../../ai_object_location.h"
 #include "../../../movement_manager_space.h"
 #include "../control_animation_base.h"
@@ -132,9 +132,9 @@ CBaseMonster::SDebugInfo CBaseMonster::show_debug_info()
 	// Hit
 	if (HitMemory.is_hit()) {
 		if (HitMemory.get_last_hit_object()) {
-			xr_sprintf(text,"Hit Info: object=[%s] time=[%u]", *(HitMemory.get_last_hit_object()->cName()), HitMemory.get_last_hit_time());
+			xr_sprintf(text,"Hit Info: this->object=[%s] time=[%u]", *(HitMemory.get_last_hit_object()->cName()), HitMemory.get_last_hit_time());
 		} else {
-			xr_sprintf(text,"Hit Info: object=[NONE] time=[%u]", HitMemory.get_last_hit_time());
+			xr_sprintf(text,"Hit Info: this->object=[NONE] time=[%u]", HitMemory.get_last_hit_time());
 		}
 	} else 
 		xr_sprintf(text, "Hit Info: NONE");
