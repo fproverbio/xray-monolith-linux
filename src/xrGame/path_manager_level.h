@@ -47,7 +47,9 @@ protected:
 		_index_type,
 		_iteration_type
 	> _Parameters;
-	typedef typename CPathManagerGeneric<
+	// Same "typename on a bare type-id with no further ::member" bug as
+	// path_manager_level_nearest_vertex.h.
+	typedef CPathManagerGeneric<
 		_Graph,
 		_DataStorage,
 		_Parameters,

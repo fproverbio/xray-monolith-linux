@@ -1,4 +1,6 @@
 #include "pch_script.h"
+// psAI_Flags - see ai_monsters_misc.cpp's comment; same established fix.
+extern Flags32 psAI_Flags;
 #include "base_monster.h"
 #include "../../../Level.h"
 #include "../../../level_debug.h"

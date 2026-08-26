@@ -946,23 +946,61 @@ target_sources_grouped(
   ai/stalker/ai_stalker_fire.cpp
 )
 
-# ai/ still excluded - 5 of 151 ai/*.cpp files, real per-file g++ -c
-# error counts, honestly not yet chased further:
+# Follow-up pass (see notes file): 3 more of the remaining 5 fixed for
+# real -
+#   basemonster/base_monster_debug.cpp: `psAI_Flags` genuinely IS a real
+#     global (ai_debug.h:48's `extern Flags32 psAI_Flags;` inside
+#     `#ifndef MASTER_GOLD`, which is dead in every TU of this build due
+#     to a pre-existing xrCore.h ordering quirk - see
+#     alife_level_registry_inline.h's comment for the full explanation)
+#     - fixed the same way as everywhere else: a local `extern Flags32
+#     psAI_Flags;` declaration.
+#   stalker/ai_stalker.cpp: `message.info()->name()` - `luabind::
+#     cast_failed::info()` returns `type_id` BY VALUE with `.name()` a
+#     direct member (not a pointer) - `->` should have been `.`.
+#   stalker/ai_stalker_debug.cpp: same `psAI_Flags` fix, PLUS a genuine
+#     MSVC-permissive-extension bug (a `u32 j` declared inside a
+#     `for (u32 i=0, j=0; ...)` init-statement, then used again AFTER
+#     the loop closes - illegal in standard C++, for-init variables are
+#     scoped to the loop only; MSVC's old pre-2005 compat mode let this
+#     slide) fixed by hoisting `j`'s declaration above the loop, PLUS
+#     ~39 `CDebugRenderer::draw_line`/`draw_aabb`/`draw_ellipse`/
+#     `draw_obb` calls missing the `bool bHud` parameter (no default
+#     value - genuinely required, not optional) added since this file
+#     was last touched, PLUS two missing `typename`s in a template
+#     function (`draw_planner`) never previously instantiated with this
+#     particular `planner_type`, PLUS a matching `this->` dependent-base
+#     qualification fix in the unrelated shared `game_path_manager_inline.h`
+#     (`path()`/`m_intermediate_index` reached through `inherited`).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "AI_PathBuilder_Fixed2"
+  FILES
+  ai/monsters/basemonster/base_monster_debug.cpp
+  ai/stalker/ai_stalker.cpp
+  ai/stalker/ai_stalker_debug.cpp
+)
+
+# ai/ still excluded - 2 of 151 ai/*.cpp files:
 #
-# 3 share NO common root cause with each other any more (the shared
-# vertex-manager blocker above is fixed) - each has its own genuinely
-# separate, not-yet-chased issue:
-#   control_path_builder.cpp(1) - a NEW template-instantiation cascade
-#     through path_manager_level_nearest_vertex.h, a different template
-#     subsystem entirely, not yet investigated.
-#   basemonster/base_monster_debug.cpp(1) - `psAI_Flags` extern
-#     undeclared (same gap as stalker/ai_stalker_debug.cpp below).
-#   stalker/ai_stalker.cpp(1) - a `luabind::type_id` used as if it were
-#     a pointer (`->` on a non-pointer type) at update_object_handler(),
-#     line 978 - a real, distinct bug, not yet chased.
-#
-# 2 more are unrelated to the above and have their own real, not-yet-
-# chased issues:
+#   control_path_builder.cpp(1, down from many after two `typename`
+#     fixes in path_manager_level_nearest_vertex.h/path_manager_level.h
+#     that also unblocked the OTHER 3 files above) - the remaining error
+#     opens into an entirely separate, much larger template-subsystem
+#     cascade (the "level path manager" family:
+#     path_manager_level_inline.h/path_manager_level_flooder_inline.h/
+#     path_manager_level_nearest_vertex_inline.h/path_manager_solver_inline.h/
+#     path_manager_game*_inline.h/level_location_selector_inline.h/
+#     game_location_selector_inline.h/data_storage_*_inline.h and more -
+#     dozens of `this->`-dependent-base-qualification warnings surfaced
+#     across ~15 files when this exact template combination got compiled
+#     for the first time). Same shape and same root fix pattern as
+#     everything already fixed in this project, but a whole separate
+#     dedicated-pass-sized effort, not a "cheap fix" - explicitly not
+#     chased further this pass. Notably: `UIMapWndActions.cpp`/
+#     `UIMapWnd.cpp` (ui/ exclusions above) are blocked by
+#     `path_manager_solver_inline.h`, part of this SAME family - a
+#     future pass fixing this cascade would likely unblock those 2 too.
 #   monsters/rats/ai_rat_fsm.cpp(42) - CAI_Rat member/method names this
 #     file references (m_thinking, vfUpdateSpawnPosition, aiRatDie,
 #     vfSetFire, ...) don't exist anywhere on the current CAI_Rat/rat
@@ -970,10 +1008,4 @@ target_sources_grouped(
 #     different version of the class's own API, not a mechanical port
 #     bug; needs a real per-symbol audit against what CAI_Rat actually
 #     exposes today.
-#   stalker/ai_stalker_debug.cpp(42, down from 46 now that the shared
-#     root cause is fixed) - missing `psAI_Flags` extern (same as
-#     base_monster_debug.cpp above) plus several `CDebugRenderer::
-#     draw_line`/`draw_aabb`/`draw_ellipse` calls missing the `bool
-#     bHud` parameter added since this file was last touched - same
-#     shape as the fix already applied to rats/ai_rat_templates.cpp.
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

@@ -47,7 +47,10 @@ protected:
 		_index_type,
 		_iteration_type
 	> _Parameters;
-	typedef typename CPathManager<
+	// `typename` here is illegal - CPathManager<...> is a plain type-id
+	// with no further `::member` after it, not a qualified-dependent
+	// name (typename is only valid before qualified-id forms).
+	typedef CPathManager<
 		_Graph,
 		_DataStorage,
 		SBaseParameters<
