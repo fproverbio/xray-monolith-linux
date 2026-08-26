@@ -40,10 +40,25 @@ struct CVertexManagerFixed
 		};
 	};
 
+	// `_data_storage`'s original default `= CBuilderAllocatorConstructor`
+	// (bare, unspecialized class template used where a type is required)
+	// is ill-formed and GCC diagnoses it eagerly as soon as this class is
+	// instantiated, even though every real call site (via the
+	// CFixedVertexManager macro in vertex_manager_fixed_inline.h) always
+	// supplies `_data_storage` explicitly - confirmed via exhaustive grep,
+	// the default's actual VALUE is genuinely never relied upon. Can't
+	// just drop the default though: `_vertex`/`_index_vertex` (the two
+	// preceding parameters) both have defaults, and C++ requires every
+	// template parameter after the first defaulted one to also have a
+	// default. `void` is a syntactically valid type that satisfies this
+	// rule and is never actually substituted into `_data_storage::
+	// template CDataStorage<...>` below since no real caller omits this
+	// argument - default template arguments are only substituted/checked
+	// when actually used.
 	template <
 		template <typename _T> class _vertex = CEmptyClassTemplate,
 		template <typename _T1, typename _T2> class _index_vertex = CEmptyClassTemplate2,
-		typename _data_storage = CBuilderAllocatorConstructor
+		typename _data_storage = void
 	>
 	class CDataStorage : public _data_storage::template CDataStorage<VertexManager<_vertex>::template _vertex>
 	{

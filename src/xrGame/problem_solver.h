@@ -64,9 +64,11 @@ public:
 		_operator_id_type m_operator_id;
 		_operator_ptr m_operator;
 
-		IC SOperator(const _operator_id_type& operator_id, _operator_ptr _operator) :
+		// Parameter renamed from `_operator` to `_operator_arg` - same
+		// self-shadowing bug class as add_operator() above.
+		IC SOperator(const _operator_id_type& operator_id, _operator_ptr _operator_arg) :
 			m_operator_id(operator_id),
-			m_operator(_operator)
+			m_operator(_operator_arg)
 		{
 		}
 
@@ -98,13 +100,26 @@ protected:
 	bool m_failed;
 
 private:
-	template <bool>
-	IC bool is_goal_reached_impl(const _index_type& vertex_index) const { return is_goal_reached_impl(vertex_index); }
-
-	template <>
-	IC bool is_goal_reached_impl<true>(const _index_type& vertex_index) const
+	// Used to be a primary member template plus an explicit `<true>`
+	// specialization providing the branch - illegal at class scope in
+	// standard C++ (explicit specialization of a member function
+	// template must be both declared and defined at namespace scope,
+	// an MSVC permissive extension), and not fixable by moving it
+	// out-of-line either: that requires ALL of the enclosing class
+	// template's own parameters to also be concrete ("enclosing class
+	// templates are not explicitly specialized" - GCC is correct that
+	// C++ has no partial specialization for function templates), which
+	// isn't possible for a reusable library template like this one used
+	// with many different argument sets. Replaced with a single
+	// `if constexpr` (available: this whole codebase is compiled as
+	// gnu++17) - same two-overload dispatch, no specialization needed.
+	template <bool _reverse>
+	IC bool is_goal_reached_impl(const _index_type& vertex_index) const
 	{
-		return is_goal_reached_impl(vertex_index, true);
+		if constexpr (_reverse)
+			return is_goal_reached_impl(vertex_index, true);
+		else
+			return is_goal_reached_impl(vertex_index);
 	}
 
 	IC bool is_goal_reached_impl(const _index_type& vertex_index) const;
@@ -114,23 +129,22 @@ private:
 	IC _edge_value_type estimate_edge_weight_impl(const _index_type& vertex_index, bool) const;
 
 private:
-	template <bool>
-	struct helper
+	// Same bug/fix as is_goal_reached_impl<bool> above: the nested
+	// `helper<bool>` class template plus an explicit `helper<true>`
+	// specialization was a work-around for "can't partially specialize
+	// a function template", but explicit specialization of a MEMBER
+	// class template is equally illegal at class scope while the
+	// enclosing class template stays generic (same "enclosing class
+	// templates are not explicitly specialized" restriction). Replaced
+	// with a single `if constexpr` function, no specialization needed.
+	template <bool _reverse>
+	IC _edge_value_type estimate_edge_weight_impl_dispatch(const _index_type& vertex_index) const
 	{
-		static IC _edge_value_type estimate_edge_weight_impl(self_type const& self, const _index_type& vertex_index)
-		{
-			return self.estimate_edge_weight_impl(vertex_index);
-		}
-	}; // struct helper
-
-	template <>
-	struct helper<true>
-	{
-		static IC _edge_value_type estimate_edge_weight_impl(self_type const& self, const _index_type& vertex_index)
-		{
-			return self.estimate_edge_weight_impl(vertex_index, true);
-		}
-	}; // struct helper
+		if constexpr (_reverse)
+			return estimate_edge_weight_impl(vertex_index, true);
+		else
+			return estimate_edge_weight_impl(vertex_index);
+	}
 
 protected:
 #ifdef DEBUG
@@ -156,7 +170,10 @@ public:
 	IC _edge_value_type estimate_edge_weight(const _index_type& vertex_index) const;
 
 	// operator interface
-	IC virtual void add_operator(const _edge_type& operator_id, _operator_ptr _operator);
+	// Parameter renamed from `_operator` to `_operator_arg` - shadowed
+	// this class's own `_operator` template parameter (same
+	// self-shadowing bug class as elsewhere in this batch).
+	IC virtual void add_operator(const _edge_type& operator_id, _operator_ptr _operator_arg);
 	IC virtual void remove_operator(const _edge_type& operator_id);
 	IC _operator_ptr get_operator(const _operator_id_type& operator_id);
 	IC const OPERATOR_VECTOR& operators() const;

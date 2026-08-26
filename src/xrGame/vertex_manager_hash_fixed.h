@@ -56,10 +56,17 @@ struct CVertexManagerHashFixed
 		};
 	};
 
+	// Same dead/ill-formed default as vertex_manager_fixed.h's identical
+	// CDataStorage - `_data_storage` is always supplied explicitly by
+	// every real call site (CHashFixedVertexManager macro in
+	// vertex_manager_hash_fixed_inline.h), confirmed via exhaustive grep.
+	// Replaced with `void`, a syntactically valid placeholder that's
+	// never actually substituted (see vertex_manager_fixed.h's identical
+	// fix for the full explanation of why a default must still exist).
 	template <
 		template <typename _T> class _vertex = CEmptyClassTemplate,
 		template <typename _T1, typename _T2> class _index_vertex = CEmptyClassTemplate2,
-		typename _data_storage = CBuilderAllocatorConstructor
+		typename _data_storage = void
 	>
 	class CDataStorage : public _data_storage::template CDataStorage<VertexManager<_vertex>::template _vertex>
 	{

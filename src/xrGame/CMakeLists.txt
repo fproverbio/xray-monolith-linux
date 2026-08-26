@@ -492,19 +492,25 @@ target_sources_grouped(
   ui/uiscriptwnd_script2.cpp
 )
 
+# Follow-up pass (see notes file, milestone after section 33): the `OUT`
+# macro bug in ai/monsters/basemonster/base_monster.h was fixed for real
+# during the ai/ sweep (added to xrCore/win32_compat.h) - re-checked and
+# all four of these now compile clean:
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game3_UI"
+  FILES
+  ui/UIActorMenu.cpp
+  ui/UIActorMenuDeadBodySearch.cpp
+  ui/UIActorMenuTrade.cpp
+  ui/UIHudStatesWnd.cpp
+)
+
 # ui/ sweep (this pass): of the 114 files that were still unwired after
 # section 31, 100 now compile clean and are wired in above. The remaining
 # 14 are EXCLUDED, each with real, individually-diagnosed evidence - not
 # a guess, and not the same root cause across the board:
 #
-#   UIActorMenu.cpp(6) UIActorMenuDeadBodySearch.cpp(6) UIActorMenuTrade.cpp(6)
-#   UIHudStatesWnd.cpp(7)
-#     - all four reach ai/monsters/basemonster/base_monster.h (via
-#       ../ai/monsters/BaseMonster/base_monster.h, case-fixed to the real
-#       on-disk "basemonster"), which itself has a real, unrelated bug (an
-#       undeclared `OUT` macro at two call sites, `int Type` shadowing a
-#       template parameter) that would need fixing INSIDE ai/ - explicitly
-#       out of scope for this pass per the task boundary. Not touched.
 #   UIListBox_script.cpp(13) UIScriptWnd_script.cpp(7) UIActorMenu_script.cpp(1)
 #     - all three register a class_<Derived, bases<...>, WrapType> (a
 #       ::luabind::wrap_base-derived wrapper enabling Lua-side virtual
@@ -520,16 +526,32 @@ target_sources_grouped(
 #       incompatibility, not something to force a workaround for. Worth a
 #       dedicated future pass - likely affects other not-yet-attempted
 #       wrap_base-registered UI _script.cpp files too.
-#   UIMapWndActions.cpp(22) UIMapWnd.cpp(14)
-#     - both reach a template-instantiation cascade through
-#       action_base_inline.h/action_planner.h/condition_state_inline.h/
-#       graph_engine_inline.h/operator_abstract_inline.h/problem_solver.h
-#       (CActionPlanner<CUIMapWnd,...>/CProblemSolver<...>/CGraphEngine -
-#       the "action planner" template family) - similar shape to the
-#       graph-engine-cycle bug fixed in an earlier pass (section 30) but a
-#       different, unrelated template family/root cause, not chased this
-#       pass. A plausible dedicated-pass target, analogous to how the
-#       graph-engine cycle got its own session.
+#   UIMapWndActions.cpp(1) UIMapWnd.cpp(1)
+#     - UPDATE (follow-up pass after section 33): the "action planner"
+#       template-instantiation cascade through action_base_inline.h/
+#       action_planner.h/condition_state_inline.h/graph_engine_inline.h/
+#       operator_abstract_inline.h/problem_solver.h that used to block
+#       both of these (22/14 errors respectively) is now genuinely fixed -
+#       a chain of ~15 real bugs (the vertex_manager_fixed.h/
+#       vertex_manager_hash_fixed.h dead ill-formed default-template-
+#       argument, two illegal in-class explicit specializations of member
+#       templates in problem_solver.h rewritten as `if constexpr`, several
+#       more self-shadowing-parameter cases, and a long tail of missing
+#       `typename`/`this->`/`inherited::` qualifications across
+#       problem_solver.h/problem_solver_inline.h/action_planner.h/
+#       action_planner_inline.h/condition_state_inline.h/
+#       operator_abstract_inline.h - see the notes file for the full
+#       list). This ALSO unblocked 6 of the 9 ai/-sweep files that shared
+#       the same vertex_manager_fixed.h root cause (section 33's
+#       exclusion list) - see below. Both files are down to exactly 1
+#       NEW, unrelated error each, in a different, wholly-unexercised
+#       template subsystem (path_manager_solver_inline.h /
+#       CPathManager<CProblemSolver<...>,...> - "'graph' was not declared
+#       in this scope", the same this-> dependent-base-member pattern
+#       yet again, just not yet chased into this specific file). A good
+#       dedicated-pass target - the root-cause pattern is now
+#       well-understood, this is likely another quick win, just not
+#       chased this pass.
 #   UIServerInfo.cpp(1)
 #     - needs ximage.h/xmemfile.h (CxImage/CxMemFile, for decoding a
 #       downloaded MP server's map-preview screenshot) from the cximage
@@ -548,9 +570,12 @@ target_sources_grouped(
 #       mean rewriting most of the class, not a narrow removal. Deferred.
 #
 # (parenthesized number = real g++ -c error count as of this pass, not a
-# complexity estimate). ~254 ui/ files remained unstarted before this
-# pass (271 minus the 17 from section 30's tail); after this pass, only
-# these 14 remain (100 ported + the pre-existing 38).
+# complexity estimate). ~254 ui/ files remained unstarted before the
+# original ui/ sweep (271 minus the 17 from section 30's tail); after
+# that pass, 14 remained - the follow-up pass above fixed 4 fully (moved
+# to Game3_UI) and made UIMapWndActions.cpp/UIMapWnd.cpp's blocker
+# unrelated-and-much-smaller (22/14 errors down to 1 each, in a new
+# subsystem) without fully clearing them - 10 files remain excluded.
 
 target_sources_grouped(
   TARGET xrGame
@@ -893,45 +918,48 @@ ai/monsters/zombie/zombie_script.cpp
 ai/monsters/zombie/zombie_state_manager.cpp
 )
 
-# ai/ still excluded (this pass) - 11 of 151 ai/*.cpp files, real per-file
-# g++ -c error counts, honestly not yet chased further:
+# Follow-up pass (see notes file): the vertex-manager root cause below
+# is now genuinely FIXED (not just diagnosed) - `_data_storage`'s
+# ill-formed default `= CBuilderAllocatorConstructor` (a bare,
+# unspecialized class template used where a type is required) in both
+# vertex_manager_fixed.h and vertex_manager_hash_fixed.h was replaced
+# with `= void` (a syntactically valid placeholder, confirmed via
+# exhaustive grep to never actually be substituted - every real call
+# site supplies `_data_storage` explicitly via the
+# CFixedVertexManager/CHashFixedVertexManager macros). This alone, plus
+# a further chain of ~10 real bugs surfaced once it cleared (two illegal
+# in-class explicit specializations of member templates in
+# problem_solver.h rewritten as `if constexpr`, more self-shadowing
+# parameters, several missing `typename`/`this->`/`inherited::`
+# qualifications across problem_solver_inline.h/action_planner_inline.h/
+# condition_state_inline.h/operator_abstract_inline.h), unblocked 6 of
+# the 9 files below for real:
+target_sources_grouped(
+  TARGET xrGame
+  NAME "AI_PathBuilder_Fixed"
+  FILES
+  ai/monsters/basemonster/base_monster_script.cpp
+  ai/monsters/control_path_builder_base.cpp
+  ai/monsters/control_path_builder_base_path.cpp
+  ai/stalker/ai_stalker_cover.cpp
+  ai/stalker/ai_stalker_script.cpp
+  ai/stalker/ai_stalker_fire.cpp
+)
+
+# ai/ still excluded - 5 of 151 ai/*.cpp files, real per-file g++ -c
+# error counts, honestly not yet chased further:
 #
-# 9 of these 11 all cascade from ONE still-genuinely-unresolved root cause
-# in the shared A*/Dijkstra graph-pathfinding template library (a_star.h/
-# dijkstra.h/vertex_manager_fixed.h/vertex_manager_hash_fixed.h/
-# data_storage_*.h/builder_allocator_constructor.h/
-# manager_builder_allocator_constructor.h) - this pass found and fixed
-# MANY real self-shadowing-typedef bugs in that exact family (notes
-# section 30b's bug class, recurring in operator_condition.h, a_star.h
-# x2, vertex_manager_hash_fixed.h, vertex_manager_fixed.h, dijkstra.h,
-# problem_solver.h, operator_abstract.h, action_planner.h) plus several
-# missing `::template` disambiguators before dependent nested templates
-# (a_star.h, edge_path.h, vertex_manager_*.h, data_storage_bucket_list.h/
-# data_storage_double_linked_list.h/data_storage_single_linked_list.h) -
-# this genuinely unblocked most of the "action planner" second template
-# cycle the standing task brief flagged (CActionBase/CActionPlanner/
-# CProblemSolver via action_base_inline.h/action_planner.h/
-# condition_state_inline.h/graph_engine_inline.h/operator_abstract_inline.h/
-# problem_solver.h - all now compile). The one remaining root cause: one of
-# the vertex-manager family's `CDataStorage` template parameters defaults
-# to a bare `CBuilderAllocatorConstructor` (a 2-parameter template) with no
-# template arguments at all - not a lookup/shadowing bug, a genuinely
-# incomplete default that was apparently never actually relied upon by any
-# instantiation MSVC needed until this exact call chain. Fixing it needs
-# knowing what path-builder/vertex-allocator types the default *should*
-# supply, which isn't inferable from the surrounding code - guessing would
-# risk a wrong (silently different) default rather than a compile fix, so
-# left honestly unresolved rather than forced:
-#   basemonster/base_monster_script.cpp(1) control_path_builder.cpp(1)
-#   control_path_builder_base.cpp(1) control_path_builder_base_path.cpp(1)
-#   stalker/ai_stalker_cover.cpp(1) stalker/ai_stalker_script.cpp(1)
-#   basemonster/base_monster_debug.cpp(2) stalker/ai_stalker.cpp(2)
-#   stalker/ai_stalker_fire.cpp(2)
-# (parenthesized number = real g++ -c error count once past the shared
-# root cause above - each file's own single extra error is a different,
-# not-yet-chased issue: a `luabind::type_id` used as if it were a pointer
-# in ai_stalker.cpp, `get_operator` needing a `this->`/qualification fix
-# in ai_stalker_fire.cpp, etc.)
+# 3 share NO common root cause with each other any more (the shared
+# vertex-manager blocker above is fixed) - each has its own genuinely
+# separate, not-yet-chased issue:
+#   control_path_builder.cpp(1) - a NEW template-instantiation cascade
+#     through path_manager_level_nearest_vertex.h, a different template
+#     subsystem entirely, not yet investigated.
+#   basemonster/base_monster_debug.cpp(1) - `psAI_Flags` extern
+#     undeclared (same gap as stalker/ai_stalker_debug.cpp below).
+#   stalker/ai_stalker.cpp(1) - a `luabind::type_id` used as if it were
+#     a pointer (`->` on a non-pointer type) at update_object_handler(),
+#     line 978 - a real, distinct bug, not yet chased.
 #
 # 2 more are unrelated to the above and have their own real, not-yet-
 # chased issues:
@@ -942,10 +970,10 @@ ai/monsters/zombie/zombie_state_manager.cpp
 #     different version of the class's own API, not a mechanical port
 #     bug; needs a real per-symbol audit against what CAI_Rat actually
 #     exposes today.
-#   stalker/ai_stalker_debug.cpp(46) - hits the same shared graph-engine
-#     root cause above, plus its own independent issues (missing
-#     `psAI_Flags` extern, several `CDebugRenderer::draw_line`/
-#     `draw_aabb`/`draw_ellipse` calls missing the `bool bHud` parameter
-#     added since this file was last touched - same shape as the fix
-#     already applied to rats/ai_rat_templates.cpp).
+#   stalker/ai_stalker_debug.cpp(42, down from 46 now that the shared
+#     root cause is fixed) - missing `psAI_Flags` extern (same as
+#     base_monster_debug.cpp above) plus several `CDebugRenderer::
+#     draw_line`/`draw_aabb`/`draw_ellipse` calls missing the `bool
+#     bHud` parameter added since this file was last touched - same
+#     shape as the fix already applied to rats/ai_rat_templates.cpp.
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
