@@ -66,7 +66,7 @@ void CWeaponStatMgun::OverrideRangeFOV(const CGameObject* npc, float& range)
     ::luabind::object lua_var = ::luabind::newtable(ai().script_engine().lua());
     lua_var["range"] = range;
     ::luabind::object lua_res = lua_function(lua_game_object(), npc->lua_game_object(), lua_var);
-    if (lua_res && lua_res.type() == LUA_TTABLE)
+    if (lua_res && luabind::type(lua_res) == LUA_TTABLE)
     {
         range = ::luabind::object_cast<float>(lua_res["range"]);
     }

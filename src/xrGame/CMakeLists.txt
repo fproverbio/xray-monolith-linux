@@ -1584,4 +1584,85 @@ target_sources_grouped(
   stalker_search_planner.cpp
 )
 
+# xrGame/ root sweep, fifth batch: 24 more files fixed via real per-file
+# investigation. Two genuine, previously-dormant pre-existing bugs found
+# this pass in already-compiling foundational code (same class as
+# Game4_RootBatch4's xrCore/_sphere.h find): xrCore/intrusive_ptr.h's
+# ref_count_storage<>::intrusive_ref_sub() was missing a semicolon - a hard
+# syntax error that never surfaced because nothing had instantiated that
+# exact member function before (GCC's -fpermissive lets template bodies
+# slide until first real instantiation, same root cause as _sphere.h);
+# mixed_delegate.h's DEFINE_MIXED_DELEGATE_SCRIPT macro passed an
+# overloaded (template + non-template) member function pointer to
+# luabind's .def() with no disambiguation, needing the by-now-established
+# `(Ret (Class::*)(Args...))&Class::method` cast. Also fixed: two more
+# `luabind::object::type()` API-drift call sites (Actor.cpp/HudItem.cpp/
+# WeaponStatMgunMisc.cpp - `luabind::type()` is the real accessor in this
+# fork); property_evaluator_const.h/property_evaluator_member.h had
+# accidentally moved `_value_type`/`_condition_type` from public (matching
+# the CPropertyEvaluator base) to protected when an earlier pass added the
+# `typename inherited::` qualification - a real regression in an already-
+# "fixed" file; `return_stl_iterator`/`out_value<N>`/`adopt<N>` are alias
+# templates in this fork's luabind (not the global tag objects the classic
+# API docs show) - bare `return_stl_iterator` needs `()` to construct an
+# instance, and `out_value<N>()`/`adopt<N>()` need `using namespace
+# luabind::policy;` in scope (game_graph_script.cpp, alife_simulator_
+# script.cpp, script_game_object_script3.cpp); alife_simulator_script.cpp's
+# `instance = std::move(instance).enum_(...)[...]` was a real bug -
+# enum_maker::operator[] already mutates and returns `instance` by
+# reference, so the assignment was self-assignment through class_<>'s
+# private operator=, fixed by dropping the assignment entirely;
+# console_commands.cpp's Concat2/Concat3 macros used `##` to paste string
+# literals together (illegal - `##` pastes preprocessor tokens, not
+# strings), when plain adjacency was all that was needed since adjacent
+# string literals concatenate automatically; Level_input.cpp/MainMenu.cpp
+# each had a manual Win32 mouse-cursor-confinement block (ClientToScreen+
+# SetCursorPos / GetClientRect+MapWindowPoints+ClipCursor) already made
+# redundant by this port's SDL_SetRelativeMouseMode/SDL_SetWindowGrab
+# usage elsewhere - stubbed out rather than ported; MainMenu.cpp also had
+# 5 dead GameSpy-account-management includes (account_manager.h/
+# login_manager.h/profile_store.h/stats_submitter.h/atlas_submit_queue.h)
+# whose only uses were already commented out - removed; ActorInput.cpp's
+# `det->ToggleDetector(...)` doesn't exist on CCustomDetector, real method
+# is the inherited CCustomDevice::ToggleDevice(); HUDManager.cpp's DEBUG-
+# only SetFirstBulletCrosshairDisp() called two nonexistent members
+# (GetHUDCrosshair()/SetFirstBulletDispertion()) - stubbed to match its
+# sibling SetDispersion(), already an empty stub in this fork;
+# xrgame_dll_detach.cpp referenced g_profiler/CProfiler (doesn't exist -
+# xrCore/profiler.h is a macro-only shim, not a class) and
+# release_smart_cast_stats() (declared extern, but its definition in
+# xrServerEntities/smart_cast_stats.cpp is entirely commented out) - both
+# dead legacy debug diagnostics, removed. Remaining fixes were the
+# established this->/typename/case/psAI_Flags-extern/sprintf_s-shim
+# patterns from earlier batches.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch5"
+  FILES
+  Actor.cpp
+  ActorInput.cpp
+  HUDManager.cpp
+  HudItem.cpp
+  Level_input.cpp
+  MainMenu.cpp
+  PhraseDialog.cpp
+  UIDosimeter.cpp
+  WeaponAK74.cpp
+  WeaponStatMgunMisc.cpp
+  alife_simulator_script.cpp
+  artefact_script.cpp
+  console_commands.cpp
+  game_graph_script.cpp
+  inventory_item.cpp
+  key_binding_registrator_script.cpp
+  player_hud_legs.cpp
+  profile_data_types_script.cpp
+  property_evaluator_script.cpp
+  script_game_object_inventory_owner.cpp
+  script_game_object_script3.cpp
+  script_property_evaluator_wrapper.cpp
+  smart_cover_storage.cpp
+  xrgame_dll_detach.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

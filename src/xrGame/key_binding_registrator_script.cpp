@@ -1,5 +1,9 @@
 #include "pch_script.h"
+// <dinput.h> only exists on Windows; DIK_* constants come from
+// win32_compat.h's portable stand-ins on Linux (see xr_input.h's guard).
+#ifdef _WIN32
 #include <dinput.h>
+#endif
 #include "key_binding_registrator.h"
 #include "xr_level_controller.h"
 #include "xr_input.h"

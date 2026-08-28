@@ -13,6 +13,7 @@
 
 #include <alloca.h>
 #include <cerrno>
+#include <cstdarg>
 #include <climits> // PATH_MAX (GetFullPathName)
 #include <cmath>
 #include <cstdint>
@@ -470,6 +471,19 @@ template <size_t N>
 inline int vsprintf_s(char (&dest)[N], const char* fmt, va_list args)
 {
 	return vsnprintf(dest, N, fmt, args);
+}
+inline int vsprintf_s(char* dest, size_t destsz, const char* fmt, va_list args)
+{
+	return vsnprintf(dest, destsz, fmt, args);
+}
+template <size_t N>
+inline int sprintf_s(char (&dest)[N], const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	int result = vsnprintf(dest, N, fmt, args);
+	va_end(args);
+	return result;
 }
 
 // _strdate/_strtime: legacy MSVC "DD/MM/YY"/"HH:MM:SS" formatters, used
@@ -1130,6 +1144,13 @@ using LPDIRECTINPUTDEVICE8 = IDirectInputDevice8*;
 #define DIK_RIGHTARROW       DIK_RIGHT
 #define DIK_DOWNARROW        DIK_DOWN
 #define DIK_PGDN             DIK_NEXT
+
+// WM_USER - real Win32 value (0x0400), needed only as a base integer
+// constant for enum arithmetic (script_debugger_messages.h's dbg_messages
+// enum); the mailslot-based script debugger IPC it belongs to is itself
+// Windows-only and not ported, but this file is still reached transitively
+// by other, real console-command registration code.
+#define WM_USER 0x0400
 
 inline int WideCharToMultiByte(unsigned codePage, unsigned long /*flags*/, const char16_t* src, int srcLen,
                                 char* dst, int dstCapacity, const char* /*defaultChar*/, int* /*usedDefaultChar*/)

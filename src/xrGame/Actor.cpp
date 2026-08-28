@@ -74,7 +74,7 @@
 #include "ActorHelmet.h"
 #include "ui/UIDragDropReferenceList.h"
 
-#include "build_config_defines.h"
+#include "../build_config_defines.h"
 
 #include "ActorNightVision.h"
 #include "Flashlight.h"
@@ -2751,7 +2751,7 @@ float CActor::HitArtefactsOnBelt(float hit_power, ALife::EHitType hit_type)
 		table["hit_power"] = hit_power;
 
 		::luabind::object output = funct(table, hit_power, hit_type);
-		if (output && output.type() == LUA_TTABLE)
+		if (output && luabind::type(output) == LUA_TTABLE)
 		{
 			if (::luabind::object_cast<bool>(output["override"]))
 				return ::luabind::object_cast<float>(output["hit_power"]);

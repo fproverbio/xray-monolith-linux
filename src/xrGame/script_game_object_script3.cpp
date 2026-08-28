@@ -36,6 +36,7 @@
 #include "script_attachment_manager.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject> &&instance)
 {
@@ -76,10 +77,10 @@ class_<CScriptGameObject> script_register_game_object2(class_<CScriptGameObject>
 		.def("safe_cover", SAFE_WRAP(&CScriptGameObject::safe_cover))
 		.def("spawn_ini", SAFE_WRAP(&CScriptGameObject::spawn_ini))
 		.def("memory_remove_links", SAFE_WRAP(&CScriptGameObject::memory_remove_links))
-		.def("memory_visible_objects", SAFE_WRAP(&CScriptGameObject::memory_visible_objects), return_stl_iterator)
-		.def("memory_sound_objects", SAFE_WRAP(&CScriptGameObject::memory_sound_objects), return_stl_iterator)
-		.def("memory_hit_objects", SAFE_WRAP(&CScriptGameObject::memory_hit_objects), return_stl_iterator)
-		.def("not_yet_visible_objects", SAFE_WRAP(&CScriptGameObject::not_yet_visible_objects), return_stl_iterator)
+		.def("memory_visible_objects", SAFE_WRAP(&CScriptGameObject::memory_visible_objects), return_stl_iterator())
+		.def("memory_sound_objects", SAFE_WRAP(&CScriptGameObject::memory_sound_objects), return_stl_iterator())
+		.def("memory_hit_objects", SAFE_WRAP(&CScriptGameObject::memory_hit_objects), return_stl_iterator())
+		.def("not_yet_visible_objects", SAFE_WRAP(&CScriptGameObject::not_yet_visible_objects), return_stl_iterator())
 		.def("visibility_threshold", SAFE_WRAP(&CScriptGameObject::visibility_threshold))
 		.def("enable_vision", SAFE_WRAP(&CScriptGameObject::enable_vision))
 		.def("vision_enabled", SAFE_WRAP(&CScriptGameObject::vision_enabled))

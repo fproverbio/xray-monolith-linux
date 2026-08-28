@@ -226,8 +226,13 @@ extern CrosshairSettings g_crosshair_weapon_far;
 extern CrosshairSettings g_crosshair_device_near;
 extern CrosshairSettings g_crosshair_device_far;
 
-#define Concat2(a, b) #a ## b
-#define Concat3(a, b, c) #a ## b ## #c
+// b (below) is already a quoted string literal at every call site (the
+// `suffix` argument passed in as e.g. "camera_near") - `##` cannot paste
+// string literals together (that's a hard preprocessing-token error);
+// plain adjacency is all that's needed, since adjacent string literals are
+// concatenated automatically by the compiler (no `##` involved).
+#define Concat2(a, b) #a b
+#define Concat3(a, b, c) #a b #c
 
 #define CrosshairBaseCommands(crosshair, suffix) \
 	CMD3(CCC_Mask, Concat2(g_crosshair_, suffix), &crosshair.flags, CROSSHAIR_SHOW); \

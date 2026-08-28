@@ -32,7 +32,6 @@ extern STORY_PAIRS spawn_story_ids;
 
 extern void show_smart_cast_stats();
 extern void clear_smart_cast_stats();
-extern void release_smart_cast_stats();
 extern void dump_list_wnd();
 extern void dump_list_lines();
 extern void dump_list_sublines();
@@ -118,10 +117,13 @@ void clean_game_globals()
 
 	xr_delete(g_sound_collection_storage);
 
-#ifdef DEBUG
-	xr_delete										(g_profiler);
-	release_smart_cast_stats						();
-#endif
+	// g_profiler/CProfiler and release_smart_cast_stats() were legacy
+	// debug-only diagnostics from the original engine: CProfiler doesn't
+	// exist anywhere in this port (xrCore/profiler.h is a macro-only
+	// PROF_EVENT-style shim, not a class), and release_smart_cast_stats()
+	// is declared extern here but its definition in
+	// xrServerEntities/smart_cast_stats.cpp is entirely commented out -
+	// both are dead subsystems this fork never carried forward.
 
 	RELATION_REGISTRY::clear_relation_registry();
 

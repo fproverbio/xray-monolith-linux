@@ -21,9 +21,10 @@
 #include "Level.h"
 
 #include <luabind/iterator_policy.hpp>
-#include <luabind/iterator_pair_policy.hpp>
+#include <luabind/iterator_policy.hpp>
 
 using namespace luabind;
+using namespace luabind::policy;
 
 typedef xr_vector<std::pair<shared_str, int>> STORY_PAIRS;
 typedef STORY_PAIRS SPAWN_STORY_PAIRS;
@@ -648,7 +649,7 @@ void CALifeSimulator::script_register(lua_State* L)
 		.def("set_objects_per_update", &set_objects_per_update)
 		.def("set_process_time", &set_process_time)
 		.def("force_update", &force_update)
-		.def("get_children", &get_children, return_stl_iterator)
+		.def("get_children", &get_children, return_stl_iterator())
 		//Alundaio: END
 
 		// demonized: iterate alife objects
@@ -680,7 +681,7 @@ void CALifeSimulator::script_register(lua_State* L)
 		::luabind::class_<class_exporter<CALifeSimulator>> instance("story_ids");
 
 		for (const auto& pair : story_ids)
-			instance = std::move(instance).enum_("_story_ids")[::luabind::value(*pair.first, pair.second)];
+			instance.enum_("_story_ids")[::luabind::value(*pair.first, pair.second)];
 
 		::luabind::module(L)[std::move(instance)];
 	}
@@ -700,7 +701,7 @@ void CALifeSimulator::script_register(lua_State* L)
 		::luabind::class_<class_exporter<class_exporter<CALifeSimulator>>> instance("spawn_story_ids");
 
 		for (const auto& pair : spawn_story_ids)
-			instance = std::move(instance).enum_("_spawn_story_ids")[::luabind::value(*pair.first, pair.second)];
+			instance.enum_("_spawn_story_ids")[::luabind::value(*pair.first, pair.second)];
 
 		::luabind::module(L)[std::move(instance)];
 	}

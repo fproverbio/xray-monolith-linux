@@ -1339,7 +1339,7 @@ void CInventoryItem::OnRender()
 		object().Visual()->getVisData().box.get_CD	(bc,bd);
 		Fmatrix	M = object().XFORM();
 		M.c.add (bc);
-		Level().debug_renderer().draw_obb			(M,bd,color_rgba(0,0,255,255));
+		Level().debug_renderer().draw_obb			(M,bd,color_rgba(0,0,255,255),false);
 /*
 		u32 Color;
 		if (processing_enabled())

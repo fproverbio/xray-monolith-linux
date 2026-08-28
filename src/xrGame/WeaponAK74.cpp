@@ -198,7 +198,7 @@ void CWeaponAK74::script_register	(lua_State *L)
 			.def("SetMisfire", &CWeapon::SetMisfireScript)
 
 			.def("IsPending", &CWeapon::IsPending)
-			.def("SetPending", &CWeapon::SetPending)
+			.def("SetPending", &CWeaponAK74::SetPending)
 
 			.enum_("EWeaponStates")
 			[

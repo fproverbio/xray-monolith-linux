@@ -729,7 +729,7 @@ u32 CHudItem::PlayHUDMotion(shared_str M, BOOL bMixIn, CHudItem* W, u32 state, f
 			table["anm_end"] = end;
 
 			::luabind::object const& output = funct(table, object().lua_game_object(), object().lua_game_object() ? object().lua_game_object()->Parent() : nullptr);
-			if (output && output.type() == LUA_TTABLE)
+			if (output && luabind::type(output) == LUA_TTABLE)
 			{
 				M = ::luabind::object_cast<LPCSTR>(output["anm_name"]);
 				bMixIn = ::luabind::object_cast<bool>(output["anm_mixin"]);

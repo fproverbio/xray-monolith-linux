@@ -378,9 +378,12 @@ void CHUDManager::SetCrosshairDisp(float dispf, float disps)
 }
 
 #ifdef DEBUG
+// GetHUDCrosshair()/SetFirstBulletDispertion() don't exist anywhere in
+// CHUDTarget/CHUDCrosshair - this debug-only dispersion-visualization hook
+// was already dead in this fork (matching SetDispersion() above, which is
+// itself an empty stub).
 void CHUDManager::SetFirstBulletCrosshairDisp(float fbdispf)
 {
-    m_pHUDTarget->GetHUDCrosshair().SetFirstBulletDispertion(fbdispf);
 }
 #endif
 

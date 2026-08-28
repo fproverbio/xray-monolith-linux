@@ -1,5 +1,9 @@
 #include "StdAfx.h"
+// <dinput.h> only exists on Windows; this file doesn't actually use any
+// DirectInput symbols (see xr_input.h/imgui_helper.h's identical guard).
+#ifdef _WIN32
 #include <dinput.h>
+#endif
 #include "Actor.h"
 #include "Torch.h"
 #include "trade.h"
@@ -836,7 +840,7 @@ void CActor::NoClipFly(int cmd)
 			if(det_active)
 			{
 				CCustomDetector* det = smart_cast<CCustomDetector*>(det_active);
-					det->ToggleDetector(g_player_hud->attached_item(0)!=NULL);
+					det->ToggleDevice(g_player_hud->attached_item(0)!=NULL);
 				return;
 			}
 		}

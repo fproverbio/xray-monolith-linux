@@ -1,5 +1,9 @@
 #include "StdAfx.h"
+// <dinput.h> only exists on Windows; DIK_* constants come from
+// win32_compat.h's portable stand-ins on Linux (see xr_input.h's guard).
+#ifdef _WIN32
 #include <dinput.h>
+#endif
 #include "../xrEngine/XR_IOConsole.h"
 #include "entity_alive.h"
 #include "game_sv_single.h"
@@ -25,7 +29,7 @@
 
 #include "../Include/xrRender/DebugRender.h"
 
-#include "build_config_defines.h"
+#include "../build_config_defines.h"
 
 //Alundaio
 #include "pch_script.h"
@@ -133,11 +137,10 @@ void CLevel::IR_OnMouseMove(int dx, int dy)
 		if (IR) IR->IR_OnMouseMove(dx, dy);
 	}
 
-    POINT p;
-    p.x = Device.clientWidth / 2;
-    p.y = Device.clientHeight / 2;
-    ClientToScreen(Device.m_hWnd, &p);
-    SetCursorPos(p.x, p.y);
+	// Manual per-frame cursor re-centering (ClientToScreen/SetCursorPos) was
+	// the classic pre-raw-input Win32 trick for infinite mouselook; it's
+	// obsolete now that mouse acquisition goes through
+	// SDL_SetRelativeMouseMode (Xr_input.cpp), which handles this itself.
 }
 
 // Обработка нажатия клавиш

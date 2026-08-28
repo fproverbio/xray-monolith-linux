@@ -9,10 +9,13 @@
 #include "xr_level_controller.h"
 #include "ui/UITextureMaster.h"
 #include "ui/UIXmlInit.h"
+// <dinput.h> only exists on Windows; DIK_* constants come from
+// win32_compat.h's portable stand-ins on Linux (see xr_input.h's guard).
+#ifdef _WIN32
 #include <dinput.h>
+#endif
 #include "ui/UIBtnHint.h"
 #include "UICursor.h"
-#include "gamespy/CdkeyDecode/cdkeydecode.h"
 #include "string_table.h"
 #include "../xrCore/os_clipboard.h"
 
@@ -21,16 +24,20 @@
 
 #include "ui/UICDkey.h"
 
+// shellapi.h (ShellExecute) only exists on Windows; open_originals_link()
+// below is guarded accordingly.
+#ifdef _WIN32
 #include <shellapi.h>
 #pragma comment(lib, "shell32.lib")
+#endif
 
 #include "object_broker.h"
 
-#include "account_manager.h"
-#include "login_manager.h"
-#include "profile_store.h"
-#include "stats_submitter.h"
-#include "atlas_submit_queue.h"
+// account_manager.h/login_manager.h/profile_store.h/stats_submitter.h/
+// atlas_submit_queue.h don't exist in this port (GameSpy account/profile/
+// stats-submission management, never carried forward) - every use of the
+// types they'd declare is already commented out below, so these were dead
+// includes.
 
 //#define DEMO_BUILD
 
@@ -536,10 +543,9 @@ extern u32 g_screenmode;
 
 void CMainMenu::OnDeviceCreate()
 {
-	RECT winRect;
-	GetClientRect(Device.m_hWnd, &winRect);
-	MapWindowPoints(Device.m_hWnd, nullptr, reinterpret_cast<LPPOINT>(&winRect), 2);
-	ClipCursor(&winRect);
+	// GetClientRect/MapWindowPoints/ClipCursor was the Win32 way to confine
+	// the cursor to the window; SDL_SetWindowGrab (device.cpp/xr_ioc_cmd.cpp)
+	// already does the equivalent job on this SDL2-based port.
 }
 
 
@@ -918,6 +924,8 @@ demo_info const* CMainMenu::GetDemoInfo(LPCSTR file_name)
 
 void open_originals_link()
 {
+#ifdef _WIN32
 	LPCSTR params = "/C start https://www.stalker-game.com/en/available-on";
 	ShellExecute(0, "open", "cmd.exe", params, NULL, SW_SHOW);
+#endif
 }

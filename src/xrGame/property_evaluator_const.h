@@ -15,10 +15,12 @@ class CPropertyEvaluatorConst : public CPropertyEvaluator<_object_type>
 {
 protected:
 	typedef CPropertyEvaluator<_object_type> inherited;
-	// _value_type is a protected member of the dependent base
-	// CPropertyEvaluator<_object_type> - needs `typename inherited::`
-	// qualification (same pattern as object_actions.h's _condition_type/
-	// _value_type fix).
+
+public:
+	// _value_type is actually public on the dependent base
+	// CPropertyEvaluator<_object_type> - restated here (public, matching
+	// the base) only for the `typename inherited::` disambiguation, same
+	// pattern as object_actions.h's _condition_type/_value_type fix.
 	typedef typename inherited::_value_type _value_type;
 
 protected:
