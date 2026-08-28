@@ -559,33 +559,32 @@ target_sources_grouped(
 # uiscriptwnd_script.h needed `luabind::` qualification (its own `using
 # namespace luabind` doesn't reach this shared header from every includer).
 #
-# The remaining 5 are EXCLUDED, each with real, individually-diagnosed
-# evidence - not a guess, and not the same root cause across the board:
+# The remaining 5 are OUT OF SCOPE by deliberate project decision, not a
+# TODO - this port targets singleplayer only, no functional multiplayer,
+# and all 5 are MP-only:
 #
-#   UIServerInfo.cpp(1)
-#     - needs ximage.h/xmemfile.h (CxImage/CxMemFile, for decoding a
-#       downloaded MP server's map-preview screenshot) from the cximage
-#       3rd-party library, which isn't vendored into this build at all -
-#       real usage (CxMemFile/CxImage constructed and used, not a dead
-#       include), not droppable narrowly. Vendoring a whole new image
-#       library is out of scope for one file; deferred.
-#   UIMpTradeWnd.cpp(10) UISpawnWnd.cpp(16) UISkinSelector.cpp(20)
-#     - all three are genuinely MP-only dialogs (trade confirm, spawn/map
-#       select, skin selector) built around game_cl_mp - a type confirmed
-#       (grep) absent anywhere in this source tree, same as the several
-#       game_cl_mp/ServerList.h/UIChatWnd.h gaps fixed narrowly elsewhere
-#       in this batch. Unlike those, game_cl_mp is used pervasively
-#       throughout each of these three files' real logic (4-6 call sites
-#       each, not 1-2 isolated null-checked branches) - gutting them would
-#       mean rewriting most of the class, not a narrow removal. Deferred.
+#   UIServerInfo.cpp
+#     - an MP server-browser widget (decodes a downloaded server's
+#       map-preview screenshot via CxImage/CxMemFile, from the
+#       un-vendored cximage 3rd-party library). Confirmed via grep that
+#       CUIServerInfo is referenced nowhere else in the tree - genuinely
+#       dead code in a singleplayer-only build, not merely hard to port.
+#   UIMpTradeWnd.cpp UISpawnWnd.cpp UISkinSelector.cpp
+#     - genuinely MP-only dialogs (trade confirm, spawn/map select, skin
+#       selector) built pervasively around game_cl_mp, a type confirmed
+#       absent anywhere in this source tree (the whole MP/GameSpy
+#       subsystem was removed early in this port, see commit
+#       1d4ec53e). Fixing these to compile without game_cl_mp would mean
+#       either resurrecting real MP networking or gutting each class to
+#       an inert stub for no functional benefit - not worth doing for a
+#       singleplayer-only port.
 #
-# (parenthesized number = real g++ -c error count as of this pass, not a
-# complexity estimate). ~254 ui/ files remained unstarted before the
-# original ui/ sweep (271 minus the 17 from section 30's tail); after
-# that pass, 14 remained - a follow-up pass fixed 4 fully (moved to
-# Game3_UI), a later pass (see "Game3_UI_MapWnd" above) fixed
-# UIMapWndActions.cpp/UIMapWnd.cpp for real too, and the cleanup pass
-# above fixed the 3 wrap_base files - 5 files remain excluded.
+# ~254 ui/ files remained unstarted before the original ui/ sweep (271
+# minus the 17 from section 30's tail); after that pass, 14 remained - a
+# follow-up pass fixed 4 fully (moved to Game3_UI), a later pass (see
+# "Game3_UI_MapWnd" above) fixed UIMapWndActions.cpp/UIMapWnd.cpp for
+# real too, and the cleanup pass above fixed the 3 wrap_base files. `ui/`
+# is DONE: 147/152, the remaining 5 out of scope by design.
 
 target_sources_grouped(
   TARGET xrGame
