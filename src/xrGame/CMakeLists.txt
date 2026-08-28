@@ -520,26 +520,48 @@ target_sources_grouped(
   ui/UIMapWnd.cpp
 )
 
+# ui/ cleanup pass: the 3 "wrap_base" exclusions (see the comment further
+# down near their old exclusion entry for the full root-cause diagnosis)
+# were a real, narrow HolderType-vs-WrapperType class_<> argument-slot
+# mixup, not a deep luabind/GCC incompatibility - fixed and wired in.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game3_UI_Wrappers"
+  FILES
+  ui/UIActorMenu_script.cpp
+  ui/UIListBox_script.cpp
+  ui/UIScriptWnd_script.cpp
+)
+
 # ui/ sweep (this pass): of the 114 files that were still unwired after
-# section 31, 100 now compile clean and are wired in above. The remaining
-# 14 are EXCLUDED, each with real, individually-diagnosed evidence - not
-# a guess, and not the same root cause across the board:
+# section 31, 100 now compile clean and are wired in above.
 #
-#   UIListBox_script.cpp(13) UIScriptWnd_script.cpp(7) UIActorMenu_script.cpp(1)
-#     - all three register a class_<Derived, bases<...>, WrapType> (a
-#       ::luabind::wrap_base-derived wrapper enabling Lua-side virtual
-#       overrides) for a UI class ultimately deriving from the noncopyable
-#       CUIWindow hierarchy, with a plain .def(constructor<>()). This
-#       vendored luabind fork's constructor<Class, Pointer, Signature>
-#       machinery (luabind/detail/constructor.hpp) ends up trying to
-#       construct the WrapType from a raw base-class pointer in a way GCC
-#       rejects ("no matching function for call to
-#       CWrapperBase<T>::CWrapperBase(pointer)") - root cause not fully
-#       chased into class.hpp's constructor_registration/default_pointer
-#       template plumbing; a real, non-trivial pre-existing luabind/GCC
-#       incompatibility, not something to force a workaround for. Worth a
-#       dedicated future pass - likely affects other not-yet-attempted
-#       wrap_base-registered UI _script.cpp files too.
+# UPDATE (ui/ cleanup pass): the "3 wrap_base files" above turned out to
+# be a real, narrow, fully-diagnosed bug, not a deep luabind/GCC
+# incompatibility - see luabind/class.hpp's own forward declaration:
+#   template<typename T, typename BaseOrBases = no_bases,
+#            typename HolderType = null_type, typename WrapperType = null_type>
+# The 3rd class_<> template argument is HolderType, NOT the Lua-override
+# WrapperType (that's the 4th). All three files passed their *Wrapper
+# class positionally as the 3rd argument (`class_<T, Base, WrapType>`),
+# which silently compiles right up until a constructor is also
+# registered - at which point the fork's constructor-registration
+# machinery tries to construct "HolderType" (really the Wrapper class)
+# from a raw pointer, which doesn't exist ("no matching function for
+# call to ...Wrapper::Wrapper(...pointer)"). UIActorMenu_script.cpp had a
+# related-but-distinct bug: CUIActorMenu genuinely has two base classes
+# (CUIDialogWnd + CUIWndCallback) passed positionally instead of wrapped
+# in `bases<>`, so the second base landed in the HolderType slot instead.
+# All three fixed (explicit `null_type` in the HolderType slot + moving
+# the Wrapper class to the 4th slot; `bases<>` for the two-base case) and
+# wired in below as "Game3_UI_Wrappers". UIScriptWnd_script.cpp also
+# needed one more real fix once the above unblocked it: `call_member` in
+# uiscriptwnd_script.h needed `luabind::` qualification (its own `using
+# namespace luabind` doesn't reach this shared header from every includer).
+#
+# The remaining 5 are EXCLUDED, each with real, individually-diagnosed
+# evidence - not a guess, and not the same root cause across the board:
+#
 #   UIServerInfo.cpp(1)
 #     - needs ximage.h/xmemfile.h (CxImage/CxMemFile, for decoding a
 #       downloaded MP server's map-preview screenshot) from the cximage
@@ -561,8 +583,9 @@ target_sources_grouped(
 # complexity estimate). ~254 ui/ files remained unstarted before the
 # original ui/ sweep (271 minus the 17 from section 30's tail); after
 # that pass, 14 remained - a follow-up pass fixed 4 fully (moved to
-# Game3_UI), and a later pass (see "Game3_UI_MapWnd" above) fixed
-# UIMapWndActions.cpp/UIMapWnd.cpp for real too - 8 files remain excluded.
+# Game3_UI), a later pass (see "Game3_UI_MapWnd" above) fixed
+# UIMapWndActions.cpp/UIMapWnd.cpp for real too, and the cleanup pass
+# above fixed the 3 wrap_base files - 5 files remain excluded.
 
 target_sources_grouped(
   TARGET xrGame

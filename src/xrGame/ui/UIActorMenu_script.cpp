@@ -317,7 +317,19 @@ void CUIActorMenu::script_register(lua_State* L)
 			value("iTrashSlot", int(EDDListType::iTrashSlot))
 		],
 
-		class_<CUIActorMenu, CUIDialogWnd, CUIWndCallback>("CUIActorMenu")
+		// CUIActorMenu genuinely derives from both CUIDialogWnd and
+		// CUIWndCallback (multiple inheritance) - both need wrapping in
+		// bases<> for this fork's class_<T, BaseOrBases, HolderType,
+		// WrapperType> signature, matching the convention already used
+		// successfully elsewhere in this codebase (e.g. CarScript.cpp's
+		// class_<CCar, bases<CGameObject, CHolderCustom, CExplosive>>).
+		// Passed positionally instead, CUIWndCallback was landing in the
+		// HolderType slot, where the fork's constructor-registration
+		// machinery tried (and failed) to construct it from a raw
+		// CUIActorMenu* - a real, narrow bug in this file, not the same
+		// wrap_base/constructor<> incompatibility as UIListBox_script.cpp/
+		// UIScriptWnd_script.cpp (see their own comments).
+		class_<CUIActorMenu, bases<CUIDialogWnd, CUIWndCallback>>("CUIActorMenu")
 		.def(constructor<>())
 		.def("get_drag_item", &CUIActorMenu::GetCurrentItemAsGameObject)
 		.def("highlight_section_in_slot", &CUIActorMenu::HighlightSectionInSlot)

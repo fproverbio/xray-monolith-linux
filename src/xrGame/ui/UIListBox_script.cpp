@@ -51,7 +51,18 @@ void CUIListBox::script_register(lua_State* L)
 		.def("AddTextItem", &CUIListBox::AddTextItem)
 		.def("AddExistingItem", &CUIListBox::AddExistingItem, adopt<2>()),
 
-		class_<CUIListBoxItem, CUIFrameLineWnd, CUIListBoxItemWrapper>("CUIListBoxItem")
+		// The 3rd class_<> template argument is HolderType (defaults to
+		// null_type), NOT the Lua-override WrapperType - that's the 4th
+		// argument. Passing the *Wrapper class positionally as the 3rd
+		// argument (as this file did) silently compiles until a
+		// constructor is also registered, at which point the fork's
+		// constructor-registration machinery tries to construct the
+		// "HolderType" (really the Wrapper class) from a raw pointer,
+		// which doesn't exist - "no matching function for call to
+		// ...Wrapper::Wrapper(...pointer)". Fixed by explicitly skipping
+		// the HolderType slot with `null_type` and moving the Wrapper
+		// class into the real WrapperType (4th) slot.
+		class_<CUIListBoxItem, CUIFrameLineWnd, null_type, CUIListBoxItemWrapper>("CUIListBoxItem")
 		.def(constructor<float>())
 		.def("GetTextItem", &CUIListBoxItem::GetTextItem)
 		.def("AddTextField", &CUIListBoxItem::AddTextField)
@@ -60,7 +71,7 @@ void CUIListBox::script_register(lua_State* L)
 		.def("GetTAG", &CUIListBoxItem::GetTAG)
 		.def("SetTAG", &CUIListBoxItem::SetTAG),
 
-		class_<CUIListBoxItemMsgChain, CUIListBoxItem, CUIListBoxItemMsgChainWrapper>("CUIListBoxItemMsgChain")
+		class_<CUIListBoxItemMsgChain, CUIListBoxItem, null_type, CUIListBoxItemMsgChainWrapper>("CUIListBoxItemMsgChain")
 		.def(constructor<float>()),
 
 		// SServerFilters/connect_error_cb/CServerList (ServerList.h) registration

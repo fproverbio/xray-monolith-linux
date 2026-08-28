@@ -8,7 +8,7 @@ struct CWrapperBase : public T, public ::luabind::wrap_base
 
 	virtual bool OnKeyboardAction(int dik, EUIMessages keyboard_action)
 	{
-		return call_member<bool>(this, "OnKeyboard", dik, keyboard_action);
+		return luabind::call_member<bool>(this, "OnKeyboard", dik, keyboard_action);
 	}
 
 	static bool OnKeyboard_static(inherited* ptr, int dik, EUIMessages keyboard_action)
@@ -18,7 +18,7 @@ struct CWrapperBase : public T, public ::luabind::wrap_base
 
 	virtual bool OnMouseAction(float x, float y, EUIMessages mouse_action)
 	{
-		return call_member<bool>(this, "OnMouse", x, y, mouse_action);
+		return luabind::call_member<bool>(this, "OnMouse", x, y, mouse_action);
 	}
 
 	static bool OnMouse_static(inherited* ptr, float x, float y, EUIMessages mouse_action)
@@ -28,7 +28,7 @@ struct CWrapperBase : public T, public ::luabind::wrap_base
 
 	virtual void Update()
 	{
-		call_member<void>(this, "Update");
+		luabind::call_member<void>(this, "Update");
 	}
 
 	static void Update_static(inherited* ptr)
@@ -38,7 +38,7 @@ struct CWrapperBase : public T, public ::luabind::wrap_base
 
 	virtual bool Dispatch(int cmd, int param)
 	{
-		return call_member<bool>(this, "Dispatch", cmd, param);
+		return luabind::call_member<bool>(this, "Dispatch", cmd, param);
 	}
 
 	static bool Dispatch_static(inherited* ptr, int cmd, int param)
@@ -50,4 +50,8 @@ struct CWrapperBase : public T, public ::luabind::wrap_base
 typedef CWrapperBase<CUIDialogWndEx> WrapType;
 typedef CUIDialogWndEx BaseType;
 
-typedef luabind::class_<CUIDialogWndEx, luabind::bases<CUIDialogWnd, DLL_Pure>, WrapType> export_class;
+// The 3rd class_<> template argument is HolderType (defaults to
+// null_type), NOT the Lua-override WrapperType - that's the 4th
+// argument (see UIListBox_script.cpp's identical fix for the full
+// explanation). WrapType was landing in the HolderType slot here.
+typedef luabind::class_<CUIDialogWndEx, luabind::bases<CUIDialogWnd, DLL_Pure>, luabind::null_type, WrapType> export_class;
