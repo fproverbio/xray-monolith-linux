@@ -3,7 +3,7 @@
 // BastArtefact - артефакт мочалка
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "BastArtifact.h"
 #include "../xrPhysics/PhysicsShell.h"
 #include "../xrPhysics/ExtendedGeom.h"

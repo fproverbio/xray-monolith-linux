@@ -7,7 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include <regex>
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "patrol_path.h"
 #include "LevelGameDef.h"
 #include "../xrCore/mezz_stringbuffer.h"

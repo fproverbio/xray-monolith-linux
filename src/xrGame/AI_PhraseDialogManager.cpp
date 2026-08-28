@@ -5,7 +5,7 @@
 //
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "AI_PhraseDialogManager.h"
 #include "PhraseDialog.h"
 #include "InventoryOwner.h"

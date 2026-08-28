@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "player_hud_legs.h"
 #include "player_hud.h"
 #include "Actor.h"

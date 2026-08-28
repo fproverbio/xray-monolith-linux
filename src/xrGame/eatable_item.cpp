@@ -9,7 +9,7 @@
 //	Last updated: 13/08/2015
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "eatable_item.h"
 #include "xrMessages.h"
 #include "physic_item.h"

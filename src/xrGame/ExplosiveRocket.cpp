@@ -3,7 +3,7 @@
 //						взрывается при столкновении
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "ExplosiveRocket.h"
 #include "PhysicsShellHolder.h"

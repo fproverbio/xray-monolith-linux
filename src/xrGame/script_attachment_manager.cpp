@@ -1,5 +1,5 @@
 #pragma once
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "script_attachment_manager.h"
 #include "player_hud.h"
 #include "Actor.h"

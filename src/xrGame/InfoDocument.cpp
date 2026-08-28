@@ -2,7 +2,7 @@
 // InfoDocument.cpp
 // InfoDocument - документ, содержащий сюжетную информацию
 ///////////////////////////////////////////////////////////////
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "InfoDocument.h"
 #include "../xrPhysics/PhysicsShell.h"
 #include "PDA.h"

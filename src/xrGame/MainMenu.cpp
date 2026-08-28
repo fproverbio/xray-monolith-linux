@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "MainMenu.h"
 #include "ui/UIDialogWnd.h"
 #include "ui/UIMessageBoxEx.h"

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "MosquitoBald.h"
 #include "ParticlesObject.h"
 #include "Level.h"

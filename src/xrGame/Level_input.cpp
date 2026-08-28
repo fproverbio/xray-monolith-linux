@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include <dinput.h>
 #include "../xrEngine/XR_IOConsole.h"
 #include "entity_alive.h"

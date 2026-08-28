@@ -6,7 +6,7 @@
 //	Description : weapon aimer class
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "aimers_weapon.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "animation_movement_controller.h"

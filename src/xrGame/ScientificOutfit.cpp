@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "ScientificOutfit.h"
 
 CScientificOutfit::CScientificOutfit()

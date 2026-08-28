@@ -2,7 +2,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Entity.h"
 #include "Actor.h"
 #include "xrServer_Objects_ALife_Monsters.h"

@@ -1,7 +1,7 @@
 // HUDRecon.cpp: Distance and identification readout
 // 
 //////////////////////////////////////////////////////////////////////
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "HUDRecon.h"
 
 #include "../xrEngine/Environment.h"

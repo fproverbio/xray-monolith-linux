@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "player_hud.h"
 #include "HudItem.h"
 #include "ui_base.h"

@@ -6,7 +6,7 @@
 //	Description : Sound player
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "sound_player.h"
 #include "script_engine.h"
 #include "script_game_object.h"

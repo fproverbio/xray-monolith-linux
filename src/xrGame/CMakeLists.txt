@@ -1223,4 +1223,223 @@ target_sources_grouped(
   xrServer_sls_clear.cpp
 )
 
+# xrGame/ root sweep, second batch: 201 more files that compile clean once
+# the ~686-file-class systemic bug was found to recur in a form nobody had
+# hit yet - 306 xrGame files (mostly untouched-until-now root files) still
+# spelled their OWN #include "stdafx.h" lowercase, which on this case-
+# sensitive filesystem silently resolved to the WRONG file entirely
+# (xrCore/stdafx.h, also lowercase and also on xrGame's own include path)
+# instead of erroring - producing bizarre-looking cascading parse errors
+# far downstream (e.g. "DLL_Pure does not name a type", because
+# ENGINE_API never got #define'd) rather than a clean "file not found".
+# Fixed project-wide via sed across all 306 real occurrences (not just
+# these 201 - many more already-wired or still-blocked files had the same
+# latent bug, now corrected as a side effect with zero behavior change).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch2"
+  FILES
+  AI_PhraseDialogManager.cpp
+  ActivatingCharCollisionDelay.cpp
+  ActorAnimation.cpp
+  ActorBackpack.cpp
+  ActorCameras.cpp
+  ActorEffector.cpp
+  ActorHelmet.cpp
+  ActorNightVision.cpp
+  Actor_Events.cpp
+  Actor_Feel.cpp
+  Actor_Movement.cpp
+  Actor_Weapon.cpp
+  AdvancedDetector.cpp
+  AmebaZone.cpp
+  BastArtifact.cpp
+  BlackDrops.cpp
+  BlackGraviArtifact.cpp
+  Bolt.cpp
+  BoneProtections.cpp
+  BottleItem.cpp
+  BreakableObject.cpp
+  CharacterPhysicsSupport.cpp
+  CustomDetector.cpp
+  CustomOutfit.cpp
+  CustomRocket.cpp
+  CustomZone.cpp
+  DBG_Car.cpp
+  DemoInfo_Loader.cpp
+  DemoPLay_Control.cpp
+  Dosimeter.cpp
+  DummyArtifact.cpp
+  EffectorBobbing.cpp
+  EffectorShot.cpp
+  EffectorShotX.cpp
+  EffectorZoomInertion.cpp
+  ElectricBall.cpp
+  EliteDetector.cpp
+  Entity.cpp
+  EntityCondition.cpp
+  ExoOutfit.cpp
+  Explosive.cpp
+  ExplosiveItem.cpp
+  ExplosiveRocket.cpp
+  FadedBall.cpp
+  Flashlight.cpp
+  FoodItem.cpp
+  GalantineArtifact.cpp
+  GraviArtifact.cpp
+  GraviZone.cpp
+  HUDRecon.cpp
+  HUDTarget.cpp
+  Hit.cpp
+  HitMarker.cpp
+  HolderEntityObject.cpp
+  IKLimbsController.cpp
+  InfoDocument.cpp
+  Level_SLS_Default.cpp
+  Level_SLS_Load.cpp
+  Level_SLS_Save.cpp
+  Level_load.cpp
+  Level_network_compressed_updates.cpp
+  Level_network_digest_computer.cpp
+  Level_network_map_sync.cpp
+  Level_network_messages.cpp
+  Level_network_start_client.cpp
+  Level_secure_messaging.cpp
+  MercuryBall.cpp
+  MilitaryOutfit.cpp
+  Missile.cpp
+  MosquitoBald.cpp
+  Needles.cpp
+  NoGravityZone.cpp
+  PHCollisionDamageReceiver.cpp
+  PHDestroyable.cpp
+  PHDestroyableNotificate.cpp
+  PHMovementControl.cpp
+  Phrase.cpp
+  PhraseDialogManager.cpp
+  PhysicsSkeletonObject.cpp
+  RadioactiveZone.cpp
+  RocketLauncher.cpp
+  RustyHairArtifact.cpp
+  ScientificOutfit.cpp
+  ShootingObject.cpp
+  SimpleDetector.cpp
+  ThornArtifact.cpp
+  Torch.cpp
+  TorridZone.cpp
+  UIAchivementsIndicator.cpp
+  UIDialogHolder.cpp
+  UIZoneMap.cpp
+  ZoneCampfire.cpp
+  ZoneVisual.cpp
+  ZudaArtifact.cpp
+  actor_input_handler.cpp
+  actor_memory.cpp
+  actor_statistic_mgr.cpp
+  agent_corpse_manager.cpp
+  agent_explosive_manager.cpp
+  agent_location_manager.cpp
+  agent_manager.cpp
+  agent_manager_actions.cpp
+  agent_member_manager.cpp
+  agent_memory_manager.cpp
+  ai_space.cpp
+  ai_stalker_alife.cpp
+  antirad.cpp
+  artefact_activation.cpp
+  attachable_item.cpp
+  attachment_owner.cpp
+  autosave_manager.cpp
+  cameralook.cpp
+  character_hit_animations.cpp
+  character_shell_control.cpp
+  cover_evaluators.cpp
+  cover_manager.cpp
+  danger_explosive.cpp
+  danger_object.cpp
+  debug_text_tree.cpp
+  dynamic_obstacles_avoider.cpp
+  eatable_item.cpp
+  eatable_item_object.cpp
+  ef_primary.cpp
+  encyclopedia_article.cpp
+  file_transfer.cpp
+  filetransfer_node.cpp
+  fire_disp_controller.cpp
+  first_bullet_controller.cpp
+  flare.cpp
+  game_cl_single.cpp
+  game_news.cpp
+  group_hierarchy_holder.cpp
+  holder_custom.cpp
+  hud_item_object.cpp
+  inventory_quickswitch.cpp
+  level_changer.cpp
+  level_sounds.cpp
+  map_spot.cpp
+  material_manager.cpp
+  medkit.cpp
+  moving_object.cpp
+  moving_objects.cpp
+  moving_objects_dynamic.cpp
+  moving_objects_dynamic_collision.cpp
+  moving_objects_static.cpp
+  object_property_evaluators.cpp
+  patrol_point.cpp
+  physic_item.cpp
+  player_hud.cpp
+  pp_effector_custom.cpp
+  purchase_list.cpp
+  rat_states.cpp
+  relation_registry.cpp
+  restricted_object.cpp
+  saved_game_wrapper.cpp
+  script_binder_object.cpp
+  script_effector.cpp
+  script_entity_action.cpp
+  script_monster_action.cpp
+  script_movement_action.cpp
+  script_object_action.cpp
+  script_particle_action.cpp
+  script_sound.cpp
+  script_sound_action.cpp
+  script_wallmarks_manager.cpp
+  script_wallmarks_script.cpp
+  script_watch_action.cpp
+  searchlight.cpp
+  searchlight_script.cpp
+  server_entity_wrapper.cpp
+  sight_action.cpp
+  sight_manager_target.cpp
+  sound_player.cpp
+  space_restriction_holder.cpp
+  space_restriction_manager.cpp
+  stalker_alife_task_actions.cpp
+  stalker_animation_callbacks.cpp
+  stalker_animation_data_storage.cpp
+  stalker_animation_global.cpp
+  stalker_animation_head.cpp
+  stalker_animation_legs.cpp
+  stalker_animation_manager_debug.cpp
+  stalker_animation_torso.cpp
+  stalker_anomaly_planner.cpp
+  stalker_base_action.cpp
+  stalker_death_actions.cpp
+  stalker_movement_manager_base.cpp
+  stalker_movement_params.cpp
+  stalker_sound_data.cpp
+  static_obstacles_avoider.cpp
+  step_manager.cpp
+  string_table.cpp
+  trajectories.cpp
+  vision_client.cpp
+  wallmark_manager.cpp
+  xrServerMapSync.cpp
+  xrServer_info.cpp
+  xrServer_svclient_validation.cpp
+  xrServer_updates_compressor.cpp
+  xr_time.cpp
+  zone_effector.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

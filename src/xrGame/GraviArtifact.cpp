@@ -4,7 +4,7 @@
 // и неустойчиво парит над землей
 ///////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "GraviArtifact.h"
 #include "../xrPhysics/PhysicsShell.h"
 #include "Level.h"

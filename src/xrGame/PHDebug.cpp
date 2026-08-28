@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #ifdef DEBUG
 //#include "physics.h"
 //#include "MathUtils.h"

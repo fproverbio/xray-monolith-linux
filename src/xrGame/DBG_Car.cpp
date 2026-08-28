@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #ifdef DEBUG
 #include "PHDebug.h"
 #include "alife_space.h"

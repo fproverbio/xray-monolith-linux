@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 
 #include "CharacterPhysicsSupport.h"
 #include "alife_space.h"

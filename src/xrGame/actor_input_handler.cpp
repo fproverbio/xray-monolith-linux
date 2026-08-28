@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "actor_input_handler.h"
 #include "Actor.h"
 #include "Level.h"

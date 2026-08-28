@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Flashlight.h"
 #include "Inventory.h"
 #include "player_hud.h"

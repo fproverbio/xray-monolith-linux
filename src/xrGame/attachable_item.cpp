@@ -6,7 +6,7 @@
 //	Description : Attachable item
 ////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "PhysicsShellHolder.h"
 #include "attachable_item.h"
 #include "InventoryOwner.h"

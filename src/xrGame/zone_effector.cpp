@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "zone_effector.h"
 #include "Level.h"
 #include "../xrEngine/xr_object.h"

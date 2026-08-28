@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "xrServer.h"
 #include "xrServer_Objects.h"
 #include "xrServer_Objects_ALife_Monsters.h"

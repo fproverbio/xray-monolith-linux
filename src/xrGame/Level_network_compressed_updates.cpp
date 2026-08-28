@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Level.h"
 #include "../xrCore/ppmd_compressor.h"
 #include "../xrPhysics/IPHWorld.h"

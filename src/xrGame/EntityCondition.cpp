@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "EntityCondition.h"
 #include "InventoryOwner.h"
 #include "CustomOutfit.h"

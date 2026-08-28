@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "Bolt.h"
 #include "ParticlesObject.h"
 #include "../xrPhysics/PhysicsShell.h"
