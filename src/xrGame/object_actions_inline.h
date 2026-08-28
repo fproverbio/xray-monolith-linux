@@ -9,6 +9,13 @@
 #pragma once
 
 #include "object_handler.h"
+// Needed directly for ObjectHandlerSpace::eWorldPropertyAimed1/2 and
+// CHudItem, used below - object_handler.h itself doesn't pull these in,
+// and relying on some other already-compiling includer of object_handler.h
+// having brought them in earlier in the same TU is include-order-fragile
+// (same class of bug as path_manager_solver.h's GraphEngineSpace fix).
+#include "object_handler_space.h"
+#include "HudItem.h"
 
 //////////////////////////////////////////////////////////////////////////
 // CObjectActionBase
@@ -85,5 +92,5 @@ void CObjectActionMember<_item_type>::execute()
 {
 	inherited::execute();
 	if (completed())
-		set_property(m_condition_id, m_value);
+		this->set_property(m_condition_id, m_value);
 }

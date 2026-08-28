@@ -632,13 +632,17 @@ target_sources_grouped(
 # 36 now compile clean and are wired in below (Game3_ALife group above for
 # the alife_*/character_*/car_memory/monster_community ones; a new
 # "Game3_Vehicles_Weapons" group below for the Car*/Weapon*/Helicopter*/
-# Grenade ones). The remaining 14 have real issues of their own, not yet
-# individually chased - EXCLUDED, each needing its own future look:
-#   HelicopterMovementManager.cpp(1) WeaponBinocularsVision.cpp(6)
+# Grenade ones). UPDATE (xrGame root sweep, Game4_RootBatch3): 5 more of
+# the original 14 - HelicopterMovementManager.cpp,
+# alife_monster_detail_path_manager.cpp, alife_monster_patrol_path_manager.cpp,
+# alife_spawn_registry.cpp, alife_spawn_registry_spawn.cpp - are now fixed
+# too, as a side effect of that pass's dependent-base/typename fixes rather
+# than individually targeted. The remaining 9 still have real issues of
+# their own, not yet individually chased - EXCLUDED, each needing its own
+# future look:
+#   WeaponBinocularsVision.cpp(6)
 #   WeaponMagazined.cpp(15) WeaponMagazinedWGrenade.cpp(2)
 #   WeaponStatMgun.cpp(1) WeaponStatMgunFire.cpp(15) WeaponStatMgunMisc.cpp(1)
-#   alife_monster_detail_path_manager.cpp(7) alife_monster_patrol_path_manager.cpp(1)
-#   alife_spawn_registry.cpp(3) alife_spawn_registry_spawn.cpp(1)
 #   alife_surge_manager.cpp(5) alife_trader_abstract.cpp(2) alife_update_manager.cpp(7)
 # (parenthesized number = real g++ -c error count as of this pass, not a
 # file size/complexity estimate - each is a concrete, findable bug or
@@ -1440,6 +1444,54 @@ target_sources_grouped(
   xrServer_updates_compressor.cpp
   xr_time.cpp
   zone_effector.cpp
+)
+
+# xrGame/ root sweep, third batch: 21 more files fixed via real per-file
+# investigation (not another blanket systemic fix) - a chain of individual
+# bugs, all familiar shapes from earlier in this project but newly found
+# in these specific files: self-shadowing template parameters
+# (graph_edge.h's CEdgeBase<_edge_weight_type,_vertex_type> re-typedef'd
+# its own parameters), missing `typename`/`this->` for dependent-base
+# members and types across object_actions.h/property_evaluator_const.h/
+# property_evaluator_member.h/object_manager_inline.h/
+# level_path_manager_inline.h/game_path_manager_inline.h/
+# path_manager_game_inline.h/path_manager_game_vertex_inline.h/
+# game_location_selector_inline.h, illegal `typename` before a bare
+# CPathManager<...> type-id in path_manager_game.h/
+# path_manager_game_vertex.h/path_manager_game_level.h (same class as
+# path_manager_level.h's earlier fix), and the psAI_Flags/MASTER_GOLD
+# dead-declaration fix (this time in the shared ai/ai_monsters_anims.h
+# template, fixing it once for everything that includes that header
+# rather than per-.cpp-file). Bonus: HelicopterMovementManager.cpp and
+# the 4 alife_monster/alife_spawn_registry* files were leftover
+# exclusions from the ORIGINAL graph-cycle sweep (notes section 30c,
+# months earlier in this project) - now fixed as a side effect of this
+# pass's dependent-base/typename fixes, not separately targeted.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch3"
+  FILES
+  Artefact.cpp
+  HelicopterMovementManager.cpp
+  alife_monster_detail_path_manager.cpp
+  alife_monster_patrol_path_manager.cpp
+  alife_spawn_registry.cpp
+  alife_spawn_registry_spawn.cpp
+  item_manager.cpp
+  map_location.cpp
+  memory_manager.cpp
+  movement_manager.cpp
+  movement_manager_game.cpp
+  movement_manager_level.cpp
+  movement_manager_patrol.cpp
+  object_actions.cpp
+  patrol_path.cpp
+  patrol_path_params.cpp
+  patrol_path_storage.cpp
+  smart_cover_planner_actions.cpp
+  stalker_movement_manager_obstacles.cpp
+  stalker_movement_manager_obstacles_path.cpp
+  stalker_movement_manager_smart_cover_loopholes.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

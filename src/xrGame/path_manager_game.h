@@ -35,7 +35,9 @@ class CPathManager<
 {
 protected:
 	typedef CGameGraph _Graph;
-	typedef typename CPathManagerGeneric<
+	// `typename` here is illegal - same bug as path_manager_game_vertex.h/
+	// path_manager_game_level.h.
+	typedef CPathManagerGeneric<
 		_Graph,
 		_DataStorage,
 		_Parameters,

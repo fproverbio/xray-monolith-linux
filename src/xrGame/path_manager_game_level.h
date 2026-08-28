@@ -48,7 +48,8 @@ protected:
 		_index_type,
 		_iteration_type
 	> _Parameters;
-	typedef typename CPathManager<
+	// `typename` here is illegal - same bug as path_manager_game_vertex.h.
+	typedef CPathManager<
 		_Graph,
 		_DataStorage,
 		SBaseParameters<

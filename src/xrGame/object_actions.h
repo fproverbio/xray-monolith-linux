@@ -53,6 +53,12 @@ class CObjectActionMember : public CObjectActionBase<_item_type>
 {
 protected:
 	typedef CObjectActionBase<_item_type> inherited;
+	// _condition_type/_value_type are protected members of the dependent
+	// base CObjectActionBase<_item_type> - need `typename inherited::`
+	// qualification (same dependent-base pattern as the `this->` fixes
+	// elsewhere, just for a type rather than a value/function).
+	typedef typename inherited::_condition_type _condition_type;
+	typedef typename inherited::_value_type _value_type;
 
 protected:
 	_condition_type m_condition_id;

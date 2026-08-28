@@ -11,6 +11,15 @@
 #include "../../Include/xrRender/KinematicsAnimated.h"
 #include "../ai_debug.h"
 
+#ifdef DEBUG
+// psAI_Flags - see ai_monsters_misc.cpp's comment: MASTER_GOLD's
+// #ifndef-DEBUG-before-DEBUG-is-#define'd ordering quirk in xrCore.h makes
+// it always defined in this build, so ai_debug.h's own `extern Flags32
+// psAI_Flags;` (guarded by #ifndef MASTER_GOLD) is dead here. Established
+// fix: redeclare it locally wherever it's actually used.
+extern Flags32 psAI_Flags;
+#endif
+
 DEFINE_VECTOR(MotionID, ANIM_VECTOR, ANIM_IT);
 
 class CAniVector

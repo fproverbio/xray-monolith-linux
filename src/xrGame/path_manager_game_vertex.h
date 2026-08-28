@@ -48,7 +48,11 @@ protected:
 		_index_type,
 		_iteration_type
 	> _Parameters;
-	typedef typename CPathManager<
+	// `typename` here is illegal - CPathManager<...> is a plain type-id
+	// with no further `::member` after it, not a qualified-dependent
+	// name (same bug as path_manager_level.h/
+	// path_manager_level_nearest_vertex.h).
+	typedef CPathManager<
 		_Graph,
 		_DataStorage,
 		SBaseParameters<

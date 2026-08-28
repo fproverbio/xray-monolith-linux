@@ -15,6 +15,12 @@ class CPropertyEvaluatorMember : public CPropertyEvaluator<_object_type>
 {
 protected:
 	typedef CPropertyEvaluator<_object_type> inherited;
+	// _condition_type/_value_type are protected members of the dependent
+	// base CPropertyEvaluator<_object_type> - need `typename inherited::`
+	// qualification (same pattern as object_actions.h/
+	// property_evaluator_const.h).
+	typedef typename inherited::_condition_type _condition_type;
+	typedef typename inherited::_value_type _value_type;
 
 protected:
 	_condition_type m_condition_id;
