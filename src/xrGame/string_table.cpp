@@ -3,7 +3,7 @@
 
 #include "ui/xrUIXmlParser.h"
 #include "xr_level_controller.h"
-#include "..\..\xrEngine\x_ray.h"
+#include "../xrEngine/x_ray.h"
 #include "MainMenu.h"
 #include "UIGameCustom.h"
 #include <regex>

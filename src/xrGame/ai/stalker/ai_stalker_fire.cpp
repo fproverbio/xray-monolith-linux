@@ -53,7 +53,7 @@
 
 #include "../../trajectories.h"
 #include "script_hit.h"
-#include "../../xrServerEntities/script_engine.h"
+#include "../xrServerEntities/script_engine.h"
 
 using namespace StalkerSpace;
 

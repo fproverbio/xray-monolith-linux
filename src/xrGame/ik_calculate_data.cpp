@@ -2,7 +2,7 @@
 
 #include	"ik_calculate_data.h"
 
-#include	"ik/iklimb.h"
+#include	"ik/IKLimb.h"
 
 SCalculateData::SCalculateData(CIKLimb& l, const Fmatrix& o):
 	state(),

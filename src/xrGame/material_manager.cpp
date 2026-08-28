@@ -9,7 +9,7 @@
 #include "stdafx.h"
 #include "material_manager.h"
 #include "alife_space.h"
-#include "phmovementcontrol.h"
+#include "PHMovementControl.h"
 #include "entity_alive.h"
 #include "ai/monsters/basemonster/base_monster.h"
 #include "CharacterPhysicsSupport.h"

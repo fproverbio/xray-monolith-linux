@@ -2,7 +2,7 @@
 /*
 #include "UITrackButton.h"
 #include "UITrackBar.h"
-#include "../../xr_input.h"
+#include "xr_input.h"
 
 bool CUITrackButton::OnMouseAction(float x, float y, EUIMessages mouse_action){
 	CUI3tButton::OnMouseAction(x,y,mouse_action);

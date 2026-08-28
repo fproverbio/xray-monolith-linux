@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "player_hud_legs.h"
 #include "player_hud.h"
-#include "actor.h"
+#include "Actor.h"
 #include "inventory_item.h"
 #include "Inventory.h"
 #include "../Include/xrRender/Kinematics.h"

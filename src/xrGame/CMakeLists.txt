@@ -1034,4 +1034,193 @@ target_sources_grouped(
   ai/monsters/rats/ai_rat_fsm.cpp
 )
 
+# xrGame/ root sweep, first batch: 172 files that compile clean with zero
+# changes needed once the systemic lowercase/mis-cased-#include bug (the
+# same class as the already-fixed ~686-file stdafx.h issue, but here
+# affecting real content headers like level.h/gameobject.h/actor.h/
+# inventory.h/weapon.h/xrserver.h/etc.) was fixed project-wide via a
+# script-driven, case-insensitive #include resolution pass across all of
+# xrGame (1104 individual #include directives corrected across 349 files
+# total, in root/ + ai/ + ui/ - only the files listed below were actually
+# gated on nothing else and compile clean here; the many others whose
+# includes were also fixed already were compiling for other reasons or
+# remain blocked by real, separate issues untouched by this pass).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch1"
+  FILES
+  ActorCondition.cpp
+  ActorEffector_script.cpp
+  BottleItem_script.cpp
+  CarScript.cpp
+  CustomOutfit_script.cpp
+  CustomZone_script.cpp
+  DestroyablePhysicsObject.cpp
+  ExplosiveScript.cpp
+  F1.cpp
+  FoodItem_script.cpp
+  GameTask.cpp
+  GameTask_script.cpp
+  GametaskManager.cpp
+  HairsZone.cpp
+  HairsZone_script.cpp
+  HangingLamp.cpp
+  InfoPortion.cpp
+  InventoryBox.cpp
+  InventoryBox_script.cpp
+  InventoryOwner.cpp
+  InventoryOwner_script.cpp
+  LevelDebugScript.cpp
+  Level_network.cpp
+  Level_network_spawn.cpp
+  MosquitoBald_script.cpp
+  PDA.cpp
+  PhraseDialog_script.cpp
+  PhysicObject.cpp
+  PhysicObject_script.cpp
+  RGD5.cpp
+  Scope.cpp
+  StalkerOutfit.cpp
+  UIGameCustom.cpp
+  UIGameCustom_script.cpp
+  UIGameSP.cpp
+  WeaponAmmo_script.cpp
+  WeaponBinocularsVision.cpp
+  WeaponFN2000.cpp
+  WeaponFORT.cpp
+  WeaponHPSA.cpp
+  WeaponHPSA_script.cpp
+  WeaponKnife_script.cpp
+  WeaponLR300.cpp
+  WeaponPM.cpp
+  WeaponRG6_script.cpp
+  WeaponRPG7_script.cpp
+  WeaponSSRS_script.cpp
+  WeaponStatMgun.cpp
+  WeaponStatMgunFire.cpp
+  actor_script.cpp
+  agent_manager_properties.cpp
+  ai_crow_script.cpp
+  alife_human_brain_script.cpp
+  alife_monster_brain_script.cpp
+  alife_monster_detail_path_manager_script.cpp
+  alife_monster_movement_manager_script.cpp
+  alife_monster_patrol_path_manager_script.cpp
+  alife_simulator.cpp
+  alife_simulator_base.cpp
+  alife_smart_terrain_task_script.cpp
+  alife_surge_manager.cpp
+  antirad_script.cpp
+  client_spawn_manager_script.cpp
+  cover_point_script.cpp
+  danger_manager.cpp
+  detail_path_manager.cpp
+  eatable_item_script.cpp
+  ef_storage_script.cpp
+  entity_alive.cpp
+  game_base.cpp
+  game_sv_item_respawner.cpp
+  game_sv_single.cpp
+  helicopter_script.cpp
+  hit_memory_manager.cpp
+  holder_custom_script.cpp
+  inventory_item_object.cpp
+  inventory_item_script.cpp
+  inventory_item_upgrade.cpp
+  inventory_upgrade_base.cpp
+  inventory_upgrade_group.cpp
+  inventory_upgrade_manager.cpp
+  inventory_upgrade_root.cpp
+  map_manager.cpp
+  medkit_script.cpp
+  memory_space_script.cpp
+  object_handler.cpp
+  particle_params_script.cpp
+  patrol_path_params_script.cpp
+  physics_shell_scripted.cpp
+  physics_world_scripted.cpp
+  player_hud_script.cpp
+  property_storage_script.cpp
+  raypick.cpp
+  relation_registry_actions.cpp
+  saved_game_wrapper_script.cpp
+  script_action_condition_script.cpp
+  script_action_planner_action_wrapper.cpp
+  script_action_wrapper.cpp
+  script_animation_action_script.cpp
+  script_attachment_script.cpp
+  script_binder.cpp
+  script_binder_object_script.cpp
+  script_binder_object_wrapper.cpp
+  script_effector_wrapper.cpp
+  script_entity_action_script.cpp
+  script_game_object2.cpp
+  script_game_object3.cpp
+  script_game_object4.cpp
+  script_game_object_script.cpp
+  script_game_object_script_trader.cpp
+  script_game_object_smart_covers.cpp
+  script_game_object_trader.cpp
+  script_game_object_use2.cpp
+  script_hit_script.cpp
+  script_lanim.cpp
+  script_light_script.cpp
+  script_monster_action_script.cpp
+  script_monster_hit_info_script.cpp
+  script_movement_action_script.cpp
+  script_object_action_script.cpp
+  script_particle_action_script.cpp
+  script_particles_script.cpp
+  script_sound_action_script.cpp
+  script_sound_info_script.cpp
+  script_sound_script.cpp
+  script_watch_action_script.cpp
+  script_world_property_script.cpp
+  script_zone_script.cpp
+  smart_cover_animation_selector.cpp
+  smart_cover_default_behaviour_planner.cpp
+  smart_cover_evaluators.cpp
+  smart_cover_object_script.cpp
+  smart_cover_planner_target_provider.cpp
+  smart_cover_transition_animation.cpp
+  sound_memory_manager.cpp
+  space_restrictor_script.cpp
+  stalker_alife_actions.cpp
+  stalker_animation_script.cpp
+  stalker_anomaly_actions.cpp
+  stalker_combat_action_base.cpp
+  stalker_danger_planner.cpp
+  stalker_danger_property_evaluators.cpp
+  stalker_movement_manager_smart_cover_fov_range.cpp
+  stalker_property_evaluators.cpp
+  stalker_search_actions.cpp
+  stalker_sound_data_visitor.cpp
+  torch_script.cpp
+  trade.cpp
+  trade2.cpp
+  trade_parameters.cpp
+  visual_memory_manager.cpp
+  weaponshotgun_script.cpp
+  xrClientsPool.cpp
+  xrServer_CL_connect.cpp
+  xrServer_CL_disconnect.cpp
+  xrServer_Disconnect.cpp
+  xrServer_balance.cpp
+  xrServer_perform_GameExport.cpp
+  xrServer_perform_RPgen.cpp
+  xrServer_perform_migration.cpp
+  xrServer_perform_sls_default.cpp
+  xrServer_perform_sls_load.cpp
+  xrServer_perform_sls_save.cpp
+  xrServer_perform_transfer.cpp
+  xrServer_process_event.cpp
+  xrServer_process_event_activate.cpp
+  xrServer_process_event_destroy.cpp
+  xrServer_process_event_ownership.cpp
+  xrServer_process_event_reject.cpp
+  xrServer_process_update.cpp
+  xrServer_secure_messaging.cpp
+  xrServer_sls_clear.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

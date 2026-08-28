@@ -3,7 +3,7 @@
 
 #include "player_hud.h"
 #include "HUDManager.h"
-#include "HUDItem.h"
+#include "HudItem.h"
 #include "Actor.h"
 #include "Weapon.h"
 

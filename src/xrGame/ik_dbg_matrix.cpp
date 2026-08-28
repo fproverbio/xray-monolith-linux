@@ -2,7 +2,7 @@
 
 #include	"ik_dbg_matrix.h"
 
-#include	"ik/iklimb.h"
+#include	"ik/IKLimb.h"
 
 u32 sdbg_state_sequence_number = 130;
 

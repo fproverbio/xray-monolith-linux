@@ -2,8 +2,8 @@
 #include "stdafx.h"
 #include "script_attachment_manager.h"
 #include "player_hud.h"
-#include "actor.h"
-#include "ui\UIScriptWnd.h"
+#include "Actor.h"
+#include "ui/UIScriptWnd.h"
 
 //#define DEBUG_VISBOX
 

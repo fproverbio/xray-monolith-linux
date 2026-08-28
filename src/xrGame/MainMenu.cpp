@@ -1,16 +1,16 @@
 #include "stdafx.h"
 #include "MainMenu.h"
-#include "UI/UIDialogWnd.h"
+#include "ui/UIDialogWnd.h"
 #include "ui/UIMessageBoxEx.h"
-#include "../xrEngine/xr_IOConsole.h"
+#include "../xrEngine/XR_IOConsole.h"
 #include "../xrEngine/IGame_Level.h"
 #include "../xrEngine/CameraManager.h"
 #include "../xrEngine/xr_input.h"
-#include "xr_Level_controller.h"
-#include "ui\UITextureMaster.h"
-#include "ui\UIXmlInit.h"
+#include "xr_level_controller.h"
+#include "ui/UITextureMaster.h"
+#include "ui/UIXmlInit.h"
 #include <dinput.h>
-#include "ui\UIBtnHint.h"
+#include "ui/UIBtnHint.h"
 #include "UICursor.h"
 #include "gamespy/CdkeyDecode/cdkeydecode.h"
 #include "string_table.h"
@@ -171,7 +171,7 @@ void CMainMenu::ReadTextureInfo()
 extern ENGINE_API BOOL bShowPauseString;
 extern bool IsGameTypeSingle();
 
-#include "..\..\xrEngine\x_ray.h"
+#include "../xrEngine/x_ray.h"
 
 void CMainMenu::Activate(bool bActivate)
 {

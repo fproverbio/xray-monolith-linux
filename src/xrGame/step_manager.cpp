@@ -2,13 +2,13 @@
 #include "step_manager.h"
 #include "entity_alive.h"
 #include "../Include/xrRender/Kinematics.h"
-#include "level.h"
-#include "gamepersistent.h"
+#include "Level.h"
+#include "GamePersistent.h"
 #include "material_manager.h"
 #include "profiler.h"
 #include "IKLimbsController.h"
 #include "GameObject.h"
-#include "../../xrServerEntities/script_engine.h"
+#include "../xrServerEntities/script_engine.h"
 
 #ifdef	DEBUG
 BOOL debug_step_info = FALSE;

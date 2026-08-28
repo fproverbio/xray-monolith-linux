@@ -14,14 +14,14 @@
 #include "ai_object_location.h"
 #include "level_graph.h"
 #include "stalker_movement_manager_smart_cover.h"
-#include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/GameMtlLib.h"
 #include "agent_manager.h"
 #include "agent_member_manager.h"
 #include "ai_space.h"
 #include "profiler.h"
-#include "actor.h"
-#include "../xrEngine/camerabase.h"
-#include "gamepersistent.h"
+#include "Actor.h"
+#include "../xrEngine/CameraBase.h"
+#include "GamePersistent.h"
 #include "actor_memory.h"
 #include "client_spawn_manager.h"
 #include "client_spawn_manager.h"
@@ -31,12 +31,12 @@
 float g_ai_vision_speed_boost = 1.0f;
 
 #ifndef MASTER_GOLD
-#	include "actor.h"
+#	include "Actor.h"
 #	include "ai_debug.h"
 #endif // MASTER_GOLD
 
 //Alundaio
-#include "../../xrServerEntities/script_engine.h"
+#include "../xrServerEntities/script_engine.h"
 #include "script_game_object.h"
  //Alundaio
 //-Alundaio

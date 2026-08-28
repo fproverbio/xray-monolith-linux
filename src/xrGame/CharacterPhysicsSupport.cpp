@@ -2,7 +2,7 @@
 
 #include "CharacterPhysicsSupport.h"
 #include "alife_space.h"
-#include "hit.h"
+#include "Hit.h"
 #include "PHDestroyable.h"
 #include "PHMovementControl.h"
 #include "CustomMonster.h"
@@ -11,14 +11,14 @@
 #include "../Include/xrRender/KinematicsAnimated.h"
 
 
-#include "../xrphysics/PhysicsShell.h"
-#include "../xrphysics/iActivationShape.h"
+#include "../xrPhysics/PhysicsShell.h"
+#include "../xrPhysics/IActivationShape.h"
 //#include "../xrphysics/Extendedgeom.h"
-#include "../xrphysics/geometry.h"
+#include "../xrPhysics/Geometry.h"
 //#include "../xrphysics/phdynamicdata.h"
-#include "../xrphysics/IPHCapture.h"
+#include "../xrPhysics/IPHCapture.h"
 //#include "../xrphysics/ICollideValidator.h"
-#include "../xrphysics/IPHWorld.h"
+#include "../xrPhysics/IPHWorld.h"
 
 //#include "Physics.h"
 
@@ -32,9 +32,9 @@
 #include "xrServer_Object_Base.h"
 #include "interactive_animation.h"
 #include "stalker_animation_manager.h"
-#include "inventoryowner.h"
-#include "inventory.h"
-#include "activatingcharcollisiondelay.h"
+#include "InventoryOwner.h"
+#include "Inventory.h"
+#include "ActivatingCharCollisionDelay.h"
 #include "stalker_movement_manager_smart_cover.h"
 
 #include "../build_config_defines.h"

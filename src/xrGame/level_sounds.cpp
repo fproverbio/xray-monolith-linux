@@ -3,7 +3,7 @@
 #include <algorithm>
 #pragma hdrstop
 
-#include "level.h"
+#include "Level.h"
 #include "level_sounds.h"
 
 //-----------------------------------------------------------------------------

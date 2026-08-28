@@ -1,25 +1,25 @@
 #include "pch_script.h"
-#include "gamepersistent.h"
-#include "../xrEngine/fmesh.h"
-#include "../xrEngine/xr_ioconsole.h"
-#include "../xrEngine/gamemtllib.h"
+#include "GamePersistent.h"
+#include "../xrEngine/Fmesh.h"
+#include "../xrEngine/XR_IOConsole.h"
+#include "../xrEngine/GameMtlLib.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "profiler.h"
 #include "MainMenu.h"
 #include "script_wallmarks_manager.h"
 #include "UICursor.h"
 #include "game_base_space.h"
-#include "level.h"
+#include "Level.h"
 #include "ParticlesObject.h"
 #include "game_base_space.h"
 #include "stalker_animation_data_storage.h"
 #include "stalker_velocity_holder.h"
 
 #include "ActorEffector.h"
-#include "actor.h"
-#include "spectator.h"
+#include "Actor.h"
+#include "Spectator.h"
 
-#include "UI/UItextureMaster.h"
+#include "ui/UITextureMaster.h"
 
 #include "../xrEngine/xrSASH.h"
 #include "ai_space.h"
@@ -27,14 +27,14 @@
 
 #include "holder_custom.h"
 #include "game_cl_base.h"
-#include "xrserver_objects_alife_monsters.h"
+#include "xrServer_Objects_ALife_Monsters.h"
 #include "../xrServerEntities/xrServer_Object_Base.h"
-#include "UI/UIGameTutorial.h"
+#include "ui/UIGameTutorial.h"
 
 #include "../xrEngine/xr_input.h"
 
 #ifndef MASTER_GOLD
-#	include "custommonster.h"
+#	include "CustomMonster.h"
 #endif // MASTER_GOLD
 
 #ifndef _EDITOR
@@ -998,7 +998,7 @@ void CGamePersistent::RestoreEffectorDOF()
 	SetEffectorDOF(m_dof[3]);
 }
 
-#include "hudmanager.h"
+#include "HUDManager.h"
 
 //	m_dof		[4];	// 0-dest 1-current 2-from 3-original
 void CGamePersistent::UpdateDof()
@@ -1028,7 +1028,7 @@ void CGamePersistent::UpdateDof()
 	(m_dof[0].z < m_dof[2].z) ? clamp(m_dof[1].z, m_dof[0].z, m_dof[2].z) : clamp(m_dof[1].z, m_dof[2].z, m_dof[0].z);
 }
 
-#include "ui\uimainingamewnd.h"
+#include "ui/UIMainIngameWnd.h"
 
 void CGamePersistent::OnSectorChanged(int sector)
 {

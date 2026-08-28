@@ -15,7 +15,7 @@
 #include "ai/ai_monsters_anims.h"
 #include "animation_movement_controller.h"
 #ifdef	DEBUG
-#include "phdebug.h"
+#include "PHDebug.h"
 #endif
 #pragma warning(push)
 #pragma warning(disable:4995)

@@ -7,7 +7,7 @@
 #include "game_object_space.h"
 
 #ifdef PROJECTOR_NEW
-#include "../xrphysics/PhysicsShell.h"
+#include "../xrPhysics/PhysicsShell.h"
 
 #endif
 

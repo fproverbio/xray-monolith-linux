@@ -44,7 +44,7 @@
 #include "../anti_aim_ability.h"
 
 #include "script_hit.h"
-#include "../../xrServerEntities/script_engine.h"
+#include "../xrServerEntities/script_engine.h"
 #include "script_game_object.h"
 
 // Lain: added 

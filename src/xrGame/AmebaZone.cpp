@@ -3,7 +3,7 @@
 #include "AmebaZone.h"
 #include "ZoneVisual.h"
 #include "CustomZone.h"
-#include "../xrengine/xr_collide_form.h"
+#include "../xrEngine/xr_collide_form.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "PhysicsShellHolder.h"
 #include "PHMovementControl.h"

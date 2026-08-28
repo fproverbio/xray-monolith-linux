@@ -1,23 +1,23 @@
 #include "stdafx.h"
-#include "../xrEngine/xr_ioconsole.h"
-#include "customzone.h"
-#include "hit.h"
+#include "../xrEngine/XR_IOConsole.h"
+#include "CustomZone.h"
+#include "Hit.h"
 #include "PHDestroyable.h"
-#include "actor.h"
+#include "Actor.h"
 #include "ParticlesObject.h"
-#include "xrserver_objects_alife_monsters.h"
+#include "xrServer_Objects_ALife_Monsters.h"
 #include "../xrEngine/LightAnimLibrary.h"
-#include "level.h"
+#include "Level.h"
 #include "game_cl_base.h"
-#include "../xrEngine/igame_persistent.h"
-#include "../xrengine/xr_collide_form.h"
-#include "artefact.h"
+#include "../xrEngine/IGame_Persistent.h"
+#include "../xrEngine/xr_collide_form.h"
+#include "Artefact.h"
 #include "ai_object_location.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "zone_effector.h"
-#include "breakableobject.h"
+#include "BreakableObject.h"
 #include "GamePersistent.h"
-#include "../../script_game_object.h"
+#include "script_game_object.h"
 
 #define WIND_RADIUS (4*Radius())	//расстояние до актера, когда появляется ветер 
 #define FASTMODE_DISTANCE (100.f)	//distance to camera from sphere, when zone switches to fast update sequence
@@ -915,7 +915,7 @@ void CCustomZone::PlayHitParticles(CGameObject* pObject)
 	}
 }
 
-#include "bolt.h"
+#include "Bolt.h"
 
 void CCustomZone::PlayEntranceParticles(CGameObject* pObject)
 {
