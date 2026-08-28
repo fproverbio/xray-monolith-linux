@@ -8,6 +8,14 @@
 
 #pragma once
 
+// Needed directly for ai()/CLevelGraph, used below - space_restriction_bridge.h
+// (the only includer) doesn't pull these in itself, and relying on some
+// other already-compiling includer having brought them in earlier in the
+// same TU is include-order-fragile (same class of fix as path_manager_solver.h's
+// GraphEngineSpace include earlier this session).
+#include "ai_space.h"
+#include "level_graph.h"
+
 IC CSpaceRestrictionBridge::CSpaceRestrictionBridge(CSpaceRestrictionBase* object)
 {
 	VERIFY(object);

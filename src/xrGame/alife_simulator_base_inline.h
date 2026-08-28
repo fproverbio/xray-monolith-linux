@@ -8,6 +8,11 @@
 
 #pragma once
 
+// Needed directly for CALifeRegistryContainer's full definition
+// (registry()'s return type, only forward-declared via
+// alife_simulator_base.h otherwise) - its ::get<T>() is called below.
+#include "alife_registry_container.h"
+
 IC bool CALifeSimulatorBase::initialized() const
 {
 	return (m_initialized);
@@ -192,7 +197,7 @@ IC shared_str* CALifeSimulatorBase::server_command_line() const
 template <typename T>
 IC T& CALifeSimulatorBase::registry(T* t) const
 {
-	return registry().get<T>();
+	return registry().template get<T>();
 }
 
 IC void CALifeSimulatorBase::can_register_objects(const bool& value)

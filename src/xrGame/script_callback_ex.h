@@ -60,7 +60,10 @@ protected:
     object_type m_object;
 
 private:
-    bool empty() const { return !!m_functor.lua_state(); }
+    // lua_state() doesn't exist in this fork's luabind::object/functor<T> -
+    // interpreter() is the real accessor for the underlying lua_State*
+    // (same class of API-drift rename as this file's other comments).
+    bool empty() const { return !!m_functor.interpreter(); }
 
 public:
     CScriptCallbackEx() {}
@@ -75,9 +78,9 @@ public:
     CScriptCallbackEx& operator=(const CScriptCallbackEx& callback)
     {
         clear();
-        if (callback.m_functor.is_valid() && callback.m_functor.lua_state())
+        if (callback.m_functor.is_valid() && callback.m_functor.interpreter())
             m_functor = callback.m_functor;
-        if (callback.m_object.is_valid() && callback.m_object.lua_state())
+        if (callback.m_object.is_valid() && callback.m_object.interpreter())
             m_object = callback.m_object;
         return *this;
     }

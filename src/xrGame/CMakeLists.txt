@@ -659,13 +659,14 @@ target_sources_grouped(
 # alife_monster_detail_path_manager.cpp, alife_monster_patrol_path_manager.cpp,
 # alife_spawn_registry.cpp, alife_spawn_registry_spawn.cpp - are now fixed
 # too, as a side effect of that pass's dependent-base/typename fixes rather
-# than individually targeted. The remaining 9 still have real issues of
-# their own, not yet individually chased - EXCLUDED, each needing its own
-# future look:
+# than individually targeted. UPDATE (Game4_RootBatch4): alife_update_manager.cpp
+# is fixed too (path_manager_game_level_inline.h's this-> fixes). The
+# remaining 8 still have real issues of their own, not yet individually
+# chased - EXCLUDED, each needing its own future look:
 #   WeaponBinocularsVision.cpp(6)
 #   WeaponMagazined.cpp(15) WeaponMagazinedWGrenade.cpp(2)
 #   WeaponStatMgun.cpp(1) WeaponStatMgunFire.cpp(15) WeaponStatMgunMisc.cpp(1)
-#   alife_surge_manager.cpp(5) alife_trader_abstract.cpp(2) alife_update_manager.cpp(7)
+#   alife_surge_manager.cpp(5) alife_trader_abstract.cpp(2)
 # (parenthesized number = real g++ -c error count as of this pass, not a
 # file size/complexity estimate - each is a concrete, findable bug or
 # small set of bugs, same shape as everything fixed above, just not yet
@@ -1514,6 +1515,73 @@ target_sources_grouped(
   stalker_movement_manager_obstacles.cpp
   stalker_movement_manager_obstacles_path.cpp
   stalker_movement_manager_smart_cover_loopholes.cpp
+)
+
+# xrGame/ root sweep, fourth batch: 30 more files fixed via real
+# per-file investigation, chasing each cascade's actual root cause
+# rather than a blanket fix. Notable bugs found this pass:
+# property_evaluator_const_inline.h/property_evaluator_member_inline.h
+# missing `this->` for m_evaluator_name/m_storage (dependent-base
+# members); script_callback_ex.h's `lua_state()` calls - doesn't exist
+# in this fork's luabind::object/functor<T>, `interpreter()` is the real
+# accessor; path_manager_level_flooder.h/path_manager_level_flooder_inline.h/
+# path_manager_game_level_inline.h - the by-now-familiar illegal-`typename`-
+# before-a-bare-CPathManager-type-id bug plus missing `this->` for
+# dependent-base members, recurring in two more path-manager family
+# members; space_restriction_bridge_inline.h/aimers_base_inline.h/
+# alife_simulator_base_inline.h/static_cast_checked.hpp - missing direct
+# #includes for types only forward-declared transitively (CLevelGraph,
+# CBoneInstance, IKinematicsAnimated, CALifeRegistryContainer,
+# object_type_traits); xrServerEntities/object_cloner.h - two illegal
+# in-class explicit specializations of a member function template
+# (CHelper::clone<true>, CHelper4::clone<true>), same `if constexpr`
+# fix as problem_solver.h earlier in this port, PLUS two call sites
+# missing the `template` disambiguator before a dependent template
+# member (CHelper<T>::clone<...>, CHelper4<T>::clone<...>) - a genuine,
+# previously-unexercised pre-existing bug in a shared header, not
+# something this port introduced; xrCore/_sphere.h - `_sphere<T>::
+# intersect_full()` used `Fsphere::` (typedef _sphere<float> Fsphere)
+# to qualify its own class's enum members instead of using them
+# unqualified, a genuine pre-existing bug in a foundational, already-
+# compiling core header that only ever "worked" for T=float and was
+# never exercised for any other instantiation until this pass - fixed
+# by removing the (self-referential, and for T!=float simply wrong)
+# qualification entirely, verified via a full clean rebuild of every
+# already-compiling module with zero regressions.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch4"
+  FILES
+  Level_bullet_manager_firetrace.cpp
+  actor_communication.cpp
+  agent_manager_planner.cpp
+  aimers_weapon.cpp
+  alife_update_manager.cpp
+  client_spawn_manager.cpp
+  enemy_manager.cpp
+  inventory_upgrade.cpp
+  inventory_upgrade_property.cpp
+  patrol_path_manager.cpp
+  smart_cover_animation_planner.cpp
+  smart_cover_planner_target_selector.cpp
+  space_restriction.cpp
+  space_restriction_bridge.cpp
+  space_restriction_composition.cpp
+  space_restriction_shape.cpp
+  stalker_alife_planner.cpp
+  stalker_animation_data.cpp
+  stalker_animation_manager.cpp
+  stalker_animation_manager_update.cpp
+  stalker_animation_pair.cpp
+  stalker_animation_state.cpp
+  stalker_danger_by_sound_planner.cpp
+  stalker_danger_grenade_planner.cpp
+  stalker_danger_in_direction_planner.cpp
+  stalker_danger_unknown_planner.cpp
+  stalker_death_planner.cpp
+  stalker_get_distance_planner.cpp
+  stalker_low_cover_planner.cpp
+  stalker_search_planner.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

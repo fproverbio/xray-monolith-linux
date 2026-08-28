@@ -95,20 +95,32 @@ public:
 	 range2 =range*range;
 	 }
 	 */
+	// `Fsphere::` qualification below was copy-pasted from the commented-
+	// out prototype above (written for calling code OUTSIDE this class,
+	// where `Fsphere` - typedef _sphere<float> - is the only way to name
+	// these enumerators). Inside the class's own member function, these
+	// are the class's own unqualified members - `Fsphere::` here is not
+	// just redundant but genuinely broken for a template still being
+	// defined (Fsphere = _sphere<float> requires this very definition to
+	// already be complete). "Worked" only for T=float, by returning to
+	// the not-yet-complete type via the ordinary/current-instantiation
+	// path GCC still permits in some contexts - not on real template
+	// re-instantiation elsewhere in this port ("instantiating erroneous
+	// template").
 	ICF ERP_Result intersect_full(const _vector3<T>& start, const _vector3<T>& dir, T& dist) const
 	{
 		int quantity;
 		float afT[2];
-		Fsphere::ERP_Result result = intersect(start, dir, dist, quantity, afT);
+		ERP_Result result = intersect(start, dir, dist, quantity, afT);
 
-		if (result == Fsphere::rpOriginInside || ((result == Fsphere::rpOriginOutside) && (afT[0] < dist)))
+		if (result == rpOriginInside || ((result == rpOriginOutside) && (afT[0] < dist)))
 		{
 			switch (result)
 			{
-			case Fsphere::rpOriginInside:
+			case rpOriginInside:
 				dist = afT[0] < dist ? afT[0] : dist;
 				break;
-			case Fsphere::rpOriginOutside:
+			case rpOriginOutside:
 				dist = afT[0];
 				break;
 			}

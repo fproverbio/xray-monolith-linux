@@ -9,6 +9,10 @@
 #ifndef STATIC_CAST_CHECKED_HPP_INCLUDED
 #define STATIC_CAST_CHECKED_HPP_INCLUDED
 
+// Needed directly for object_type_traits::remove_pointer/remove_reference,
+// used below - this file has no other includes to bring it in transitively.
+#include "../xrServerEntities/object_type_traits.h"
+
 #ifdef DEBUG
 
 namespace debug {

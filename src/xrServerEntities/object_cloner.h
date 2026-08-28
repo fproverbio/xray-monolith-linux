@@ -13,17 +13,25 @@ struct CCloner
 	template <typename T>
 	struct CHelper
 	{
+		// Explicit specialization of a member function template at class
+		// scope is illegal in standard C++ (GCC: "template-id 'clone<true>'
+		// in declaration of primary template" -> "instantiating erroneous
+		// template" on real use) - replaced with `if constexpr` (this
+		// codebase already builds as gnu++17), same fix as
+		// problem_solver.h's is_goal_reached_impl<true> earlier in this
+		// port.
 		template <bool a>
 		IC static void clone(const T& _1, T& _2)
 		{
-			_2 = _1;
-		}
-
-		template <>
-		IC static void clone<true>(const T& _1, T& _2)
-		{
-			_2 = xr_new<object_type_traits::remove_pointer<T>::type>(*_1);
-			CCloner::clone(*_1, *_2);
+			if constexpr (a)
+			{
+				_2 = xr_new<typename object_type_traits::remove_pointer<T>::type>(*_1);
+				CCloner::clone(*_1, *_2);
+			}
+			else
+			{
+				_2 = _1;
+			}
 		}
 	};
 
@@ -165,23 +173,26 @@ struct CCloner
 	template <typename T>
 	struct CHelper4
 	{
+		// Same illegal-in-class-explicit-specialization fix as CHelper
+		// above.
 		template <bool a>
 		IC static void clone(const T& _1, T& _2)
 		{
-			CHelper<T>::clone < object_type_traits::is_pointer<T>::value > (_1, _2);
-		}
-
-		template <>
-		IC static void clone<true>(const T& _1, T& _2)
-		{
-			CHelper3::clone(_1, _2);
+			if constexpr (a)
+			{
+				CHelper3::clone(_1, _2);
+			}
+			else
+			{
+				CHelper<T>::template clone<object_type_traits::is_pointer<T>::value>(_1, _2);
+			}
 		}
 	};
 
 	template <typename T>
 	IC static void clone(const T& _1, T& _2)
 	{
-		CHelper4<T>::clone < object_type_traits::is_stl_container<T>::value > (_1, _2);
+		CHelper4<T>::template clone<object_type_traits::is_stl_container<T>::value>(_1, _2);
 	}
 };
 

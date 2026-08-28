@@ -9,6 +9,16 @@
 #ifndef AIMERS_BASE_INLINE_H_INCLUDED
 #define AIMERS_BASE_INLINE_H_INCLUDED
 
+// Needed directly for CBoneInstance's full definition/BoneCallback, used
+// below - aimers_base.h's own includes (animation_motion.h) only bring in
+// a forward declaration of CBoneInstance (via Kinematics.h), not enough
+// to call ::callback()/::callback_param() or use BoneCallback by value.
+#include "../xrEngine/bone.h"
+// Needed directly for MAX_PARTS and IKinematicsAnimated's full definition
+// (only forward-declared via Kinematics.h otherwise) - both used below.
+#include "../xrEngine/SkeletonMotionDefs.h"
+#include "../Include/xrRender/KinematicsAnimated.h"
+
 template <u32 bone_count0, u32 bone_count1>
 inline void aimers::base::fill_bones(
 	u32 const (&bones) [bone_count0],
