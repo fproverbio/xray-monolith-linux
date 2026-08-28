@@ -198,6 +198,10 @@ protected:
 	ERatStates m_ePreviousState;
 	bool m_bStopThinking;
 	bool m_bStateChanged;
+	// Set/cleared around the Think() loop only, never read elsewhere in this
+	// class - a real member ai_rat_fsm.cpp always expected but that was
+	// missing from this header (see ai_rat_fsm.cpp's Think()).
+	bool m_thinking;
 
 	// ANIMATIONS
 	SRatAnimations m_tRatAnimations;

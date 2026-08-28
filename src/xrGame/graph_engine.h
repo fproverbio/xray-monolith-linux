@@ -11,14 +11,21 @@
 #include "a_star.h"
 #include "edge_path.h"
 #include "vertex_manager_fixed.h"
-#include "vertex_manager_hash_fixed.h"
-#include "vertex_allocator_fixed.h"
-#include "data_storage_bucket_list.h"
-#include "data_storage_binary_heap.h"
-#include "path_manager.h"
 #include "graph_engine_space.h"
-#include "profiler.h"
 
+// AI_COMPILER is never defined anywhere in this build (checked: not set by
+// any CMakeLists.txt), so this block is unconditionally live here - moved
+// ahead of vertex_manager_hash_fixed.h's #include below, along with the
+// hash_fixed_vertex_manager::to_u32() overload that follows it. Both used
+// to appear after vertex_manager_hash_fixed.h: vertex_manager_hash_fixed_
+// inline.h's hash_index() calls hash_fixed_vertex_manager::to_u32() by
+// *qualified* name, and GCC's -Wtemplate-body checks that the namespace
+// member actually exists at that #include's parse point rather than
+// deferring the check to instantiation the way plain ADL overload
+// resolution on a dependent argument would be - so both the namespace and
+// CWorldState's full definition (via condition_state.h) need to already be
+// visible before vertex_manager_hash_fixed.h is parsed, not merely later in
+// this same file.
 #ifndef AI_COMPILER
 #	include "operator_condition.h"
 #	include "condition_state.h"
@@ -32,6 +39,13 @@ namespace hash_fixed_vertex_manager
 		return (other.hash_value());
 	}
 } // namespace hash_fixed_vertex_manager
+
+#include "vertex_manager_hash_fixed.h"
+#include "vertex_allocator_fixed.h"
+#include "data_storage_bucket_list.h"
+#include "data_storage_binary_heap.h"
+#include "path_manager.h"
+#include "profiler.h"
 
 using namespace GraphEngineSpace;
 

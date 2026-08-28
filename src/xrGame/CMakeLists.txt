@@ -506,6 +506,20 @@ target_sources_grouped(
   ui/UIHudStatesWnd.cpp
 )
 
+# Follow-up pass: UIMapWndActions.cpp/UIMapWnd.cpp's shared
+# path_manager_solver_inline.h blocker is fixed for real now - see the
+# "AI_PathBuilder_LevelCascade" comment further down (near
+# ai/monsters/control_path_builder.cpp) for the full chain of fixes; that
+# same cascade covers both files, exactly as predicted when this exclusion
+# was first written.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game3_UI_MapWnd"
+  FILES
+  ui/UIMapWndActions.cpp
+  ui/UIMapWnd.cpp
+)
+
 # ui/ sweep (this pass): of the 114 files that were still unwired after
 # section 31, 100 now compile clean and are wired in above. The remaining
 # 14 are EXCLUDED, each with real, individually-diagnosed evidence - not
@@ -526,32 +540,6 @@ target_sources_grouped(
 #       incompatibility, not something to force a workaround for. Worth a
 #       dedicated future pass - likely affects other not-yet-attempted
 #       wrap_base-registered UI _script.cpp files too.
-#   UIMapWndActions.cpp(1) UIMapWnd.cpp(1)
-#     - UPDATE (follow-up pass after section 33): the "action planner"
-#       template-instantiation cascade through action_base_inline.h/
-#       action_planner.h/condition_state_inline.h/graph_engine_inline.h/
-#       operator_abstract_inline.h/problem_solver.h that used to block
-#       both of these (22/14 errors respectively) is now genuinely fixed -
-#       a chain of ~15 real bugs (the vertex_manager_fixed.h/
-#       vertex_manager_hash_fixed.h dead ill-formed default-template-
-#       argument, two illegal in-class explicit specializations of member
-#       templates in problem_solver.h rewritten as `if constexpr`, several
-#       more self-shadowing-parameter cases, and a long tail of missing
-#       `typename`/`this->`/`inherited::` qualifications across
-#       problem_solver.h/problem_solver_inline.h/action_planner.h/
-#       action_planner_inline.h/condition_state_inline.h/
-#       operator_abstract_inline.h - see the notes file for the full
-#       list). This ALSO unblocked 6 of the 9 ai/-sweep files that shared
-#       the same vertex_manager_fixed.h root cause (section 33's
-#       exclusion list) - see below. Both files are down to exactly 1
-#       NEW, unrelated error each, in a different, wholly-unexercised
-#       template subsystem (path_manager_solver_inline.h /
-#       CPathManager<CProblemSolver<...>,...> - "'graph' was not declared
-#       in this scope", the same this-> dependent-base-member pattern
-#       yet again, just not yet chased into this specific file). A good
-#       dedicated-pass target - the root-cause pattern is now
-#       well-understood, this is likely another quick win, just not
-#       chased this pass.
 #   UIServerInfo.cpp(1)
 #     - needs ximage.h/xmemfile.h (CxImage/CxMemFile, for decoding a
 #       downloaded MP server's map-preview screenshot) from the cximage
@@ -572,10 +560,9 @@ target_sources_grouped(
 # (parenthesized number = real g++ -c error count as of this pass, not a
 # complexity estimate). ~254 ui/ files remained unstarted before the
 # original ui/ sweep (271 minus the 17 from section 30's tail); after
-# that pass, 14 remained - the follow-up pass above fixed 4 fully (moved
-# to Game3_UI) and made UIMapWndActions.cpp/UIMapWnd.cpp's blocker
-# unrelated-and-much-smaller (22/14 errors down to 1 each, in a new
-# subsystem) without fully clearing them - 10 files remain excluded.
+# that pass, 14 remained - a follow-up pass fixed 4 fully (moved to
+# Game3_UI), and a later pass (see "Game3_UI_MapWnd" above) fixed
+# UIMapWndActions.cpp/UIMapWnd.cpp for real too - 8 files remain excluded.
 
 target_sources_grouped(
   TARGET xrGame
@@ -981,31 +968,70 @@ target_sources_grouped(
   ai/stalker/ai_stalker_debug.cpp
 )
 
-# ai/ still excluded - 2 of 151 ai/*.cpp files:
-#
-#   control_path_builder.cpp(1, down from many after two `typename`
-#     fixes in path_manager_level_nearest_vertex.h/path_manager_level.h
-#     that also unblocked the OTHER 3 files above) - the remaining error
-#     opens into an entirely separate, much larger template-subsystem
-#     cascade (the "level path manager" family:
-#     path_manager_level_inline.h/path_manager_level_flooder_inline.h/
-#     path_manager_level_nearest_vertex_inline.h/path_manager_solver_inline.h/
-#     path_manager_game*_inline.h/level_location_selector_inline.h/
-#     game_location_selector_inline.h/data_storage_*_inline.h and more -
-#     dozens of `this->`-dependent-base-qualification warnings surfaced
-#     across ~15 files when this exact template combination got compiled
-#     for the first time). Same shape and same root fix pattern as
-#     everything already fixed in this project, but a whole separate
-#     dedicated-pass-sized effort, not a "cheap fix" - explicitly not
-#     chased further this pass. Notably: `UIMapWndActions.cpp`/
-#     `UIMapWnd.cpp` (ui/ exclusions above) are blocked by
-#     `path_manager_solver_inline.h`, part of this SAME family - a
-#     future pass fixing this cascade would likely unblock those 2 too.
-#   monsters/rats/ai_rat_fsm.cpp(42) - CAI_Rat member/method names this
-#     file references (m_thinking, vfUpdateSpawnPosition, aiRatDie,
-#     vfSetFire, ...) don't exist anywhere on the current CAI_Rat/rat
-#     state-manager classes - looks like this file targets an older/
-#     different version of the class's own API, not a mechanical port
-#     bug; needs a real per-symbol audit against what CAI_Rat actually
-#     exposes today.
+# Follow-up pass: the "level path manager" cascade flagged above turned out
+# smaller than feared - only 5 files, not ~15 - once actually chased:
+# path_manager_level_nearest_vertex_inline.h, path_manager_level_inline.h,
+# data_storage_bucket_list_inline.h, a_star_inline.h, and
+# data_storage_double_linked_list_inline.h, all the same missing-`this->`-
+# for-dependent-base-member pattern as every other fix in this project.
+# That alone got control_path_builder.cpp compiling. Chasing
+# UIMapWndActions.cpp/UIMapWnd.cpp's shared path_manager_solver_inline.h
+# blocker further surfaced 4 more distinct, unrelated bugs in the same
+# family: (1) `this->`-qualification again in path_manager_solver_inline.h
+# itself (graph/data_storage/start_node_index/goal_node_index/
+# max_visited_node_count/max_range/max_iteration_count/best_node_index, all
+# from the CPathManagerGeneric dependent base); (2) `typename` illegally
+# applied to `_Graph::reverse_search`, which is an enum VALUE (see
+# CProblemSolver's anonymous enum) not a type - the bare `typename` there
+# was always ill-formed; (3) a local variable literally named `_vertex` in
+# vertex_manager_hash_fixed_inline.h::create_vertex() shadowing the
+# enclosing CDataStorage template's own `_vertex` template-template-
+# parameter (GCC's -Wtemplate-body escalates this shadow to a hard
+# instantiation failure) - renamed the local to `found_vertex`; (4) two
+# missing `typename`s in edge_path_inline.h's `xr_vector<_edge_type>::
+# reverse_iterator`/`::iterator`. Finally, `hash_fixed_vertex_manager::
+# to_u32(GraphEngineSpace::CWorldState const&)` (needed transitively by
+# vertex_manager_hash_fixed_inline.h's hash_index()) was declared far below
+# its own qualified call site inside graph_engine.h - GCC's -Wtemplate-body
+# checks a qualified name's namespace membership at the *parse* point of
+# the calling template, not deferred to instantiation - fixed by moving the
+# whole `#ifndef AI_COMPILER` condition_state.h/operator_condition.h/
+# operator_abstract.h include block plus the to_u32() overload itself ahead
+# of vertex_manager_hash_fixed.h's own #include in graph_engine.h (verified
+# AI_COMPILER is never defined anywhere in this build, so this is a pure
+# reorder, not a behavior change). ai/ is now 151/151 - fully done.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "AI_PathBuilder_LevelCascade"
+  FILES
+  ai/monsters/control_path_builder.cpp
+)
+
+# monsters/rats/ai_rat_fsm.cpp - the ~9 "missing" CAI_Rat identifiers
+# (m_thinking, vfUpdateSpawnPosition, aiRatDie, vfSetFire, vfComputeNewPosition,
+# vfSetMovementType, m_tSafeSpawnPosition, aiRatAttackFire, aiRatAttackRun)
+# turned out to be a real, fully-traceable rename mismatch, not a genuine API
+# gap: confirmed via grep that none of them are referenced anywhere else in
+# the tree, and every one maps 1:1 onto an existing CAI_Rat member once the
+# file's own inline comments and sibling .cpp definitions are cross-checked
+# (aiRatDie -> aiRatDeath; aiRatAttackFire/aiRatAttackRun -> aiRatAttackRange/
+# aiRatAttackMelee, per this file's own `//aiRatAttackFire`/`//aiRatAttackRun`
+# comments directly above the `case aiRatAttackRange/aiRatAttackMelee:`
+# labels that call AttackFire()/AttackRun(); vfComputeNewPosition(bool,bool)
+# -> move(bool,bool), matching signature and defaults exactly, defined in
+# ai_rat_templates.cpp; vfSetFire -> fire(), vfSetMovementType -> movement_type(),
+# both also in ai_rat_templates.cpp; vfUpdateSpawnPosition -> update_home_position(),
+# defined in ai_rat_behaviour.cpp; m_tSafeSpawnPosition -> m_home_position,
+# consistent with ai_rat_behaviour.cpp's own use of m_home_position as the
+# squad's shared "safe" reference point distinct from the wandering-goal
+# m_tSpawnPosition). m_thinking itself is a genuinely new member (only ever
+# set, never read, purely a Think()-loop reentrancy flag) - added to
+# ai_rat.h next to the closely-related m_bStopThinking/m_bStateChanged.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "AI_Rat_FSM"
+  FILES
+  ai/monsters/rats/ai_rat_fsm.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

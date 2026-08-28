@@ -9,6 +9,13 @@
 #pragma once
 
 #include "problem_solver.h"
+// Needed directly for GraphEngineSpace::_solver_dist_type (used in
+// path_manager_solver_inline.h's setup()) - problem_solver.h doesn't pull
+// this in itself, and relying on some other translation unit having already
+// included graph_engine_space.h earlier is include-order-fragile (it broke
+// for ui/UIMapWndActions.cpp/UIMapWnd.cpp but not ai/control_path_builder.cpp,
+// depending on what each TU happened to include first).
+#include "graph_engine_space.h"
 
 template <
 	typename T1,

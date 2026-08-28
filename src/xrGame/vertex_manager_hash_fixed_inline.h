@@ -155,15 +155,20 @@ IC typename CHashFixedVertexManager::CGraphVertex&CHashFixedVertexManager::creat
 	vertex.index() = vertex_id;
 
 	u32 index = hash_index(vertex_id);
-	CGraphIndexVertex* _vertex = m_hash[index];
-	if (!_vertex || (_vertex->m_path_id != current_path_id()) || (_vertex->m_hash != index))
-		_vertex = 0;
+	// Renamed from `_vertex` - shadowed the enclosing CDataStorage template's
+	// own `_vertex` template-template-parameter, which GCC's -Wtemplate-body
+	// escalates to a hard "instantiating erroneous template" failure here
+	// (same self-shadowing-parameter bug class as this file's other renames,
+	// see the header comment at the top of vertex_manager_hash_fixed.h).
+	CGraphIndexVertex* found_vertex = m_hash[index];
+	if (!found_vertex || (found_vertex->m_path_id != current_path_id()) || (found_vertex->m_hash != index))
+		found_vertex = 0;
 
 	m_hash[index] = index_vertex;
-	index_vertex->m_next = _vertex;
+	index_vertex->m_next = found_vertex;
 	index_vertex->m_prev = 0;
-	if (_vertex)
-		_vertex->m_prev = index_vertex;
+	if (found_vertex)
+		found_vertex->m_prev = index_vertex;
 	index_vertex->m_hash = index;
 	return (vertex);
 }
