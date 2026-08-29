@@ -1943,4 +1943,17 @@ target_sources_grouped(
   death_anims.cpp
 )
 
+# death_anims_predicates.cpp - identical tab-separated lowercase
+# #include "stdafx.h" bug as death_anims.cpp above, confirmed via the
+# same "aggregate ENGINE_API ... has incomplete type" cascade (this time
+# through pure_relcase.h/Feel_Touch.h/Feel_Sound.h/IInputReceiver.h/
+# bone.h in sequence - same root cause, different first-touched headers
+# since this file's own include order differs). Fixed identically.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch10"
+  FILES
+  death_anims_predicates.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
