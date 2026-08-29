@@ -1974,4 +1974,18 @@ target_sources_grouped(
   ik_dbg_matrix.cpp
 )
 
+# ik_foot_collider.cpp - same tab-separated lowercase stdafx.h bug as the
+# other bone.h-cascade files above. This is the last of the 5 files that
+# shared the §41 "aggregate ENGINE_API CBoneInstance has incomplete type"
+# cascade - all 5 turned out to be the identical root cause (a tab
+# character between #include and "stdafx.h" that the original project-
+# wide lowercase-stdafx.h sed fix's space-only pattern missed), not a
+# genuine bone.h/KinematicsAnimated.h/animation_motion.h defect.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch13"
+  FILES
+  ik_foot_collider.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
