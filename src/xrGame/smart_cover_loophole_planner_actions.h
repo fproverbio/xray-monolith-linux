@@ -12,14 +12,10 @@
 #include "smart_cover_planner_actions.h"
 
 #include "xrServer_Space.h"
+#include "stalker_decision_space.h"
 
 class CAI_Stalker;
 class CPropertyStorage;
-
-namespace StalkerDecisionSpace
-{
-	enum EWorldProperties;
-}
 
 namespace smart_cover
 {

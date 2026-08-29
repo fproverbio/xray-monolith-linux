@@ -158,7 +158,7 @@ void CGamePersistent::OnAppStart()
 	// load game materials
 	GMLib.Load();
 	init_game_globals();
-	__super::OnAppStart();
+	IGame_Persistent::OnAppStart();
 	m_pUI_core = xr_new<ui_core>();
 	m_pMainMenu = xr_new<CMainMenu>();
 	m_pWallmarksManager = xr_new<ScriptWallmarksManager>();
@@ -174,7 +174,7 @@ void CGamePersistent::OnAppEnd()
 	xr_delete(m_pUI_core);
 	xr_delete(m_pWallmarksManager);
 
-	__super::OnAppEnd();
+	IGame_Persistent::OnAppEnd();
 
 	clean_game_globals();
 
@@ -183,7 +183,7 @@ void CGamePersistent::OnAppEnd()
 
 void CGamePersistent::Start(LPCSTR op)
 {
-	__super::Start(op);
+	IGame_Persistent::Start(op);
 }
 
 void CGamePersistent::Disconnect()
@@ -191,7 +191,7 @@ void CGamePersistent::Disconnect()
 	// destroy ambient particles
 	CParticlesObject::Destroy(ambient_particles);
 
-	__super::Disconnect();
+	IGame_Persistent::Disconnect();
 	// stop all played emitters
 	::Sound->stop_emitters();
 	m_game_params.m_e_game_type = eGameIDNoGame;
@@ -201,7 +201,7 @@ void CGamePersistent::Disconnect()
 
 void CGamePersistent::OnGameStart()
 {
-	__super::OnGameStart();
+	IGame_Persistent::OnGameStart();
 	UpdateGameType();
 }
 
@@ -257,7 +257,7 @@ EGameIDs ParseStringToGameType(LPCSTR str)
 
 void CGamePersistent::UpdateGameType()
 {
-	__super::UpdateGameType();
+	IGame_Persistent::UpdateGameType();
 
 	m_game_params.m_e_game_type = ParseStringToGameType(m_game_params.m_game_type);
 
@@ -270,7 +270,7 @@ void CGamePersistent::UpdateGameType()
 
 void CGamePersistent::OnGameEnd()
 {
-	__super::OnGameEnd();
+	IGame_Persistent::OnGameEnd();
 
 	xr_delete(g_stalker_animation_data_storage);
 	xr_delete(g_stalker_velocity_holder);
@@ -753,7 +753,7 @@ void CGamePersistent::OnFrame()
 		}
 #endif // MASTER_GOLD
 	}
-	__super::OnFrame();
+	IGame_Persistent::OnFrame();
 
 	if (!Device.Paused())
 		Engine.Sheduler.Update();
@@ -784,10 +784,10 @@ void CGamePersistent::OnFrame()
 		}
 	}
 
-#ifdef DEBUG
-    if ((m_last_stats_frame + 1) < m_frame_counter)
-        profiler().clear();
-#endif
+	// profiler()/CProfiler: legacy debug-only diagnostic, doesn't exist
+	// anywhere in this port (xrCore/profiler.h is a macro-only PROF_EVENT-
+	// style shim, not a class) - see xrgame_dll_detach.cpp's/xrGame.cpp's
+	// matching removals.
 	UpdateDof();
 }
 
@@ -850,12 +850,9 @@ void CGamePersistent::OnEvent(EVENT E, u64 P1, u64 P2)
 
 void CGamePersistent::Statistics(CGameFont* F)
 {
-#ifdef DEBUG
-#	ifndef _EDITOR
-    m_last_stats_frame = m_frame_counter;
-    profiler().show_stats(F, !!psAI_Flags.test(aiStats));
-#	endif
-#endif
+	// profiler()/CProfiler: legacy debug-only diagnostic, doesn't exist
+	// anywhere in this port - see the matching removal above/in
+	// xrgame_dll_detach.cpp/xrGame.cpp.
 }
 
 float CGamePersistent::MtlTransparent(u32 mtl_idx)

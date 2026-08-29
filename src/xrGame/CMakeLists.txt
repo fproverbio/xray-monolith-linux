@@ -1821,4 +1821,54 @@ target_sources_grouped(
   xrServer_process_spawn.cpp
 )
 
+# DynamicHeightMap.cpp (CHM_Static) is OUT OF SCOPE - not MP-related this
+# time, but dead code: confirmed via grep that CHM_Static/CDynamicHeightMap
+# are referenced nowhere else in the entire source tree, and the file
+# relies on a RAPID-library BBox-triangle-query API (XRC.BBoxMode/
+# BBoxCollide/BBoxContact/GetBBoxContactCount) that plain doesn't exist on
+# this fork's xrXRC (xrCDB/xrXRC.h) - a much simpler ray/box/frustum-query
+# wrapper around CDB::COLLIDER, an entirely different collision-query
+# design. Reimplementing RAPID-style BBox triangle enumeration on top of
+# CDB::COLLIDER for a class nothing instantiates isn't worth doing.
+
+# xrGame/ root sweep, seventh batch: 9 more files fixed. One notable find:
+# CustomMonster.cpp held the only definition of psAI_Flags in the entire
+# codebase (`Flags32 psAI_Flags = {...};`), but it was #ifndef MASTER_GOLD-
+# guarded exactly like ai_debug.h's own declaration - meaning it was
+# ALSO dead in this build, and every `extern Flags32 psAI_Flags;` local
+# workaround added across this whole root sweep (many files, several
+# batches) had no real definition to resolve against at final-link time.
+# Un-guarded it (and its aiObstaclesAvoiding/aiUseSmartCovers #define
+# dependencies, same fix). Also: GamePersistent.cpp's 9 `__super::` calls
+# (MSVC-only, not standard C++) replaced with the real explicit base class
+# name (IGame_Persistent, confirmed for each overridden method), and its
+# two dead `profiler()`/psAI_Flags(aiStats) diagnostic blocks removed
+# (profiler() doesn't exist anywhere in this port, same class as the
+# g_profiler/CProfiler removals elsewhere); agent_enemy_manager.cpp's
+# `unsigned __int32` (MSVC extended-integer-type spelling, not standard)
+# fixed to u32, plus two more `typename`-before-dependent-nested-type
+# gaps (memory_manager_inline.h had `typename` in the wrong position
+# entirely - after the `::` instead of before the whole qualified-id);
+# doors_door.h/smart_cover_loophole_planner_actions.h needed the by-now-
+# familiar real-header-instead-of-bare-forward-declare fix for
+# door_state/EWorldProperties; level_graph_debug2.cpp had two real
+# variable-scope bugs (a for-loop index needed to survive past loop end,
+# only declared inside the loop's own init-statement) alongside its own
+# `m_ref_count` accessor-rename instance. The recurring bHud-argument and
+# psAI_Flags-extern patterns accounted for the rest.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch7"
+  FILES
+  Actor_Network.cpp
+  CustomMonster.cpp
+  GamePersistent.cpp
+  PHDebug.cpp
+  UsableScriptObject.cpp
+  agent_enemy_manager.cpp
+  level_graph_debug2.cpp
+  smart_cover_detail.cpp
+  smart_cover_loophole_planner_actions.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
