@@ -10,6 +10,10 @@
 #include "object_handler_planner.h"
 #include "object_property_evaluators.h"
 #include "object_actions.h"
+
+// psAI_Flags - see alife_level_registry_inline.h's comment (ai_debug.h's own
+// `extern Flags32 psAI_Flags;` is dead under MASTER_GOLD in this build).
+extern Flags32 psAI_Flags;
 #include "ai_monster_space.h"
 #include "object_handler_space.h"
 #include "ai/stalker/ai_stalker.h"

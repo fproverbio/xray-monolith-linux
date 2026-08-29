@@ -118,12 +118,12 @@ void object::OnRender		()
 				l_ball.scale		(l_sphere.R, l_sphere.R, l_sphere.R);
 				Fvector				l_p; XFORM().transform(l_p, l_sphere.P);
 				l_ball.translate_add(l_p);
-				renderer.draw_ellipse(l_ball, Color);
+				renderer.draw_ellipse(l_ball, Color, false);
 				break;
 			}
 			case 1:	{
 				l_box.mul			(XFORM(), l_pShape->data.box);
-				renderer.draw_obb	(l_box, l_half, Color);
+				renderer.draw_obb	(l_box, l_half, Color, false);
 				break;
 			}
 		}

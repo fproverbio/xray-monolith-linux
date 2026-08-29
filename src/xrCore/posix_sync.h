@@ -5,6 +5,7 @@
 // functionality, not stubs - see
 // playground/xray-monolith-vulkan-port-notes.md section 14.
 
+#include <cerrno>
 #include <cstdint>
 #include <ctime>
 #include <poll.h>
@@ -84,6 +85,34 @@ inline unsigned long WaitForSingleObject(HANDLE h, unsigned long ms)
 	struct pollfd pfd{_xr_handle_to_fd(h), POLLIN, 0};
 	int r = poll(&pfd, 1, (ms == INFINITE) ? -1 : static_cast<int>(ms));
 	return (r > 0) ? WAIT_OBJECT_0 : WAIT_TIMEOUT;
+}
+
+// --- Manual-reset event (Level.cpp's spawn-antifreeze prefetch signal) --
+// Same eventfd-as-HANDLE representation as CreateMutex above; regular
+// (non-EFD_SEMAPHORE) eventfd semantics already give exactly manual-reset
+// behavior for WaitForSingleObject's poll()-only wait (it never reads the
+// fd, so a write leaves it readable-forever until something explicitly
+// drains it) - only auto-reset events would need WaitForSingleObject
+// itself to drain on a successful wait, and nothing in this codebase
+// creates one, so that case isn't implemented.
+inline HANDLE CreateEvent(void* /*sec*/, BOOL /*bManualReset*/, BOOL bInitialState, const char* /*name*/)
+{
+	int fd = eventfd(bInitialState ? 1 : 0, EFD_CLOEXEC | EFD_NONBLOCK);
+	return (fd < 0) ? INVALID_HANDLE_VALUE : _xr_fd_to_handle(fd);
+}
+inline BOOL SetEvent(HANDLE h)
+{
+	uint64_t one = 1;
+	return write(_xr_handle_to_fd(h), &one, sizeof(one)) == sizeof(one);
+}
+inline BOOL ResetEvent(HANDLE h)
+{
+	uint64_t val;
+	// Non-blocking: drains the counter back to 0 if it was set, and simply
+	// returns EAGAIN (a normal, expected "already unsignaled") otherwise -
+	// the fd was created with EFD_NONBLOCK specifically for this.
+	ssize_t r = read(_xr_handle_to_fd(h), &val, sizeof(val));
+	return (r == sizeof(val)) || (errno == EAGAIN);
 }
 inline unsigned long WaitForMultipleObjects(unsigned long count, const HANDLE* handles, BOOL waitAll, unsigned long ms)
 {

@@ -9,11 +9,7 @@
 #define SMART_COVER_TRANSITION_HPP_INCLUDED
 
 #include "debug_make_final.hpp"
-
-namespace MonsterSpace
-{
-	enum EBodyState;
-}; // namespace MonsterSpace
+#include "ai_monster_space.h"
 
 namespace smart_cover
 {

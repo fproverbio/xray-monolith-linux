@@ -12,6 +12,10 @@
 #include "entity_alive.h"
 #include "ai_space.h"
 #include "ai_debug.h"
+
+// psAI_Flags - see alife_level_registry_inline.h's comment (ai_debug.h's own
+// `extern Flags32 psAI_Flags;` is dead under MASTER_GOLD in this build).
+extern Flags32 psAI_Flags;
 #include "ShootingObject.h"
 #include "GametaskManager.h"
 #include "Level_Bullet_Manager.h"
@@ -674,6 +678,7 @@ void CLevel::ProcessSpawnEvents()
 			goto spawn;
 		}
 
+        {
         // If the object was in alife, but now its absent, skip it
         auto spawn_data_it = spawn_events_data_copy.find(obj_id);
         if (spawn_data_it != spawn_events_data_copy.end())
@@ -687,7 +692,7 @@ void CLevel::ProcessSpawnEvents()
                     continue;
                 }
             }
-        }        
+        }
 
 		// If there is a parent of this object, check if its still in alife
 		if (parent_id != 0xffff)
@@ -699,6 +704,7 @@ void CLevel::ProcessSpawnEvents()
 				continue;
 			}
 		}
+        }
 
 	spawn:
 		u16 dummy16;
@@ -1444,7 +1450,7 @@ script_attachment* CLevel::get_attachment(LPCSTR name)
 {
 	if (m_script_attachments.size())
 	{
-		auto& att = m_script_attachments.find(name);
+		auto att = m_script_attachments.find(name);
 		if (att != m_script_attachments.end())
 			return att->second;
 	}

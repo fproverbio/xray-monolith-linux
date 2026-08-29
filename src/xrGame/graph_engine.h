@@ -38,6 +38,24 @@ namespace hash_fixed_vertex_manager
 	{
 		return (other.hash_value());
 	}
+
+	// CGraphEngine::CStringVertexManager (below) instantiates
+	// CVertexManagerHashFixed<u32, shared_str, ...> - vertex_manager_hash_
+	// fixed_inline.h's hash_index() calls this by qualified name too, so a
+	// shared_str overload is needed alongside the CWorldState one above.
+	// This is the project's own real implementation (moved here from
+	// stalker_movement_manager_smart_cover.cpp, the only other file that
+	// needed it) - it was simply defined too late in that file's own
+	// translation unit to be visible at hash_index()'s point of use,
+	// same "needs to exist before this #include" issue as CWorldState's
+	// overload above. Hashes the interned string's pointer identity
+	// (shared_str guarantees pointer equality <=> string equality within
+	// one string-container instance), not the string content.
+	IC u32 to_u32(shared_str const& string)
+	{
+		const str_value* get = string._get();
+		return (*(u32 const*)&get);
+	}
 } // namespace hash_fixed_vertex_manager
 
 #include "vertex_manager_hash_fixed.h"

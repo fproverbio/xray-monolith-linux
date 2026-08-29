@@ -10,14 +10,9 @@
 #define STALKER_LOW_COVER_ACTIONS_H_INCLUDED
 
 #include "stalker_combat_action_base.h"
+#include "ai_monster_space.h"
 
 class CCoverPoint;
-
-namespace MonsterSpace
-{
-	enum EBodyState;
-	enum EMovementType;
-}
 
 //////////////////////////////////////////////////////////////////////////
 // CStalkerActionGetItemToKillLowCover

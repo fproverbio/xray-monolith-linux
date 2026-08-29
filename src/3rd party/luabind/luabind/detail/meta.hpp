@@ -130,6 +130,19 @@ namespace luabind {
 			return type_list<Types1..., Types2...>();
 		}
 
+		// operator+: real X-Ray/luabind caller code (out_value<N>() +
+		// out_value<M>(), pure_out_value<N>() + ...) combines multiple
+		// converter_policy_injector instances - each one IS-A type_list via
+		// converter_policy_injector's own inheritance (policy.hpp), found
+		// through ADL - with `+`, matching upstream luabind's real policy-
+		// combination operator. This fork only had `|` for type_list
+		// concatenation; add the `+` alias so that real caller code (not
+		// touched by this port) keeps working unmodified.
+		template< typename... Types1, typename... Types2 >
+		type_list<Types1..., Types2...> operator+(const type_list<Types1...>& lhs, const type_list<Types2...>& rhs) {
+			return lhs | rhs;
+		}
+
 		template< typename T >
 		struct is_typelist : public std::false_type
 		{

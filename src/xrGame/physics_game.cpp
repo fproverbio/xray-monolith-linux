@@ -176,21 +176,13 @@ static void play_object(dxGeomUserData* data, SGameMtlPair* mtl_pair, const dCon
 	VERIFY(c);
 
 	CPHSoundPlayer* sp = NULL;
-#ifdef	DEBUG
-						__try{
-							sp=data->ph_ref_object->ObjectPhSoundPlayer();
-						}
-						__except(EXCEPTION_EXECUTE_HANDLER){
-							Msg( "data->ph_ref_object: %p ", data->ph_ref_object );
-							Msg( "data: %p ", data );
-							Msg( "materials: %s ", mtl_pair->dbg_Name() );
-							FlushLog();
-							FATAL( "bad data->ph_ref_object" );
-						}
-#else
+	// __try/__except(EXCEPTION_EXECUTE_HANDLER) was Win32 SEH, used only to
+	// print a diagnostic before crashing on a bad ph_ref_object - no
+	// portable equivalent (SEH isn't a thing on Linux); the release path
+	// below already dereferences unprotected, so this debug branch now
+	// matches it exactly.
 	if (data->ph_ref_object)
 		sp = data->ph_ref_object->ObjectPhSoundPlayer();
-#endif
 	if (sp)
 		sp->Play(mtl_pair, *(Fvector*)c->pos);
 }

@@ -25,6 +25,14 @@
 #include "level_location_selector.h"
 #include "memory_manager.h"
 #include "visual_memory_manager.h"
+
+// psAI_Flags/aiLua - see alife_level_registry_inline.h's comment (ai_debug.h's
+// own `extern Flags32 psAI_Flags;`/`#define aiLua` are dead under
+// MASTER_GOLD in this build).
+extern Flags32 psAI_Flags;
+#ifndef aiLua
+#	define aiLua (1<<6)
+#endif
 #include "ai_object_location.h"
 #include "movement_manager.h"
 #include "script_callback_ex.h"

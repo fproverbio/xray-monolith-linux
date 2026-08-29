@@ -307,10 +307,10 @@ void HUD_SOUND_COLLECTION_LAYERED::PlaySound(LPCSTR alias, const Fvector& positi
 		{
 			auto parent_lua_game_object = parent_game_object->lua_game_object();
 			::luabind::object output = funct(alias, parent_lua_game_object);
-			if (output && output.type() == LUA_TTABLE)
+			if (output && luabind::type(output) == LUA_TTABLE)
 			{
-				auto volume_mult_ex_obj = output["volume_mult"]; 
-				float volume_mult_ex = volume_mult_ex_obj.type() != LUA_TNUMBER ? 1 : ::luabind::object_cast<float>(volume_mult_ex_obj);
+				auto volume_mult_ex_obj = output["volume_mult"];
+				float volume_mult_ex = luabind::type(volume_mult_ex_obj) != LUA_TNUMBER ? 1 : ::luabind::object_cast<float>(volume_mult_ex_obj);
 				volume_mult = volume_mult * volume_mult_ex;
 
 				LPCSTR section = ::luabind::object_cast<LPCSTR>(output["section"]);

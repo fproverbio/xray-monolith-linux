@@ -18,6 +18,10 @@
 #include "script_callback_ex.h"
 #include "game_object_space.h"
 
+// psAI_Flags - see alife_level_registry_inline.h's comment (ai_debug.h's own
+// `extern Flags32 psAI_Flags;` is dead under MASTER_GOLD in this build).
+extern Flags32 psAI_Flags;
+
 void CInventoryOwner::OnEvent(NET_Packet& P, u16 type)
 {
 	switch (type)

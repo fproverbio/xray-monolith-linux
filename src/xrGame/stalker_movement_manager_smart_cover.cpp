@@ -355,14 +355,11 @@ bool stalker_movement_manager_smart_cover::target_approached(float const& distan
 	return (detail().distance_to_target() < distance);
 }
 
-namespace hash_fixed_vertex_manager
-{
-	IC u32 to_u32(shared_str const& string)
-	{
-		const str_value* get = string._get();
-		return (*(u32 const*)&get);
-	}
-} // namespace hash_fixed_vertex_manager
+// hash_fixed_vertex_manager::to_u32(shared_str const&) moved to
+// graph_engine.h - it needs to be visible before vertex_manager_hash_
+// fixed_inline.h's hash_index() is parsed (same reasoning as the
+// CWorldState overload already there), which is earlier than this file's
+// own point in the #include chain.
 
 void stalker_movement_manager_smart_cover::loophole_path(smart_cover::cover const& cover, shared_str const& source_raw,
                                                          shared_str const& target_raw, LoopholePath& path) const

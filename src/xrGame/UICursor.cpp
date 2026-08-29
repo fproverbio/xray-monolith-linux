@@ -7,6 +7,11 @@
 
 #define C_DEFAULT	D3DCOLOR_XRGB(0xff,0xff,0xff)
 
+// Established local-extern pattern for this function throughout xrEngine
+// (Device_create.cpp/Device_destroy.cpp/x_ray.cpp/etc.) - real SDL-backed
+// implementation lives in xrEngine/device.cpp, no shared header declares it.
+extern void GetMonitorResolution(u32& horizontal, u32& vertical);
+
 CUICursor::CUICursor()
 	: m_static(NULL), m_b_use_win_cursor(false)
 {
@@ -46,8 +51,8 @@ void CUICursor::InitInternal()
 	m_static->SetWndSize(sz);
 	m_static->SetStretchTexture(true);
 
-	u32 screen_size_x = GetSystemMetrics(SM_CXSCREEN);
-	u32 screen_size_y = GetSystemMetrics(SM_CYSCREEN);
+	u32 screen_size_x, screen_size_y;
+	GetMonitorResolution(screen_size_x, screen_size_y);
 	m_b_use_win_cursor = (screen_size_y >= Device.dwHeight && screen_size_x >= Device.dwWidth);
 }
 
@@ -127,10 +132,11 @@ void CUICursor::UpdateCursorPosition(int _dx, int _dy)
 void CUICursor::SetUICursorPosition(Fvector2 pos)
 {
 	vPos = pos;
-	POINT p;
-	p.x = iFloor(vPos.x / (UI_BASE_WIDTH / (float)Device.clientWidth));
-	p.y = iFloor(vPos.y / (UI_BASE_HEIGHT / (float)Device.clientHeight));
-	if (m_b_use_win_cursor)
-		ClientToScreen(Device.m_hWnd, (LPPOINT)&p);
-	SetCursorPos(p.x, p.y);
+	int x = iFloor(vPos.x / (UI_BASE_WIDTH / (float)Device.clientWidth));
+	int y = iFloor(vPos.y / (UI_BASE_HEIGHT / (float)Device.clientHeight));
+	// ClientToScreen+SetCursorPos was the Win32 way to warp the OS cursor to
+	// a window-client-space point; SDL_WarpMouseInWindow already takes
+	// client-space coordinates directly (see imgui_base.cpp's identical
+	// use), so no separate client->screen conversion step is needed here.
+	SDL_WarpMouseInWindow(Device.m_sdlWnd, x, y);
 }

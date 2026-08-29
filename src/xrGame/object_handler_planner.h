@@ -19,11 +19,7 @@ class CFoodItem;
 // Same illegal-opaque-forward-declaration bug as script_game_object.h's
 // enums (see its comment) - real header (a proven leaf) included directly.
 #include "object_handler_space.h"
-
-namespace MonsterSpace
-{
-	enum EObjectAction;
-};
+#include "ai_monster_space.h"
 
 class CObjectHandlerPlanner : public CActionPlanner<CAI_Stalker, true>
 {

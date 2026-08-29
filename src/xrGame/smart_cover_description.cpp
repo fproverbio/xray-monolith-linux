@@ -125,14 +125,14 @@ void description::load_loopholes(shared_str const& table_id)
 		);
 	VERIFY2(result, make_string("bad or missing loopholes table in smart_cover [%s]", table_id.c_str()));
 
-	::luabind::object::iterator I = loopholes.begin();
-	::luabind::object::iterator E = loopholes.end();
+	::luabind::iterator I(loopholes);
+	::luabind::iterator E;
 	for (; I != E; ++I)
 	{
 		::luabind::object table = *I;
-		if (table.type() != LUA_TTABLE)
+		if (luabind::type(table) != LUA_TTABLE)
 		{
-			VERIFY(table.type() != LUA_TNIL);
+			VERIFY(luabind::type(table) != LUA_TNIL);
 			continue;
 		}
 
@@ -211,14 +211,14 @@ void description::load_transitions(shared_str const& table_id)
 		);
 	VERIFY(result);
 
-	::luabind::object::iterator I = transitions.begin();
-	::luabind::object::iterator E = transitions.end();
+	::luabind::iterator I(transitions);
+	::luabind::iterator E;
 	for (; I != E; ++I)
 	{
 		::luabind::object table = *I;
-		if (table.type() != LUA_TTABLE)
+		if (luabind::type(table) != LUA_TTABLE)
 		{
-			VERIFY(table.type() != LUA_TNIL);
+			VERIFY(luabind::type(table) != LUA_TNIL);
 			continue;
 		}
 
@@ -242,8 +242,8 @@ void description::load_actions(::luabind::object const& table, description::Acti
 {
 	::luabind::object actions;
 	parse_table(table, "actions", actions);
-	::luabind::object::iterator I = actions.begin();
-	::luabind::object::iterator E = actions.end();
+	::luabind::iterator I(actions);
+	::luabind::iterator E;
 	for (; I != E; ++I)
 	{
 		::luabind::object tmp = *I;
@@ -262,20 +262,20 @@ IC void delete_data(const CGraphAbstract<_data_type, _edge_weight_type, _vertex_
 
 	Graph& graph = const_cast<Graph&>(graph_);
 
-	typedef Graph::VERTICES Vertices;
-	typedef Graph::EDGES Edges;
+	typedef typename Graph::VERTICES Vertices;
+	typedef typename Graph::EDGES Edges;
 
 	Vertices& verts = graph.vertices();
 
-	for (Vertices::iterator vi = verts.begin(); vi != verts.end(); ++vi)
+	for (typename Vertices::iterator vi = verts.begin(); vi != verts.end(); ++vi)
 	{
-		Graph::CVertex* vert = (*vi).second;
+		typename Graph::CVertex* vert = (*vi).second;
 		delete_data(vert->data());
 
 		Edges& edges = const_cast<Edges&>(vert->edges());
-		for (Edges::iterator ei = edges.begin(); ei != edges.end(); ++ei)
+		for (typename Edges::iterator ei = edges.begin(); ei != edges.end(); ++ei)
 		{
-			Graph::CEdge& edge = (*ei);
+			typename Graph::CEdge& edge = (*ei);
 			delete_data(edge.data());
 		}
 	}

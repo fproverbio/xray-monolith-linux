@@ -23,6 +23,10 @@
 
 //#define GOAP_DEBUG
 
+// psAI_Flags - see alife_level_registry_inline.h's comment (ai_debug.h's own
+// `extern Flags32 psAI_Flags;` is dead under MASTER_GOLD in this build).
+extern Flags32 psAI_Flags;
+
 using namespace StalkerDecisionSpace;
 
 CStalkerPlanner::CStalkerPlanner()

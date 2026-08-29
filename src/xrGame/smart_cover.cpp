@@ -15,14 +15,8 @@
 #include "level_graph.h"
 #include "graph_engine.h"
 
-namespace hash_fixed_vertex_manager
-{
-	IC u32 to_u32(shared_str const& string)
-	{
-		const str_value* get = string._get();
-		return (*(u32 const*)&get);
-	}
-} // namespace hash_fixed_vertex_manager
+// hash_fixed_vertex_manager::to_u32(shared_str const&) now lives in
+// graph_engine.h (see its comment) - this was a duplicate.
 
 namespace smart_cover
 {
@@ -54,8 +48,12 @@ cover::cover(
 	Loopholes::const_iterator E = m_description->loopholes().end();
 	for (; I != E; ++I)
 	{
-		::luabind::object::iterator i = loopholes_availability.begin();
-		::luabind::object::iterator e = loopholes_availability.end();
+		// luabind::object has no nested ::iterator/.begin()/.end() in this
+		// fork - luabind::iterator is a free type alias, constructed
+		// directly from the object; a default-constructed one is the
+		// end-sentinel (same idiom as luabind's own doc examples).
+		::luabind::iterator i(loopholes_availability);
+		::luabind::iterator e;
 		for (; i != e; ++i)
 		{
 			LPCSTR const loophole_id = ::luabind::object_cast<LPCSTR>(i.key());

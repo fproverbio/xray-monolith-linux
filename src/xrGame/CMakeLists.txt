@@ -1665,4 +1665,160 @@ target_sources_grouped(
   xrgame_dll_detach.cpp
 )
 
+# xrGame root: 16 files OUT OF SCOPE by deliberate project decision, not a
+# TODO - same reasoning as ui/'s 5 exclusions above (this port targets
+# singleplayer only, no functional multiplayer). The first 16 fatal-error
+# on a `#include` for a header confirmed (via `find -iname`, not just a
+# guess) to not exist anywhere in this source tree - genuine MP/GameSpy
+# subsystem gaps from the same removal (commit 1d4ec53e) that produced
+# ui/'s exclusions, not case/path bugs:
+#   DemoInfo.cpp xrServer.cpp                    - game_sv_mp.h / game_sv_mp.h
+#   Level_Bullet_Manager.cpp Spectator.cpp
+#   WeaponFire.cpp game_cl_base_weapon_usage_statistic.cpp
+#   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
+#   game_cl_base.cpp                              - game_sv_mp_vote_flags.h
+#   game_sv_base.cpp Level_start.cpp              - xrGameSpyServer.h
+#   player_account.cpp ui_export_script.cpp       - login_manager.h
+#   Level_network_Demo.cpp                        - UIGameDM.h
+#   ScriptXMLInit.cpp                             - ui\ServerList.h
+#   xrServer_Connect.cpp                          - game_sv_deathmatch.h
+# A 17th, game_cl_base_weapon_usage_statistic_save.cpp, is different in
+# kind: it compiles fine on its own merits but both its functions
+# (SaveData()/SaveDataLtx()) are called from nowhere in this entire
+# source tree, and SaveData() itself only ever produces meaningful output
+# for 4 explicit MP game-mode IDs (eGameIDDeathmatch et al.), early-
+# returning for singleplayer - genuinely dead MP-only code, not worth
+# porting SYSTEMTIME/GetLocalTime for.
+# (GameObject.cpp also #included game_cl_mp.h, for one dead
+# `if (GameID() != eGameIDSingle)`-gated reward-tracking block - unlike
+# the 17 above, GameObject.cpp is core SP infrastructure with only that
+# one incidental MP touchpoint, so it was fixed for real (dead block
+# removed) rather than excluded; see Game4_RootBatch5 above.)
+
+# xrGame/ root sweep, sixth batch: 65 more files fixed via real per-file
+# investigation. Two more dead-code discoveries (matching the project's
+# standing practice of stubbing subsystems this fork never carried
+# forward, rather than porting them): physics_game.cpp's and
+# script_game_object.cpp's `__try`/`__except(EXCEPTION_EXECUTE_HANDLER)`
+# blocks were Win32 SEH (no portable equivalent - not a thing on Linux),
+# used only to fall through to an existing unprotected fallback path in
+# each case, so both were simply dropped; Level.cpp's spawn-antifreeze
+# background-thread signal (SetEvent/ResetEvent/CreateEvent/
+# WaitForSingleObject) got a real portable implementation added to
+# xrCore/posix_sync.h (eventfd-backed, extending the CreateMutex pattern
+# already there) since it's actively-used real functionality, not dead
+# code. Two more genuinely missing luabind features found and added to
+# the vendored fork (matching functor.hpp's own precedent from an earlier
+# batch): `luabind::detail::meta::operator+` for combining converter
+# policies (`out_value<2>() + out_value<3>()` et al - this fork only had
+# `operator|`) added to meta.hpp; hash_fixed_vertex_manager::
+# to_u32(shared_str const&) needed moving from two different .cpp files
+# (each had their own copy, placed too late in their own translation
+# unit to be visible where vertex_manager_hash_fixed_inline.h needed it)
+# into graph_engine.h itself, alongside its existing CWorldState overload
+# - deduplicated down to one definition in the right place, matching
+# upstream `luabind::iterator` (a free type alias in this fork, not
+# `luabind::object::iterator` as several files assumed) recurring across
+# 6 files in the smart_cover/script_engine_help cluster. The usual
+# recurring bug classes also appeared again at volume: `draw_obb`/
+# `draw_line`/`draw_ellipse`/`draw_aabb` missing their trailing `bHud`
+# bool argument (a dozen+ call sites across a dozen files); `psAI_Flags`
+# needing the local `extern Flags32` workaround (8 more files);
+# `luabind::object::type()` API drift (→ `luabind::type()`, several more
+# files); the `class_<T, BaseOrBases, HolderType, WrapperType>` wrap_base
+# argument-slot mixup (5 more registrations across
+# action_base_script.cpp/action_planner_script.cpp/
+# action_planner_action_script.cpp/script_effector_script.cpp/
+# base_client_classes_script.cpp - the last one alone had 5 in one file);
+# `EBodyState`/`EMovementType`/`EObjectAction` bare opaque-enum-forward-
+# declarations (ai_monster_space.h's real definitions now included
+# directly in stalker_combat_actions.h/stalker_low_cover_actions.h/
+# object_handler_planner.h/smart_cover_transition.hpp, unblocking 9 more
+# files); `auto& x = container.find(...)` binding a non-const reference
+# to find()'s by-value return (6 more sites, GameObject.cpp/Level.cpp/
+# script_attachment_manager.cpp). A few standalone real bugs: Inventory.
+# cpp's `pIItem->GetSlot()` (method never existed) should have been the
+# already-in-scope `slot_id` parameter; PhysicsShellHolder.cpp's
+# `static enum EEnableState` (storage class on a type, illegal); Level.
+# cpp's `goto spawn` crossing an intervening variable's initialization
+# (wrapped the intervening block in braces); script_attachment_manager.
+# cpp's `const_cast<T*>(m_userdata) = ...` (a no-op pointee-type cast used
+# where a `const_cast<T*&>` reference cast was needed to actually
+# reassign the member through a const member function); smart_cover_
+# description.cpp's `delete_data()` template needing `typename` before
+# several dependent nested types. `debug_make_final_test.cpp` and
+# `static_cast_checked_test.cpp` are both deliberate "won't compile"
+# self-tests (own comments say so) - correctly left excluded, not forced
+# to compile.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch6"
+  FILES
+  ActorCondition_script.cpp
+  ClimableObject.cpp
+  CustomDevice.cpp
+  GameObject.cpp
+  HudSound.cpp
+  Inventory.cpp
+  Level.cpp
+  MPPlayersBag.cpp
+  Mincer.cpp
+  PHScriptCall.cpp
+  PHSkeleton.cpp
+  PhraseScript.cpp
+  PhysicsShellHolder.cpp
+  TeleWhirlwind.cpp
+  UICursor.cpp
+  WeaponMagazined.cpp
+  WeaponMagazinedWGrenade.cpp
+  action_base_script.cpp
+  action_planner_action_script.cpp
+  action_planner_script.cpp
+  alife_trader_abstract.cpp
+  base_client_classes_script.cpp
+  dbg_draw_frustum.cpp
+  doors_actor.cpp
+  inventory_owner_info.cpp
+  level_debug.cpp
+  level_graph_debug.cpp
+  mincer_script.cpp
+  object_handler_planner.cpp
+  object_handler_planner_missile.cpp
+  object_handler_planner_weapon.cpp
+  physics_game.cpp
+  player_hud_tune.cpp
+  script_action_planner_wrapper.cpp
+  script_attachment_manager.cpp
+  script_effector_script.cpp
+  script_entity.cpp
+  script_game_object.cpp
+  script_game_object_use.cpp
+  script_world_state_script.cpp
+  script_zone.cpp
+  searchlight_struct.cpp
+  sight_manager.cpp
+  smart_cover.cpp
+  smart_cover_action.cpp
+  smart_cover_description.cpp
+  smart_cover_loophole.cpp
+  smart_cover_object.cpp
+  smart_cover_transition.cpp
+  space_restrictor.cpp
+  stalker_combat_actions.cpp
+  stalker_combat_planner.cpp
+  stalker_danger_by_sound_actions.cpp
+  stalker_danger_grenade_actions.cpp
+  stalker_danger_in_direction_actions.cpp
+  stalker_danger_unknown_actions.cpp
+  stalker_get_distance_actions.cpp
+  stalker_kill_wounded_actions.cpp
+  stalker_kill_wounded_planner.cpp
+  stalker_low_cover_actions.cpp
+  stalker_movement_manager_smart_cover.cpp
+  stalker_planner.cpp
+  team_base_zone.cpp
+  xrGame.cpp
+  xrServer_process_spawn.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

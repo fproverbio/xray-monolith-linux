@@ -62,6 +62,38 @@ namespace luabind {
 		}
 	};
 
+	// lua_proxy_traits<functor<T>>: without this, is_lua_proxy_type<functor<T>>
+	// (lua_proxy_interface.hpp) resolves to the unspecialized primary
+	// template's std::false_type, and comparing two functor<T> values with
+	// == hits binary_interpreter's missing (false_type, false_type)
+	// overload - "no matching function" - even though functor<T> publicly
+	// derives from adl::object and is_object_interface<functor<T>> (a
+	// separate, inheritance-based trait) already says yes. Real game code
+	// (e.g. xrGame/PHScriptCall.cpp's CPHScriptCondition::compare(),
+	// comparing two bound Lua callbacks for equality) relies on this
+	// working, matching object's own lua_proxy_traits<object> specialization
+	// one to one since functor<T> IS an adl::object underneath.
+	template <class T>
+	struct lua_proxy_traits<functor<T> >
+	{
+		using is_specialized = std::true_type;
+
+		static lua_State* interpreter(functor<T> const& value)
+		{
+			return value.interpreter();
+		}
+
+		static void unwrap(lua_State* interpreter, functor<T> const& value)
+		{
+			value.push(interpreter);
+		}
+
+		static bool check(...)
+		{
+			return true;
+		}
+	};
+
 	namespace detail {
 
 		template <class T>

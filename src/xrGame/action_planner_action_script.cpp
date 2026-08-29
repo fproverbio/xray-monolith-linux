@@ -18,7 +18,10 @@ void CActionPlannerAction<CScriptGameObject>::script_register(lua_State* L)
 {
 	module(L)
 	[
-		class_<CScriptActionPlannerAction, bases<CScriptActionPlanner, CScriptActionBase>, CScriptActionPlannerActionWrapper>("planner_action")
+		// CScriptActionPlannerActionWrapper derives from luabind::wrap_base -
+		// it's a Lua-override WrapperType (4th slot), not HolderType (3rd
+		// slot); same argument-slot mixup bug as ui/'s wrap_base fixes.
+		class_<CScriptActionPlannerAction, bases<CScriptActionPlanner, CScriptActionBase>, null_type, CScriptActionPlannerActionWrapper>("planner_action")
 		.def(constructor<>())
 		.def(constructor<CScriptGameObject*>())
 		.def(constructor<CScriptGameObject*, LPCSTR>())

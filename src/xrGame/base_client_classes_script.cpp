@@ -23,7 +23,7 @@ void DLL_PureScript::script_register(lua_State* L)
 {
 	module(L)
 	[
-		class_<DLL_Pure, CDLL_PureWrapper>("DLL_Pure")
+		class_<DLL_Pure, bases<>, null_type, CDLL_PureWrapper>("DLL_Pure")
 		.def(constructor<>())
 		.def("_construct", &DLL_Pure::_construct, &CDLL_PureWrapper::_construct_static)
 	];
@@ -34,7 +34,7 @@ void ISpatialScript::script_register	(lua_State *L)
 {
 	module(L)
 	[
-		class_<ISpatial,CISpatialWrapper>("ISpatial")
+		class_<ISpatial, bases<>, null_type, CISpatialWrapper>("ISpatial")
 			.def(constructor<>())
 			.def("spatial_register",	&ISpatial::spatial_register,	&CISpatialWrapper::spatial_register_static)
 			.def("spatial_unregister",	&ISpatial::spatial_unregister,	&CISpatialWrapper::spatial_unregister_static)
@@ -53,7 +53,7 @@ void ISheduledScript::script_register(lua_State* L)
 {
 	module(L)
 	[
-		class_<ISheduled, CISheduledWrapper>("ISheduled")
+		class_<ISheduled, bases<>, null_type, CISheduledWrapper>("ISheduled")
 		//			.def(constructor<>())
 		//			.def("shedule_Scale",		&ISheduled::shedule_Scale,		&CISheduledWrapper::shedule_Scale_static)
 		//			.def("shedule_Update",		&ISheduled::shedule_Update,		&CISheduledWrapper::shedule_Update_static)
@@ -65,7 +65,7 @@ void IRenderableScript::script_register(lua_State* L)
 {
 	module(L)
 	[
-		class_<IRenderable, CIRenderableWrapper>("IRenderable")
+		class_<IRenderable, bases<>, null_type, CIRenderableWrapper>("IRenderable")
 		//			.def(constructor<>())
 		//			.def("renderable_Render",&IRenderable::renderable_Render,&CIRenderableWrapper::renderable_Render_static)
 		//			.def("renderable_ShadowGenerate",&IRenderable::renderable_ShadowGenerate,&CIRenderableWrapper::renderable_ShadowGenerate_static)
@@ -107,7 +107,7 @@ void CObjectScript::script_register(lua_State* L)
 		//			.def("renderable_ShadowReceive",&CObject::renderable_ShadowReceive,&CObjectWrapper::renderable_ShadowReceive_static)
 		//			.def("Visual",					&CObject::Visual)
 
-		class_<CGameObject, bases<DLL_Pure, ISheduled, ICollidable, IRenderable>, CGameObjectWrapper>("CGameObject")
+		class_<CGameObject, bases<DLL_Pure, ISheduled, ICollidable, IRenderable>, null_type, CGameObjectWrapper>("CGameObject")
 		.def(constructor<>())
 		.def("_construct", &CGameObject::_construct, &CGameObjectWrapper::_construct_static)
 		.def("Visual", &CGameObject::Visual)

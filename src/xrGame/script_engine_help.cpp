@@ -19,18 +19,18 @@
 xr_string to_string					(::luabind::object const& o)
 {
 	using namespace luabind;
-	if (o.type() == LUA_TSTRING) return object_cast<::luabind::internal_string>(o).c_str();
+	if (luabind::type(o) == LUA_TSTRING) return object_cast<::luabind::internal_string>(o).c_str();
 	lua_State* L = o.lua_state();
 	LUABIND_CHECK_STACK(L);
 
-	if (o.type() == LUA_TNUMBER)
+	if (luabind::type(o) == LUA_TNUMBER)
 	{
 		char buffer[_CVTBUFSIZE];
 		_gcvt_s( buffer, object_cast<float>(o), 16);
 		return buffer;
 	}
 
-	return xr_string("<") + lua_typename(L, o.type()) + ">";
+	return xr_string("<") + lua_typename(L, luabind::type(o)) + ">";
 }
 
 void strreplaceall						(xr_string &str, LPCSTR S, LPCSTR N)
@@ -58,7 +58,7 @@ xr_string member_to_string			(::luabind::object const& e, LPCSTR function_signat
 	lua_State* L = e.lua_state();
 	LUABIND_CHECK_STACK(L);
 
-	if (e.type() == LUA_TFUNCTION)
+	if (luabind::type(e) == LUA_TFUNCTION)
 	{
 		e.pushvalue();
 		detail::stack_pop p(L, 1);
@@ -188,7 +188,8 @@ void print_class						(lua_State *L, ::luabind::detail::class_rep *crep)
 		crep->get_table	(L);
 		::luabind::object	table(L);
 		table.set		();
-		for (::luabind::object::iterator i = table.begin(); i != table.end(); ++i) {
+		::luabind::iterator e;
+		for (::luabind::iterator i(table); i != e; ++i) {
 			::luabind::object	object = *i;
 			xr_string	S;
 			S			= "    function ";
@@ -213,10 +214,10 @@ void print_class						(lua_State *L, ::luabind::detail::class_rep *crep)
 void print_free_functions				(lua_State *L, const ::luabind::object &object, LPCSTR header, const xr_string &indent)
 {
 	u32							count = 0;
-	::luabind::object::iterator	I = object.begin();
-	::luabind::object::iterator	E = object.end();
+	::luabind::iterator	I(object);
+	::luabind::iterator	E;
 	for ( ; I != E; ++I) {
-		if ((*I).type() != LUA_TFUNCTION)
+		if (luabind::type(*I) != LUA_TFUNCTION)
 			continue;
 		(*I).pushvalue();
 		::luabind::detail::free_functions::function_rep* rep = 0;

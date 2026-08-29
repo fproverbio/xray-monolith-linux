@@ -11,6 +11,7 @@
 #include "script_effector_wrapper.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 void SPPInfo_assign(SPPInfo* self, SPPInfo* obj)
 {
@@ -66,7 +67,10 @@ void CScriptEffector::script_register(lua_State* L)
 		.def(constructor<>())
 		.def("assign", &SPPInfo_assign),
 
-		class_<CScriptEffector, CScriptEffectorWrapper>("effector")
+		// CScriptEffectorWrapper derives from luabind::wrap_base - it's a
+		// Lua-override WrapperType (4th slot), not a BaseOrBases (2nd
+		// slot); same argument-slot mixup bug as ui/'s wrap_base fixes.
+		class_<CScriptEffector, bases<>, null_type, CScriptEffectorWrapper>("effector")
 		.def(constructor<int, float>())
 		.def("start", &add_effector, adopt<1>())
 		.def("finish", &remove_effector, adopt<1>())

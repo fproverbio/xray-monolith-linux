@@ -18,7 +18,11 @@ void CActionBase<CScriptGameObject>::script_register(lua_State* L)
 {
 	module(L)
 	[
-		class_<CScriptActionBase, CScriptActionWrapper>("action_base")
+		// CScriptActionWrapper derives from luabind::wrap_base - it's a
+		// Lua-override WrapperType (4th slot), not a BaseOrBases (2nd
+		// slot); same argument-slot mixup bug as UIListBox_script.cpp/
+		// UIActorMenu_script.cpp (see CMakeLists.txt's ui/ notes).
+		class_<CScriptActionBase, bases<>, null_type, CScriptActionWrapper>("action_base")
 		.def_readonly("object", &CScriptActionBase::m_object)
 		.def_readonly("storage", &CScriptActionBase::m_storage)
 		.def(constructor<>())

@@ -12,6 +12,7 @@
 #include "action_base.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 void set_goal_world_state(CScriptActionPlanner* action_planner, CScriptActionPlanner::CState* world_state)
 {
@@ -35,7 +36,10 @@ void CScriptActionPlanner::script_register(lua_State* L)
 {
 	module(L)
 	[
-		class_<CScriptActionPlanner, CScriptActionPlannerWrapper>("action_planner")
+		// CScriptActionPlannerWrapper derives from luabind::wrap_base - it's
+		// a Lua-override WrapperType (4th slot), not a BaseOrBases (2nd
+		// slot); same argument-slot mixup bug as ui/'s wrap_base fixes.
+		class_<CScriptActionPlanner, bases<>, null_type, CScriptActionPlannerWrapper>("action_planner")
 		.def_readonly("object", &CScriptActionPlanner::m_object)
 		.def_readonly("storage", &CScriptActionPlanner::m_storage)
 		.def(constructor<>())

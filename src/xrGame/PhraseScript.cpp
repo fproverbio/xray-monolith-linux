@@ -10,6 +10,9 @@
 #include "ui/xrUIXmlParser.h"
 #include "Actor.h"
 
+// psAI_Flags - see alife_level_registry_inline.h's comment (ai_debug.h's own
+// `extern Flags32 psAI_Flags;` is dead under MASTER_GOLD in this build).
+extern Flags32 psAI_Flags;
 
 //загрузка из XML файла
 void CDialogScriptHelper::Load(CUIXml* uiXml, XML_NODE* phrase_node)

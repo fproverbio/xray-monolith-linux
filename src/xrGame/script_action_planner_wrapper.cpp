@@ -11,6 +11,10 @@
 #include "script_game_object.h"
 #include "ai_debug.h"
 
+// psAI_Flags - see alife_level_registry_inline.h's comment (ai_debug.h's own
+// `extern Flags32 psAI_Flags;` is dead under MASTER_GOLD in this build).
+extern Flags32 psAI_Flags;
+
 void CScriptActionPlannerWrapper::setup(CScriptGameObject* object)
 {
 #ifdef LOG_ACTION

@@ -3,6 +3,7 @@
 #include "physics_joint_scripted.h"
 #include "physics_element_scripted.h"
 using namespace luabind;
+using namespace luabind::policy;
 
 
 cphysics_element_scripted* cphysics_joint_scripted::PFirst_element()

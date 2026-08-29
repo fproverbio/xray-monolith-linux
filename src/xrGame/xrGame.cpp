@@ -58,9 +58,10 @@ BOOL DllMainXrGame(HANDLE hModule, u32 ul_reason_for_call, LPVOID lpReserved)
 			CCC_RegisterInput();
 
 			setup_luabind_allocator();
-#ifdef DEBUG
-			g_profiler			= xr_new<CProfiler>();
-#endif
+			// g_profiler/CProfiler: legacy debug-only diagnostic, doesn't
+			// exist anywhere in this port (xrCore/profiler.h is a
+			// macro-only PROF_EVENT-style shim, not a class) - see
+			// xrgame_dll_detach.cpp's matching removal.
 			break;
 		}
 

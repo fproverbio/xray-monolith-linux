@@ -316,18 +316,18 @@ struct DrawLevelPredicate {
 	void operator() (CLevelDebug::SLevelItem s) {
 
 		if (s.ptype == CLevelDebug::SLevelItem::ePoint) {
-			Level().debug_renderer().draw_aabb(s.position1,0.35f,0.35f,0.35f,s.color);
+			Level().debug_renderer().draw_aabb(s.position1,0.35f,0.35f,0.35f,s.color,false);
 
 			Fvector upV;
 			upV		= s.position1;
 			upV.y	+= 5.0f;
 
-			Level().debug_renderer().draw_line(Fidentity,s.position1,upV,s.color);
+			Level().debug_renderer().draw_line(Fidentity,s.position1,upV,s.color,false);
 
 		} else if (s.ptype == CLevelDebug::SLevelItem::eLine) {
-			Level().debug_renderer().draw_line(Fidentity,s.position1,s.position2,s.color);			
+			Level().debug_renderer().draw_line(Fidentity,s.position1,s.position2,s.color,false);			
 		} else if (s.ptype == CLevelDebug::SLevelItem::eBox) {
-			Level().debug_renderer().draw_aabb(s.position1,s.radius,s.radius,s.radius,s.color);
+			Level().debug_renderer().draw_aabb(s.position1,s.radius,s.radius,s.radius,s.color,false);
 		}
 	}
 };

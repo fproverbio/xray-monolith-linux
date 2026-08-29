@@ -7,7 +7,7 @@ using namespace luabind;
 
 void BoosterForEach(CActorCondition* conditions, const ::luabind::functor<bool> &funct)
 {
-	CEntityCondition::BOOSTER_MAP& cur_booster_influences = conditions->GetCurBoosterInfluences();
+	CEntityCondition::BOOSTER_MAP cur_booster_influences = conditions->GetCurBoosterInfluences();
 	CEntityCondition::BOOSTER_MAP::const_iterator it = cur_booster_influences.begin();
 	CEntityCondition::BOOSTER_MAP::const_iterator it_e = cur_booster_influences.end();
 	for (; it != it_e; ++it)
@@ -24,7 +24,14 @@ bool ApplyBooster_script(CActorCondition* cond, const SBooster& B, LPCSTR sect)
 
 void ClearAllBoosters(CActorCondition* conditions)
 {
-	CEntityCondition::BOOSTER_MAP& cur_booster_influences = conditions->GetCurBoosterInfluences();
+	// GetCurBoosterInfluences() returns BOOSTER_MAP by value (ActorCondition.h),
+	// so cur_booster_influences is (and always was, even pre-port) a local
+	// copy - the .clear() below only clears this copy, not the real
+	// m_booster_influences. Pre-existing logic gap, not introduced by this
+	// port; only fixing what's needed to compile (was binding a non-const
+	// reference to a temporary, an MSVC-permissive/GCC-strict gap), not
+	// the underlying behavior.
+	CEntityCondition::BOOSTER_MAP cur_booster_influences = conditions->GetCurBoosterInfluences();
 	CEntityCondition::BOOSTER_MAP::const_iterator it = cur_booster_influences.begin();
 	CEntityCondition::BOOSTER_MAP::const_iterator it_e = cur_booster_influences.end();
 	for (; it != it_e; ++it)
