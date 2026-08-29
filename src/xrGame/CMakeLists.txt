@@ -1956,4 +1956,13 @@ target_sources_grouped(
   death_anims_predicates.cpp
 )
 
+# ik_calculate_data.cpp - same tab-separated lowercase stdafx.h bug as
+# death_anims.cpp/death_anims_predicates.cpp above.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch11"
+  FILES
+  ik_calculate_data.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
