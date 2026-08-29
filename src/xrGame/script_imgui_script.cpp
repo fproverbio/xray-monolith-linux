@@ -5,6 +5,7 @@
 #include "imgui/imgui_internal.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 #pragma optimize("s",on)
 void ScriptImGui::script_register(::lua_State* L)
 {

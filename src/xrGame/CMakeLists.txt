@@ -1871,4 +1871,44 @@ target_sources_grouped(
   smart_cover_loophole_planner_actions.cpp
 )
 
+# RegistryFuncs.cpp and profile_data_types.cpp are OUT OF SCOPE, both dead
+# code like DynamicHeightMap.cpp above: RegistryFuncs.cpp's Read/
+# WriteRegistry* functions (Win32 registry API - HKEY/RegOpenKeyEx/etc,
+# no Linux equivalent) are called from nowhere in the entire tree;
+# profile_data_types.cpp is entirely `namespace gamespy_profile` (GameSpy
+# online-achievements/leaderboard stat names), the same MP/GameSpy
+# subsystem family as player_account.cpp/ui_export_script.cpp above.
+
+# xrGame/ root sweep, eighth batch: 4 more files fixed. level_script.cpp/
+# script_imgui_script.cpp both needed only the missing `using namespace
+# luabind::policy;` for out_value<N>()/pure_out_value<N>() - despite
+# using the exact same `out_value<2>() + out_value<3>()` policy-
+# combination pattern still unresolved in physics_joint_scripted.cpp
+# (deferred, see the notes file), so that deeper issue is specific to
+# GetLimits(float&, float&, int)'s exact member-function signature, not
+# a general limitation. level_script.cpp also had a genuine `R_ASSERT`
+# bug (passed 2 comma-separated conditions where the macro takes 1 -
+# combined with `&&`, matching the obvious original intent) and a dead
+# GetSystemMetrics(SM_SWAPBUTTON) left-handed-mouse check (X11 already
+# swaps physical button events for a left-handed-configured mouse, same
+# reasoning already established in Xr_input.cpp for the same API).
+# script_game_object_script2.cpp needed two fixes of its own: SAFE_WRAP's
+# non-type-template-parameter mechanism requires the `.def()` cast's
+# return-type spelling to exactly match the real declaration including a
+# meaningless-but-present top-level `const` (idle_min_time() et al. are
+# declared `float const ... () const` in script_game_object.h); and
+# `adopt<result>()` tried to use a meta::index<0> marker object where
+# adopt<N> needs a real unsigned-int template argument - `adopt<0>()`.
+# doors_door.cpp was unblocked as a side effect of the doors_door.h fix
+# two batches ago.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch8"
+  FILES
+  doors_door.cpp
+  level_script.cpp
+  script_game_object_script2.cpp
+  script_imgui_script.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

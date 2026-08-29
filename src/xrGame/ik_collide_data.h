@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cfloat>
+
 class ik_foot_geom
 {
 public:

@@ -31,6 +31,7 @@
 #include "patrol_path_manager_space.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 extern CScriptActionPlanner* script_action_planner(CScriptGameObject* obj);
 
@@ -148,7 +149,11 @@ class_<CScriptGameObject> script_register_game_object1(class_<CScriptGameObject>
 		.def("get_current_smart_cover_name", SAFE_WRAP(&CScriptGameObject::GetCurrentSmartCoverName))
 		.def("get_current_loophole_id", SAFE_WRAP(&CScriptGameObject::GetCurrentLoopholeId))
 		.def("command", SAFE_WRAP(&CScriptGameObject::AddAction))
-		.def("action", SAFE_WRAP(&CScriptGameObject::GetCurrentAction), adopt<result>())
+		// `result`/`return_value` (policy.hpp) are meta::index<0> marker
+		// objects, not usable as adopt<N>'s unsigned-int template argument
+		// directly - adopt<0>() is the literal equivalent (index 0 = the
+		// return value, matching what `result` symbolically means).
+		.def("action", SAFE_WRAP(&CScriptGameObject::GetCurrentAction), adopt<0>())
 		.def("object_count", SAFE_WRAP(&CScriptGameObject::GetInventoryObjectCount))
 		.def("object", SAFE_WRAP((CScriptGameObject *(CScriptGameObject::*)(LPCSTR))(&CScriptGameObject::GetObjectByName)))
 		.def("object", SAFE_WRAP((CScriptGameObject *(CScriptGameObject::*)(int))(&CScriptGameObject::GetObjectByIndex)))
@@ -418,16 +423,16 @@ class_<CScriptGameObject> script_register_game_object1(class_<CScriptGameObject>
 		.def("set_smart_cover_target_default", SAFE_WRAP(&CScriptGameObject::set_smart_cover_target_default))
 
 		.def("idle_min_time", SAFE_WRAP((void (CScriptGameObject::*)(float))(&CScriptGameObject::idle_min_time)))
-		.def("idle_min_time", SAFE_WRAP((float (CScriptGameObject::*)() const)(&CScriptGameObject::idle_min_time)))
+		.def("idle_min_time", SAFE_WRAP((const float (CScriptGameObject::*)() const)(&CScriptGameObject::idle_min_time)))
 
 		.def("idle_max_time", SAFE_WRAP((void (CScriptGameObject::*)(float))(&CScriptGameObject::idle_max_time)))
-		.def("idle_max_time", SAFE_WRAP((float (CScriptGameObject::*)() const)(&CScriptGameObject::idle_max_time)))
+		.def("idle_max_time", SAFE_WRAP((const float (CScriptGameObject::*)() const)(&CScriptGameObject::idle_max_time)))
 
 		.def("lookout_min_time", SAFE_WRAP((void (CScriptGameObject::*)(float))(&CScriptGameObject::lookout_min_time)))
-		.def("lookout_min_time", SAFE_WRAP((float (CScriptGameObject::*)() const)(&CScriptGameObject::lookout_min_time)))
+		.def("lookout_min_time", SAFE_WRAP((const float (CScriptGameObject::*)() const)(&CScriptGameObject::lookout_min_time)))
 
 		.def("lookout_max_time", SAFE_WRAP((void (CScriptGameObject::*)(float))(&CScriptGameObject::lookout_max_time)))
-		.def("lookout_max_time", SAFE_WRAP((float (CScriptGameObject::*)() const)(&CScriptGameObject::lookout_max_time)))
+		.def("lookout_max_time", SAFE_WRAP((const float (CScriptGameObject::*)() const)(&CScriptGameObject::lookout_max_time)))
 
 		.def("in_loophole_fov", SAFE_WRAP(&CScriptGameObject::in_loophole_fov))
 		.def("in_current_loophole_fov", SAFE_WRAP(&CScriptGameObject::in_current_loophole_fov))

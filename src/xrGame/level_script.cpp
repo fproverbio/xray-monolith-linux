@@ -66,6 +66,7 @@
 #include "ActorCondition.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 extern ENGINE_API float ps_r2_sun_shafts_min;
 extern ENGINE_API float ps_r2_sun_shafts_value;
@@ -146,7 +147,7 @@ CScriptGameObject* get_object_by_id()
 
 CScriptGameObject* get_object_by_id(const ::luabind::object& ob)
 {
-	if (!ob || ob.type() == LUA_TNIL)
+	if (!ob || luabind::type(ob) == LUA_TNIL)
 	{
 		Msg("!WARNING : level.object_by_id(nil) called!");
 		ai().script_engine().print_stack();
@@ -1146,26 +1147,32 @@ void refresh_npc_names()
 
 void LevelPressAction(int cmd)
 {
-	if ((cmd == MOUSE_1 || cmd == MOUSE_2) && !!GetSystemMetrics(SM_SWAPBUTTON))
-		cmd = cmd == MOUSE_1 ? MOUSE_2 : MOUSE_1;
+	// GetSystemMetrics(SM_SWAPBUTTON) - no left-handed-mouse swap logic
+	// needed on this SDL2/X11 port; X11 already swaps physical button
+	// events for a left-handed-configured mouse (see Xr_input.cpp's
+	// identical reasoning).
 
-	Level().IR_OnKeyboardPress(cmd);
+Level().IR_OnKeyboardPress(cmd);
 }
 
 void LevelReleaseAction(int cmd)
 {
-	if ((cmd == MOUSE_1 || cmd == MOUSE_2) && !!GetSystemMetrics(SM_SWAPBUTTON))
-		cmd = cmd == MOUSE_1 ? MOUSE_2 : MOUSE_1;
+	// GetSystemMetrics(SM_SWAPBUTTON) - no left-handed-mouse swap logic
+	// needed on this SDL2/X11 port; X11 already swaps physical button
+	// events for a left-handed-configured mouse (see Xr_input.cpp's
+	// identical reasoning).
 
-	Level().IR_OnKeyboardRelease(cmd);
+Level().IR_OnKeyboardRelease(cmd);
 }
 
 void LevelHoldAction(int cmd)
 {
-	if ((cmd == MOUSE_1 || cmd == MOUSE_2) && !!GetSystemMetrics(SM_SWAPBUTTON))
-		cmd = cmd == MOUSE_1 ? MOUSE_2 : MOUSE_1;
+	// GetSystemMetrics(SM_SWAPBUTTON) - no left-handed-mouse swap logic
+	// needed on this SDL2/X11 port; X11 already swaps physical button
+	// events for a left-handed-configured mouse (see Xr_input.cpp's
+	// identical reasoning).
 
-	Level().IR_OnKeyboardHold(cmd);
+Level().IR_OnKeyboardHold(cmd);
 }
 
 u32 vertex_id(Fvector position)
@@ -1700,7 +1707,7 @@ void AddBullet(Fvector pos, Fvector dir, float speed, float power, float impulse
 // demonized: AddBullet with lua table as argument
 void AddBullet(::luabind::object t)
 {
-	if (t && t.type() == LUA_TTABLE)
+	if (t && luabind::type(t) == LUA_TTABLE)
 	{
 		Fvector pos = ::luabind::object_cast<Fvector>(t["pos"]);
 		Fvector dir = ::luabind::object_cast<Fvector>(t["dir"]);
@@ -1911,7 +1918,7 @@ enum ETraceTarget {
 
 static SPickParam* get_pick(ETraceTarget tt)
 {
-	R_ASSERT(tt >= 0, tt < TT_MAX);
+	R_ASSERT(tt >= 0 && tt < TT_MAX);
 
 	const attachable_hud_item* item = NULL;
 	switch (tt)
