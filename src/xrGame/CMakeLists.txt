@@ -1883,12 +1883,7 @@ target_sources_grouped(
 
 # xrGame/ root sweep, eighth batch: 4 more files fixed. level_script.cpp/
 # script_imgui_script.cpp both needed only the missing `using namespace
-# luabind::policy;` for out_value<N>()/pure_out_value<N>() - despite
-# using the exact same `out_value<2>() + out_value<3>()` policy-
-# combination pattern still unresolved in physics_joint_scripted.cpp
-# (deferred, see the notes file), so that deeper issue is specific to
-# GetLimits(float&, float&, int)'s exact member-function signature, not
-# a general limitation. level_script.cpp also had a genuine `R_ASSERT`
+# luabind::policy;` for out_value<N>()/pure_out_value<N>(). level_script.cpp also had a genuine `R_ASSERT`
 # bug (passed 2 comma-separated conditions where the macro takes 1 -
 # combined with `&&`, matching the obvious original intent) and a dead
 # GetSystemMetrics(SM_SWAPBUTTON) left-handed-mouse check (X11 already
@@ -1986,6 +1981,37 @@ target_sources_grouped(
   NAME "Game4_RootBatch13"
   FILES
   ik_foot_collider.cpp
+)
+
+# physics_joint_scripted.cpp - the "out_value<2>()+out_value<3>() gap on
+# a member function" from §41 was a MISATTRIBUTION, not a real luabind
+# limitation. A standalone isolated repro (a throwaway class registered
+# with the exact same `void GetLimits(float&, float&, int)`-shaped
+# member function and `out_value<2>() + out_value<3>()`) compiled with
+# ZERO errors, proving the combinator works fine on member functions.
+# The real bug: `get_max_force_and_velocity`'s own `.def()` call, right
+# above `get_limits` in this file, registers
+# `GetMaxForceAndVelocity(float& force, float& velocity, int axis_num)`
+# - an IDENTICAL (float&, float&, int) shape - with NO out_value policy
+# at all, so it hits the exact same "default_converter<float&,void> has
+# no match() for by_reference<float>" error text as get_limits would.
+# Because `register_()` is a virtual override (instantiated whenever the
+# class template is, active or not) and appears earlier in the same
+# fluent `.def().def()...` chain, its errors were reported first and
+# looked identical enough to get_limits' own (correctly-written)
+# out_value<2>()+out_value<3>() call to be misread as the same bug in
+# the previous session. Confirmed by isolating: temporarily replacing
+# get_limits' body with a harmless stand-in left the exact same 3 errors
+# in place, now unambiguously pointing at get_max_force_and_velocity.
+# Fixed by adding the same out_value<2>() + out_value<3>() policy there.
+# GetAxisDirDynamic(int, Fvector&)/GetAnchorDynamic(Fvector&) need no
+# such policy - class-type references convert natively, only primitive
+# (float&, int&, etc) out-params need it.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch14"
+  FILES
+  physics_joint_scripted.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
