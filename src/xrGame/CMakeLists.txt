@@ -660,18 +660,20 @@ target_sources_grouped(
 # alife_spawn_registry.cpp, alife_spawn_registry_spawn.cpp - are now fixed
 # too, as a side effect of that pass's dependent-base/typename fixes rather
 # than individually targeted. UPDATE (Game4_RootBatch4): alife_update_manager.cpp
-# is fixed too (path_manager_game_level_inline.h's this-> fixes). The
-# remaining 8 still have real issues of their own, not yet individually
-# chased - EXCLUDED, each needing its own future look:
-#   WeaponBinocularsVision.cpp(6)
-#   WeaponMagazined.cpp(15) WeaponMagazinedWGrenade.cpp(2)
-#   WeaponStatMgun.cpp(1) WeaponStatMgunFire.cpp(15) WeaponStatMgunMisc.cpp(1)
-#   alife_surge_manager.cpp(5) alife_trader_abstract.cpp(2)
-# (parenthesized number = real g++ -c error count as of this pass, not a
-# file size/complexity estimate - each is a concrete, findable bug or
-# small set of bugs, same shape as everything fixed above, just not yet
-# done). See the notes file's per-batch section for the exact original
-# root-cause diagnosis this comment used to carry in full.
+# is fixed too (path_manager_game_level_inline.h's this-> fixes). UPDATE
+# (2026-08-29): the last 8 - WeaponBinocularsVision.cpp,
+# WeaponMagazined.cpp, WeaponMagazinedWGrenade.cpp, WeaponStatMgun.cpp,
+# WeaponStatMgunFire.cpp, WeaponStatMgunMisc.cpp, alife_surge_manager.cpp,
+# alife_trader_abstract.cpp - are ALSO fixed now: verified each already
+# compiled clean and was already an active (uncommented) entry below
+# (added incidentally across Game4_RootBatch1/5/6, whichever pass's
+# shared-header/dependent-base fixes happened to unblock it), this
+# comment block just never got cleaned up to say so. Confirmed via a real
+# full clean rebuild (1900/1900, 0 errors), not just standalone
+# per-file -c checks. The graph-cycle sweep leftover list from §30c is
+# now fully empty - 0 remaining. See the notes file's per-batch section
+# for the exact original root-cause diagnosis this comment used to carry
+# in full.
 
 target_sources_grouped(
   TARGET xrGame
