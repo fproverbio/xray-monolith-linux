@@ -1913,4 +1913,34 @@ target_sources_grouped(
   script_imgui_script.cpp
 )
 
+# death_anims.cpp - one of the 5 files that shared an identical, previously
+# not-root-caused "aggregate ENGINE_API CBoneInstance has incomplete type"
+# cascade out of xrEngine/bone.h (§41). Root cause found: this file's own
+# `#include "stdafx.h"` is BOTH lowercase AND uses a literal TAB character
+# between `#include` and the filename (`#include\t"stdafx.h"`) - the exact
+# same lowercase-stdafx.h bug already fixed project-wide in an earlier pass
+# (306 files, see the Game4_RootBatch2 comment above), just missed by that
+# pass's sed pattern because it assumed a single space, not a tab, between
+# `#include` and the opening quote. Same silent-wrong-file-found failure
+# mode as before: `xrCore/stdafx.h` (lowercase, real, also on xrGame's
+# include path) satisfies the lowercase include instead of erroring, so
+# `xrEngine/stdafx.h` (reached only via the real `xrGame/StdAfx.h`) never
+# runs and ENGINE_API never gets #define'd - by the time bone.h is reached,
+# `class ENGINE_API CBoneInstance;` parses as declaring a variable named
+# CBoneInstance of an incomplete type literally named ENGINE_API, producing
+# the exact cascade seen. bone.h/KinematicsAnimated.h/animation_motion.h
+# were correctly ruled out as not at fault in §41 - confirmed here for
+# real. Fixed by capitalizing to `StdAfx.h` (tab preserved, only the
+# filename case changed). The other 4 files sharing this exact cascade
+# (death_anims_predicates.cpp, ik_calculate_data.cpp, ik_dbg_matrix.cpp,
+# ik_foot_collider.cpp) have the identical tab-separated lowercase
+# #include and are expected to need the identical fix - not yet
+# individually verified, left for their own dedicated passes.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch9"
+  FILES
+  death_anims.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
