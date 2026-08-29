@@ -1965,4 +1965,13 @@ target_sources_grouped(
   ik_calculate_data.cpp
 )
 
+# ik_dbg_matrix.cpp - same tab-separated lowercase stdafx.h bug as the
+# other bone.h-cascade files above.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch12"
+  FILES
+  ik_dbg_matrix.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
