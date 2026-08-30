@@ -170,17 +170,41 @@ target_sources_grouped(
 # KEY_* enum constants from this file's own usage is possible but not a
 # mechanical fix; deferred.
 #
-# script_engine_help.cpp: EXCLUDED - a lua-console debug-dump helper (lists
-# every registered class/free-function) that uses several luabind
-# reflection APIs genuinely absent from this vendored deboostified fork,
-# confirmed by grep against the real headers, not assumption:
-# luabind::detail::free_functions (namespace doesn't exist at all - the
-# only hit anywhere under src/3rd party/luabind is a stale comment),
-# luabind::internal_string, object::pushvalue()/object::set(),
-# class_registry::iterate_classes() (real API is get_classes(), returning
-# a map with different iteration semantics, not a drop-in rename like the
-# get_globals -> globals case in notes section 25c/27d). A real rewrite
-# against the actual vendored API, not a mechanical port; deferred.
+# script_engine_help.cpp: UPDATE (2026-08-30) - the "real rewrite, not a
+# mechanical port" deferral below turned out to have a faithful modern
+# replacement path after all, once the vendored fork's actual (not
+# assumed) function-object machinery was traced end to end. Every
+# obsolete API was ported to its real modern equivalent, with nothing
+# dropped except one genuinely gone feature:
+#   - method_rep/overload_rep/upvalue-3-magic-number-0x1337 detection ->
+#     detail::is_luabind_function(L, index) (checks upvalue 2), then the
+#     function_object* stored in upvalue 1, walked via ->next, formatted
+#     per-overload via the virtual function_object::format_signature().
+#     Same pattern reused for member functions, free functions, and (new)
+#     constructor overloads - constructors turned out to be introspectable
+#     the exact same way, since constructor_registration::register_()
+#     (class.hpp) registers them through the identical make_function()/
+#     add_overload() path used by every other method, just stored under
+#     the "__init" key instead of a named method key.
+#   - class_registry::iterate_classes() -> manual iteration over
+#     get_classes() (a real luabind::map<type_id, class_rep*>), calling
+#     print_class per entry.
+#   - luabind::get_globals(L) -> luabind::globals(L) (per notes 25c/27d).
+#   - luabind::internal_string -> luabind::string (still a real,
+#     object_cast-able type, just renamed).
+#   - object::pushvalue()/object::set() -> object::push(L) / the
+#     object(from_stack(L,-1)) idiom used throughout the fork's own code.
+#   - o.lua_state() -> o.interpreter().
+#   - _gcvt_s/_CVTBUFSIZE (MSVC-only CRT) -> xr_sprintf with "%.16g",
+#     matching the project's established float-to-string convention.
+# The one dropped feature: crep->properties() (a distinct property-name
+# container) no longer exists - class_rep stopped tracking properties
+# separately. Recovered without loss of information by detecting property
+# closures directly wherever they appear in the class' method table via
+# their lua_CFunction entry point, `&detail::property_tag` - the same
+# marker/idiom already used elsewhere in this exact fork
+# (src/class_info.cpp, src/object_rep.cpp) to distinguish properties from
+# regular methods, so properties are still listed as their own category.
 #
 # RegistryFuncs.cpp: EXCLUDED - a genuine Win32 Registry API wrapper
 # (HKEY/RegOpenKeyEx/RegQueryValueEx/RegCloseKey, storing STALKER-Anomaly
@@ -2012,6 +2036,13 @@ target_sources_grouped(
   NAME "Game4_RootBatch14"
   FILES
   physics_joint_scripted.cpp
+)
+
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch15"
+  FILES
+  script_engine_help.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
