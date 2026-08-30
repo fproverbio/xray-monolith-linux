@@ -1,12 +1,13 @@
 #include "StdAfx.h"
 #include "Level.h"
-#include "UIGameDM.h"
 #include "xrServer.h"
-#include "game_sv_mp.h"
 #include "Spectator.h"
 #include "Actor.h"
 #include "game_cl_base.h"
-#include "game_cl_mp.h"
+// UIGameDM.h / game_sv_mp.h / game_cl_mp.h: MP-only deathmatch UI + game-mode
+// headers, don't exist in this singleplayer-only port (removed in commit
+// 1d4ec53e). Nothing below actually needed the MP subclasses they declared -
+// see SaveDemoInfo() and SpawnDemoSpectator() further down.
 #include "../xrCore/stream_reader.h"
 #include "Message_Filter.h"
 #include "DemoPlay_Control.h"
@@ -18,15 +19,19 @@ void CLevel::PrepareToSaveDemo()
 	R_ASSERT(!m_DemoPlay);
 	string_path demo_name = "";
 	string_path demo_path;
-	SYSTEMTIME Time;
-	GetLocalTime(&Time);
+	// SYSTEMTIME/GetLocalTime: Win32-only, no portable equivalent - use
+	// time_t/localtime instead, matching the established pattern elsewhere
+	// in this port (see xrCore/memory_monitor.cpp).
+	time_t raw_time;
+	time(&raw_time);
+	tm local_time = *localtime(&raw_time);
 	xr_sprintf(demo_name, "xray_%02d-%02d-%02d_%02d-%02d-%02d.demo",
-	           Time.wMonth,
-	           Time.wDay,
-	           Time.wYear,
-	           Time.wHour,
-	           Time.wMinute,
-	           Time.wSecond
+	           local_time.tm_mon + 1,
+	           local_time.tm_mday,
+	           local_time.tm_year + 1900,
+	           local_time.tm_hour,
+	           local_time.tm_min,
+	           local_time.tm_sec
 	);
 	Msg("Demo would be stored in - %s", demo_name);
 	FS.update_path(demo_path, "$logs$", demo_name);
@@ -152,21 +157,12 @@ void CLevel::SaveDemoHeader(shared_str const& server_options)
 
 void CLevel::SaveDemoInfo()
 {
-	game_cl_mp* tmp_game = smart_cast<game_cl_mp*>(&Game());
-	if (!tmp_game)
-		return;
-
-	R_ASSERT(m_writer);
-
-	u32 old_pos = m_writer->tell();
-	m_writer->seek(m_demo_info_file_pos);
-	if (!m_demo_info)
-	{
-		m_demo_info = xr_new<demo_info>();
-	}
-	m_demo_info->load_from_game();
-	m_demo_info->write_to_file(m_writer);
-	m_writer->seek(old_pos);
+	// game_cl_mp: MP-only client game type, doesn't exist in this
+	// singleplayer-only port (removed in commit 1d4ec53e). This populated
+	// per-player deathmatch scoring metadata into the demo file; Game() is
+	// never anything but the singleplayer game type here, so the original
+	// MP-presence check this guarded on always failed and this was already
+	// dead code in singleplayer before the port.
 }
 
 void CLevel::SavePacket(NET_Packet& packet)
@@ -239,19 +235,21 @@ void CLevel::SpawnDemoSpectator()
 {
 	R_ASSERT(Server && Server->game);
 	m_current_spectator = NULL;
-	game_sv_mp* tmp_sv_game = smart_cast<game_sv_mp*>(Server->game);
-	game_cl_mp* mp_cl_game = smart_cast<game_cl_mp*>(Level().game);
-
+	// Was smart_cast<game_sv_mp*>/smart_cast<game_cl_mp*> to the MP-only game
+	// subclasses, which don't exist in this singleplayer-only port (removed
+	// in commit 1d4ec53e). spawn_begin()/assign_RP() and local_player are all
+	// declared directly on the base game_sv_GameState/game_cl_GameState
+	// types (see game_sv_base.h, game_cl_base.h), so the MP-specific casts
+	// were never actually required - use the base pointers directly. This
+	// keeps demo-playback spectator spawning itself intact.
 	CSE_Spectator* specentity = smart_cast<CSE_Spectator*>(
-		tmp_sv_game->spawn_begin("spectator"));
+		Server->game->spawn_begin("spectator"));
 	R_ASSERT(specentity);
-	R_ASSERT2(mp_cl_game->local_player, "player not spawned");
-	//mp_cl_game->local_player		= mp_cl_game->createPlayerState();
-	//xr_strcpy						(mp_cl_game->local_player->name, "demo_spectator");
-	specentity->set_name_replace(mp_cl_game->local_player->getName());
+	R_ASSERT2(Level().game->local_player, "player not spawned");
+	specentity->set_name_replace(Level().game->local_player->getName());
 	specentity->s_flags.assign(M_SPAWN_OBJECT_LOCAL | M_SPAWN_OBJECT_ASPLAYER | M_SPAWN_OBJECT_PHANTOM);
 	//M_SPAWN_OBJECT_PHANTOM is ONLY to indicate thath this is a fake spectator
-	tmp_sv_game->assign_RP(specentity, Level().game->local_player);
+	Server->game->assign_RP(specentity, Level().game->local_player);
 
 	g_sv_Spawn(specentity);
 

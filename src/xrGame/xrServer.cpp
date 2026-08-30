@@ -8,7 +8,6 @@
 #include "xrServer_Objects_ALife_All.h"
 #include "Level.h"
 #include "game_cl_base.h"
-#include "game_sv_mp.h"
 #include "game_cl_base_weapon_usage_statistic.h"
 #include "ai_space.h"
 #include "../xrEngine/IGame_Persistent.h"
@@ -207,7 +206,11 @@ void xrServer::GetPooledState(xrClientData* xrCL)
 int g_Dump_Update_Write = 0;
 
 #ifdef DEBUG
-INT g_sv_SendUpdate = 0;
+// INT (Win32's alias for int, normally pulled in via windows.h) doesn't
+// exist in win32_compat.h's shim layer - s32 is this codebase's own
+// portable 32-bit signed-int typedef (xrCore/_types.h), used here in
+// its place.
+s32 g_sv_SendUpdate = 0;
 #endif
 
 void xrServer::Update()
@@ -666,25 +669,13 @@ u32 xrServer::OnMessage(NET_Packet& P, ClientID sender) // Non-Zero means broadc
 		break;
 	case M_STATISTIC_UPDATE_RESPOND:
 		{
-			//client method for collecting statistics are called from two places : 1 - this, 2 - game_sv_mp::WritePlayerStats
-			if (GameID() != eGameIDSingle)
-			{
-				game_sv_mp* my_game = static_cast<game_sv_mp*>(game);
-				if (CL)
-				{
-					my_game->m_async_stats.set_responded(CL->ID);
-					if (static_cast<IClient*>(CL) != GetServerClient())
-					{
-						game_PlayerState* tmp_ps = CL->ps;
-						u32 tmp_pid = tmp_ps != NULL ? tmp_ps->m_account.profile_id() : 0;
-						Game().m_WeaponUsageStatistic->OnUpdateRespond(&P, CL->m_cdkey_digest, tmp_pid);
-					}
-				}
-				else
-				{
-					Msg("! ERROR: SV: update respond received from unknown sender");
-				}
-			}
+			//---------------------------------------------------------------------------
+			// game_sv_mp.h: MP-only stats-collection hook (game_sv_mp::m_async_stats,
+			// game_sv_mp::WritePlayerStats), dead in this singleplayer-only port
+			// (GameID() is always eGameIDSingle here, and the header doesn't exist
+			// in this fork - the MP/GameSpy subsystem was removed early on, see
+			// commit 1d4ec53e, same as GameObject.cpp's GE_HIT_STATISTIC handler).
+			//---------------------------------------------------------------------------
 			//if (SV_Client) SendTo	(SV_Client->ID, P, net_flags(TRUE, TRUE));
 		}
 		break;
@@ -905,7 +896,10 @@ void xrServer::Server_Client_Check(IClient* CL)
 		return;
 	};
 
-	if (CL->process_id == GetCurrentProcessId())
+	// GetCurrentProcessId() (Win32, normally pulled in via windows.h) has
+	// no shim in win32_compat.h - getpid() is the POSIX equivalent, and
+	// process_id (NET_Server.h) is already u32, matching getpid()'s range.
+	if (CL->process_id == static_cast<u32>(getpid()))
 	{
 		CL->flags.bLocal = 1;
 		SV_Client = (xrClientData*)CL;
@@ -1042,7 +1036,7 @@ void xrServer::create_direct_client()
 	SClientConnectData cl_data;
 	cl_data.clientID.set(1);
 	xr_strcpy(cl_data.name, "single_player");
-	cl_data.process_id = GetCurrentProcessId();
+	cl_data.process_id = static_cast<u32>(getpid()); // see Server_Client_Check() above
 
 	new_client(&cl_data);
 }

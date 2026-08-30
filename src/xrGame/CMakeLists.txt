@@ -1692,22 +1692,35 @@ target_sources_grouped(
   xrgame_dll_detach.cpp
 )
 
-# xrGame root: 16 files OUT OF SCOPE by deliberate project decision, not a
+# xrGame root: 12 files OUT OF SCOPE by deliberate project decision, not a
 # TODO - same reasoning as ui/'s 5 exclusions above (this port targets
-# singleplayer only, no functional multiplayer). The first 16 fatal-error
+# singleplayer only, no functional multiplayer). The first 12 fatal-error
 # on a `#include` for a header confirmed (via `find -iname`, not just a
 # guess) to not exist anywhere in this source tree - genuine MP/GameSpy
 # subsystem gaps from the same removal (commit 1d4ec53e) that produced
 # ui/'s exclusions, not case/path bugs:
-#   DemoInfo.cpp xrServer.cpp                    - game_sv_mp.h / game_sv_mp.h
+#   DemoInfo.cpp
 #   Level_Bullet_Manager.cpp Spectator.cpp
 #   WeaponFire.cpp game_cl_base_weapon_usage_statistic.cpp
 #   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
 #   game_cl_base.cpp                              - game_sv_mp_vote_flags.h
-#   game_sv_base.cpp Level_start.cpp              - xrGameSpyServer.h
+#   game_sv_base.cpp                              - xrGameSpyServer.h
 #   player_account.cpp ui_export_script.cpp       - login_manager.h
-#   Level_network_Demo.cpp                        - UIGameDM.h
-#   xrServer_Connect.cpp                          - game_sv_deathmatch.h
+# xrServer.cpp, Level_start.cpp, xrServer_Connect.cpp, Level_network_Demo.cpp
+# (2026-08-30): un-excluded - SP genuinely runs through the same
+# xrServer/CLevel client+server object-lifecycle API as MP, just over a
+# no-op loopback transport (see xrNetServer/NET_Server.h's already-stubbed
+# SendTo_LL/_Recieve), so this is real SP-load-bearing code, not MP-only.
+# Their game_sv_mp.h/game_cl_mp.h/xrGameSpyServer.h/game_sv_deathmatch.h
+# (and sibling MP-gamemode headers)/UIGameDM.h touchpoints were each dead
+# `GameID() != eGameIDSingle`-style branches (or, for Level_start.cpp, a
+# dead `else` arm of a game-type string check) - removed per GameObject.cpp's
+# established precedent, same as ui/'s ScriptXMLInit.cpp case just below.
+# One incidentally-real fix rode along: Level_network_Demo.cpp's
+# PrepareToSaveDemo() used Win32 SYSTEMTIME/GetLocalTime for its demo
+# filename timestamp - genuinely reachable code, ported to time_t/localtime
+# (matching xrCore/memory_monitor.cpp's existing pattern) rather than
+# excluded.
 # ScriptXMLInit.cpp (2026-08-30): un-excluded - ui\ServerList.h (CServerList,
 # the MP server-browser UI) was its only dead touchpoint, isolated the same
 # way object_factory_register.cpp's was (one method + one .def() registration
@@ -2484,6 +2497,21 @@ target_sources_grouped(
   NAME "Game4_RootBatch16"
   FILES
   ScriptXMLInit.cpp
+)
+
+# xrServer.cpp, Level_start.cpp, xrServer_Connect.cpp, Level_network_Demo.cpp
+# (2026-08-30): un-excluded from the root-sweep list above - see that
+# comment for the triage detail (dead MP-only branches/includes removed
+# per GameObject.cpp's precedent; SP itself genuinely needs this
+# xrServer/CLevel local-loopback client+server plumbing).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch17"
+  FILES
+  xrServer.cpp
+  Level_start.cpp
+  xrServer_Connect.cpp
+  Level_network_Demo.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)
