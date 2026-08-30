@@ -108,11 +108,6 @@ float discord_update_rate = .5f;
 //#pragma comment(lib, "sicuuc.lib")
 //#pragma comment(lib, "sicudt.lib")
 
-//Reshade
-#pragma comment(lib, "reshadecompat.lib")
-bool use_reshade = false;
-extern bool init_reshade();
-extern void unregister_reshade();
 extern void GetMonitorResolution(u32& horizontal, u32& vertical);
 extern void GetMonitorPosition(int& x, int& y);
 
@@ -702,13 +697,6 @@ void Startup()
 	Init_Discord();
 #endif
 
-	//Reshade
-	use_reshade = init_reshade();
-	if (use_reshade)
-		Msg("[ReShade]: Loaded compatibility addon");
-	else
-		Msg("[ReShade]: ReShade not installed or version too old - didn't load compatibility addon");
-
 	// Main cycle
 	Msg("* [x-ray]: Starting Main Loop");
 	Memory.mem_usage();
@@ -719,10 +707,6 @@ void Startup()
 #ifdef USE_DISCORD_INTEGRATION
 	clearDiscordPresence();
 #endif
-
-	//Reshade
-	if (use_reshade)
-		unregister_reshade();
 
 	// Destroy APP
 	xr_delete(g_SpatialSpacePhysic);

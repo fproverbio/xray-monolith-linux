@@ -1228,8 +1228,6 @@ extern Flags32 dbg_net_Draw_Flags;
 #endif
 
 extern void draw_wnds_rects();
-extern bool use_reshade;
-extern void render_reshade_effects();
 
 extern int ps_r4_hdr10_pda; // NOTE: this is a hack to avoid double HDR tonemapping the PDA
 
@@ -1301,9 +1299,6 @@ void CLevel::OnRender()
 
 	if (Device.m_SecondViewport.IsSVPFrame())
 		Render->RenderToTarget(Render->rtSVP);
-
-	if (use_reshade)
-		render_reshade_effects();
 
 	HUD().RenderUI();
 

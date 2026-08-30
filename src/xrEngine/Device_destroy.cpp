@@ -63,9 +63,6 @@ void CRenderDevice::Destroy(void)
 }
 
 #include "CustomHUD.h"
-extern bool use_reshade;
-extern bool init_reshade();
-extern void unregister_reshade();
 extern u32 g_screenmode;
 extern void GetMonitorResolution(u32& horizontal, u32& vertical);
 extern void GetMonitorPosition(int& x, int& y);
@@ -73,11 +70,6 @@ extern ENGINE_API u32 psCurrentVidMode[];
 
 void CRenderDevice::Reset(bool precache)
 {
-	if (use_reshade)
-		unregister_reshade();
-
-	use_reshade = false;
-
 	m_imgui.OnDeviceResetBegin();
 
 	u32 dwWidth_before = dwWidth;
@@ -135,7 +127,6 @@ void CRenderDevice::Reset(bool precache)
 #endif
 
 	m_imgui.OnDeviceResetEnd();
-	use_reshade = init_reshade();
 }
 
 bool CRenderDevice::ChangeOutputMonitor(HMONITOR hTargetMon)
@@ -164,10 +155,6 @@ bool CRenderDevice::ChangeOutputMonitor(HMONITOR hTargetMon)
 		~SwapGuard() { flag = false; }
 	} guard(s_swap_in_progress);
 
-	if (use_reshade)
-		unregister_reshade();
-	use_reshade = false;
-
 	m_imgui.OnDeviceResetBegin();
 	SDL_ShowCursor(SDL_ENABLE);
 
@@ -182,7 +169,6 @@ bool CRenderDevice::ChangeOutputMonitor(HMONITOR hTargetMon)
 	{
 		m_imgui.OnDeviceResetEnd();
 		SDL_ShowCursor(SDL_DISABLE);
-		use_reshade = init_reshade();
 		return false;
 	}
 
@@ -211,7 +197,6 @@ bool CRenderDevice::ChangeOutputMonitor(HMONITOR hTargetMon)
 #endif
 
 	m_imgui.OnDeviceResetEnd();
-	use_reshade = init_reshade();
 
 	Msg("* vid_monitor: live switch succeeded");
 	return true;
