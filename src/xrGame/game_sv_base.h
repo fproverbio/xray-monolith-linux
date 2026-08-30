@@ -235,6 +235,4 @@ public:
 	virtual void DumpOnlineStatistic()
 	{
 	};
-
-	bool CheckNewPlayer(xrClientData* CL);
 };

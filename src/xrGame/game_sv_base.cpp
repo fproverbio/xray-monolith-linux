@@ -13,7 +13,6 @@
 #include "string_table.h"
 
 #include "debug_renderer.h"
-#include "xrGameSpyServer.h"
 
 extern ENGINE_API bool g_dedicated_server;
 
@@ -831,7 +830,11 @@ void game_sv_GameState::OnEvent(NET_Packet& tNetPacket, u16 type, u32 time, Clie
 			if (g_dedicated_server && (CL == m_server->GetServerClient()))
 				break;
 
-			CheckNewPlayer(CL);
+			// CheckNewPlayer(CL): GameSpy public-server login/name-collision
+			// check, dead in this singleplayer-only port - psNET_direct_connect
+			// is always true here, so this point is unreachable (see the
+			// earlier break above). Removed along with xrGameSpyServer.h
+			// (MP/GameSpy removal, commit 1d4ec53e).
 		}
 		break;
 	default:
@@ -840,50 +843,6 @@ void game_sv_GameState::OnEvent(NET_Packet& tNetPacket, u16 type, u32 time, Clie
 			R_ASSERT3(0, "Game Event not implemented!!!", itoa(type, tmp, 10));
 		};
 	};
-}
-
-bool game_sv_GameState::CheckNewPlayer(xrClientData* CL)
-{
-	xrGameSpyServer* gs_server = smart_cast<xrGameSpyServer*>(m_server);
-	R_ASSERT(gs_server);
-
-	char const* error_msg = NULL;
-	ClientID tmp_client_id(CL->ID);
-
-	if (gs_server->IsPublicServer())
-	{
-		if (!CL->ps->m_account.is_online())
-		{
-			error_msg = "mp_please_login";
-		}
-		else
-		{
-			if (FindPlayerName(CL->ps->getName(), CL))
-			{
-				error_msg = "mp_already_logged_in";
-			}
-		}
-	}
-	else
-	{
-		if (CL->ps->m_account.is_online())
-		{
-			error_msg = "mp_use_offline_mode";
-		}
-		else
-		{
-			CheckPlayerName(CL);
-		}
-	}
-
-	if (error_msg)
-	{
-		m_server->SendProfileCreationError(CL, error_msg);
-		if (CL != m_server->GetServerClient()) //CL can be NULL
-			CleanDelayedEventFor(tmp_client_id);
-		return false;
-	}
-	return true;
 }
 
 void game_sv_GameState::OnSwitchPhase(u32 old_phase, u32 new_phase)

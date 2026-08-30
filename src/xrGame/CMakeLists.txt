@@ -1702,7 +1702,6 @@ target_sources_grouped(
 #   DemoInfo.cpp
 #   game_cl_base_weapon_usage_statistic.cpp
 #   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
-#   game_sv_base.cpp                              - xrGameSpyServer.h
 # Level_Bullet_Manager.cpp (2026-08-30): un-excluded - its two game_cl_mp.h
 # touchpoints (CBulletManager::AddBullet's reward-generator/WeaponUsageStatistic
 # hook, and a WeaponUsageStatistic::OnBullet_Remove call in the bullet-removal
@@ -2648,6 +2647,24 @@ target_sources_grouped(
   NAME "Game4_RootBatch23"
   FILES
   game_cl_base.cpp
+)
+
+# game_sv_base.cpp (2026-08-30): un-excluded - see the "11 files OUT OF SCOPE"
+# note above. Its only genuinely-missing header, xrGameSpyServer.h, is used
+# at exactly one call site: CheckNewPlayer's `smart_cast<xrGameSpyServer*>
+# (m_server)` for GameSpy public-server login/name-collision checks. Its only
+# caller (game_sv_GameState::OnEvent's GAME_EVENT_CREATE_PLAYER_STATE case)
+# always `break`s before reaching it via `if (psNET_direct_connect) break;`
+# (psNET_direct_connect is the SP/direct-connect flag - see its other
+# "//single"-commented uses across Level_network*.cpp/xrServer*.cpp), so
+# CheckNewPlayer is unreachable in this SP-only port. Removed outright
+# (declaration and definition), along with the xrGameSpyServer.h include -
+# same precedent as CLevel::OnGameSpyChallenge's removal (commit 3452fb06).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch24"
+  FILES
+  game_sv_base.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)
