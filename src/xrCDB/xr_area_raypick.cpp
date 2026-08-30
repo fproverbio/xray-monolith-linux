@@ -1,10 +1,13 @@
 #include "stdafx.h"
 #include "xr_area.h"
 #include "ISpatial.h"
-#include "../xrengine/xr_collide_form.h"
-#include "../xrengine/xr_object.h"
-#include "../xrengine/cl_intersect.h"
-#include "d3d9types.h"
+#include "../xrEngine/xr_collide_form.h"
+#include "../xrEngine/xr_object.h"
+#include "../xrEngine/cl_intersect.h"
+// d3d9types.h: doesn't exist anywhere in this fork; the only macro it could
+// have supplied here, D3DCOLOR_XRGB, is already portably defined in
+// xrCore/win32_compat.h (reachable transitively via stdafx.h), same as
+// other already-building files that use it.
 //#include "igame_level.h"
 //#include "x_ray.h"
 //#include "GameFont.h"
