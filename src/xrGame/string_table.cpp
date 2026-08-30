@@ -88,6 +88,12 @@ void CStringTable::Init()
 	ReparseKeyBindings();
 
 	//Discord
+	// xr_ToUTF8() is only ever defined under USE_DISCORD_INTEGRATION
+	// (x_ray.cpp - real feature, ICU/Discord Game SDK both genuinely
+	// Windows-only in this checkout, not stubbed, same treatment as
+	// xrNetServer's DirectPlay8/xrSound's WASAPI-hotplug removals) - these
+	// call sites were missing the matching guard entirely.
+#ifdef USE_DISCORD_INTEGRATION
 	snprintf(discord_strings.mainmenu, 128, xr_ToUTF8(*CStringTable().translate("st_main_menu")));
 	snprintf(discord_strings.paused, 128, xr_ToUTF8(*CStringTable().translate("st_pause_menu")));
 	snprintf(discord_strings.loading, 128, xr_ToUTF8(*CStringTable().translate("st_loading")));
@@ -100,6 +106,7 @@ void CStringTable::Init()
 	snprintf(discord_strings.godmode, 128, xr_ToUTF8(*CStringTable().translate("st_godmode")));
 
 	discord_gameinfo.ex_update = true;
+#endif // USE_DISCORD_INTEGRATION
 }
 
 void CStringTable::Load(LPCSTR xml_file_full, LPCSTR lang_in)

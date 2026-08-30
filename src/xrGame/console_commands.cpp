@@ -309,6 +309,12 @@ void register_mp_console_commands();
 //-----------------------------------------------------------
 
 BOOL g_bCheckTime = FALSE;
+// NET_Queue.h declares this extern (added to an M_EVENT's imported
+// timestamp) but genuinely never defines it anywhere in this tree, in
+// any file, excluded or not - a real pre-existing gap, not something
+// this port introduced. 0 is the conservative default (no extra delay
+// applied), matching what happens if this were simply never engaged.
+int g_dwEventDelay = 0;
 int net_cl_inputupdaterate = 50;
 Flags32 g_mt_config = {
 	mtLevelPath | mtDetailPath | mtObjectHandler | mtSoundPlayer | mtAiVision | mtBullets | mtLUA_GC | mtLevelSounds |
@@ -1991,7 +1997,9 @@ public:
 		else if (EQ(args, "off") || EQ(args, "0"))
 		{
 			value->set(mask, FALSE);
+#ifdef USE_DISCORD_INTEGRATION
 			clearDiscordPresence();
+#endif
 		}
 		else InvalidSyntax();
 	}

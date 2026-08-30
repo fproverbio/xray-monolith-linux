@@ -1345,13 +1345,21 @@ void CActor::UpdateCL()
 			//Level
 			if (g_pGameLevel && g_pGameLevel->name() != NULL)
 			{
+#ifdef USE_DISCORD_INTEGRATION
 				snprintf(discord_gameinfo.level_name, 128, xr_ToUTF8(*CStringTable().translate(g_pGameLevel->name())));
+#endif
 				srand(time(0));
 				int level_icon_id = rand() % 3 + 1;
 				discord_gameinfo.level_icon_index = level_icon_id;
 				discord_gameinfo.level = g_pGameLevel->name().c_str();
 			}
 
+			// xr_ToUTF8()/discord_gameinfo.gamemode labels are only ever
+			// meaningful (and only ever defined, for xr_ToUTF8) under
+			// USE_DISCORD_INTEGRATION - the possessed_lives sub-block
+			// isn't Discord-specific on its own, but has no purpose
+			// outside this Discord-only gamemode-detection chain.
+#ifdef USE_DISCORD_INTEGRATION
 			//Story Mode
 			::luabind::functor<bool> game_mode;
 			if (ai().script_engine().functor("_g.IsStoryMode", game_mode) && game_mode())
@@ -1381,6 +1389,7 @@ void CActor::UpdateCL()
 			//Freeplay Mode
 			else
 				snprintf(discord_gameinfo.gamemode, 128, xr_ToUTF8(*CStringTable().translate("st_cap_check_freeplay")));
+#endif // USE_DISCORD_INTEGRATION
 
 			//Update Active Task
 			Level().GameTaskManager().RPC_UpdateTaskName();
@@ -1428,9 +1437,11 @@ void CActor::RPC_UpdateFaction()
 		{
 			LPCSTR faction_name = real_faction();
 			discord_gameinfo.faction = faction_name;
+#ifdef USE_DISCORD_INTEGRATION
 			char buffer[128];
 			sprintf(buffer, "st_faction_%s", faction_name);
 			snprintf(discord_gameinfo.faction_name, 128, xr_ToUTF8(*CStringTable().translate(buffer)));
+#endif
 		}
 	}
 }
@@ -1444,9 +1455,11 @@ void CActor::RPC_UpdateRank()
 		if (actor_rank)
 		{
 			LPCSTR rank = actor_rank();
+#ifdef USE_DISCORD_INTEGRATION
 			char rank_name[100];
 			sprintf(rank_name, "st_rank_%s", rank);
 			snprintf(discord_gameinfo.rank_name, 128, xr_ToUTF8(*CStringTable().translate(rank_name)));
+#endif
 		}
 	}
 }
@@ -1466,8 +1479,10 @@ void CActor::RPC_UpdateReputation()
 				if (actor_rep)
 				{
 					LPCSTR reputation_name = actor_rep(reputation);
+#ifdef USE_DISCORD_INTEGRATION
 					if (reputation_name)
 						snprintf(discord_gameinfo.reputation, 128, xr_ToUTF8(*CStringTable().translate(reputation_name)));
+#endif
 				}
 			}
 		}

@@ -230,8 +230,10 @@ void CGameTaskManager::UpdateActiveTask()
 void CGameTaskManager::RPC_UpdateTaskName()
 {
 	CGameTask* tr = ActiveTask();
+#ifdef USE_DISCORD_INTEGRATION
 	if (tr)
 		snprintf(discord_gameinfo.task_name, 128, xr_ToUTF8(*CStringTable().translate(tr->m_Title)));
+#endif
 }
 
 CGameTask* CGameTaskManager::ActiveTask()

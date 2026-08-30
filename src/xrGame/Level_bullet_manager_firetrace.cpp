@@ -369,7 +369,41 @@ void CBulletManager::DynamicObjectHit(CBulletManager::_event& E)
 FvectorVec g_hit[3];
 #endif
 
-extern void random_dir(Fvector& tgt_dir, const Fvector& src_dir, float dispersion);
+// random_dir()/its private _nrand() helper used to live in WeaponFire.cpp,
+// which stays excluded (real MP-only content: game_cl_mp.h is confirmed
+// absent from this tree, plus a real renderer-console.h dependency) -
+// but this generic dispersion-direction utility has no MP or renderer
+// dependency of its own, and is needed here and by the already-wired-in
+// ShootingObject.cpp (which keeps its own separate extern declaration).
+// Relocated for real rather than re-declared extern against a
+// definition that would never exist.
+static float _nrand(float sigma)
+{
+	if (sigma == 0) return 0;
+
+	float y;
+	do
+	{
+		y = -logf(Random.randF());
+	}
+	while (Random.randF() > expf(-_sqr(y - 1.0f) * 0.5f));
+	if (rand() & 0x1) return y * sigma * (1.0f / 0.7975f);
+	else return -y * sigma * (1.0f / 0.7975f);
+}
+
+void random_dir(Fvector& tgt_dir, const Fvector& src_dir, float dispersion)
+{
+	float sigma = dispersion / 3.f;
+	float alpha = clampr(_nrand(sigma), -dispersion, dispersion);
+	float theta = Random.randF(0, PI);
+	float r = tan(alpha);
+	Fvector U, V, T;
+	Fvector::generate_orthonormal_basis(src_dir, U, V);
+	U.mul(r * _sin(theta));
+	V.mul(r * _cos(theta));
+	T.add(U, V);
+	tgt_dir.add(src_dir, T).normalize();
+}
 
 bool CBulletManager::ObjectHit(SBullet_Hit* hit_res, SBullet* bullet, const Fvector& end_point,
                                collide::rq_result& R, u16 target_material, Fvector& hit_normal)
