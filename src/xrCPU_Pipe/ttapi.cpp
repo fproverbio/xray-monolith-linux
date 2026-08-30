@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #pragma hdrstop
 
+#include "ttapi.h"
+#include <thread>
+
 typedef struct TTAPI_WORKER_PARAMS
 {
 	volatile LONG vlFlag;
@@ -11,7 +14,12 @@ typedef struct TTAPI_WORKER_PARAMS
 
 typedef PTTAPI_WORKER_PARAMS LPTTAPI_WORKER_PARAMS;
 
-static LPHANDLE ttapi_threads_handles = NULL;
+// Real OS threads, not the eventfd/inotify-backed HANDLEs posix_sync.h's
+// WaitForMultipleObjects() models - a Windows thread HANDLE becomes
+// "signaled" on thread exit, semantically a join(), which std::thread
+// models directly and far more simply than faking up pollable fds per
+// worker thread would.
+static std::thread* ttapi_threads = NULL;
 static BOOL ttapi_initialized = FALSE;
 static DWORD ttapi_workers_count = 0;
 static DWORD ttapi_threads_count = 0;
@@ -27,7 +35,7 @@ struct
 	DWORD dwPadding[15];
 } ttapi_queue_size;
 
-DWORD WINAPI ttapiThreadProc(LPVOID lpParameter)
+DWORD ttapiThreadProc(LPVOID lpParameter)
 {
 	LPTTAPI_WORKER_PARAMS pParams = (LPTTAPI_WORKER_PARAMS)lpParameter;
 	DWORD i, dwFastIter = ttapi_dwFastIter, dwSlowIter = ttapi_dwSlowIter;
@@ -55,7 +63,7 @@ DWORD WINAPI ttapiThreadProc(LPVOID lpParameter)
 				// Msg( "0x%8.8X Moderate %u" , dwId , i );
 				goto process;
 			}
-			SwitchToThread();
+			std::this_thread::yield();
 		}
 
 		// Slow
@@ -78,32 +86,6 @@ DWORD WINAPI ttapiThreadProc(LPVOID lpParameter)
 	} // while
 
 	return 0;
-}
-
-typedef struct tagTHREADNAME_INFO
-{
-	DWORD dwType;
-	LPCSTR szName;
-	DWORD dwThreadID;
-	DWORD dwFlags;
-} THREADNAME_INFO;
-
-void SetThreadName(DWORD dwThreadID, LPCSTR szThreadName)
-{
-	THREADNAME_INFO info;
-	{
-		info.dwType = 0x1000;
-		info.szName = szThreadName;
-		info.dwThreadID = dwThreadID;
-		info.dwFlags = 0;
-	}
-	__try
-	{
-		RaiseException(0x406D1388, 0, sizeof(info) / sizeof(DWORD), (ULONG_PTR*)&info);
-	}
-	__except (EXCEPTION_CONTINUE_EXECUTION)
-	{
-	}
 }
 
 DWORD ttapi_Init(_processor_info* ID)
@@ -138,8 +120,7 @@ DWORD ttapi_Init(_processor_info* ID)
 	// Helper threads count
 	ttapi_threads_count = ttapi_workers_count - 1;
 
-	if ((ttapi_threads_handles = (LPHANDLE)malloc(sizeof(HANDLE) * ttapi_threads_count)) == NULL)
-		return 0;
+	ttapi_threads = new std::thread[ttapi_threads_count];
 	if ((ttapi_worker_params = (PTTAPI_WORKER_PARAMS)malloc(sizeof(TTAPI_WORKER_PARAMS) * ttapi_workers_count)) == NULL)
 		return 0;
 
@@ -149,29 +130,23 @@ DWORD ttapi_Init(_processor_info* ID)
 	// 5. Create Threads WITHOUT Affinity Masking
 	// let the Windows Scheduler decide where to put threads.
 	char szThreadName[64];
-	DWORD dwThreadId = 0;
 
 	for (DWORD i = 0; i < ttapi_threads_count; i++)
 	{
 		ttapi_worker_params[i].vlFlag = 1;
 
-		// Create the thread using standard WinAPI (compatible with existing handles array)
-		ttapi_threads_handles[i] = CreateThread(
-			NULL,
-			0,
-			&ttapiThreadProc,
-			&ttapi_worker_params[i],
-			0,
-			&dwThreadId
-		);
+		ttapi_threads[i] = std::thread(ttapiThreadProc, &ttapi_worker_params[i]);
 
-		if (ttapi_threads_handles[i] == NULL)
-			return 0;
-
-		// Modern Thread Naming (Windows 10 Build 1607+)
-		// Falls back gracefully on older windows if not available, 
-		// much cleaner than the old "Throw Exception" hack.
-		sprintf_s(szThreadName, "Helper Thread #%u", i);
+		// Modern Thread Naming: pthread_setname_np is the direct portable
+		// equivalent of the old RaiseException(0x406D1388, ...) "magic
+		// exception" trick MSVC debuggers used to sniff for - much
+		// cleaner, no SEH involved, and it works whether or not a
+		// debugger is attached. Linux thread names are capped at 15
+		// bytes + NUL (TASK_COMM_LEN) - "Worker #%u" instead of the
+		// original "Helper Thread #%u" to stay under that even for
+		// large worker counts.
+		sprintf_s(szThreadName, "Worker #%u", i);
+		pthread_setname_np(ttapi_threads[i].native_handle(), szThreadName);
 	}
 
 	ttapi_initialized = TRUE;
@@ -241,11 +216,12 @@ VOID ttapi_Done()
 	}
 
 	// Waiting threads for completion
-	WaitForMultipleObjects(ttapi_threads_count, ttapi_threads_handles, TRUE, INFINITE);
+	for (DWORD i = 0; i < ttapi_threads_count; i++)
+		ttapi_threads[i].join();
 
 	// Freeing resources
-	free(ttapi_threads_handles);
-	ttapi_threads_handles = NULL;
+	delete[] ttapi_threads;
+	ttapi_threads = NULL;
 	free(ttapi_worker_params);
 	ttapi_worker_params = NULL;
 

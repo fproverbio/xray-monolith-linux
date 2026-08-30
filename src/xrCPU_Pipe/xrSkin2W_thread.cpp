@@ -1,6 +1,11 @@
 #include "stdafx.h"
 #pragma hdrstop
 
+#include "xrCPU_Pipe.h"
+#include "ttapi.h"
+#include "../xrEngine/bone.h"
+#include "../Layers/xrRender/SkeletonXVertRender.h"
+
 extern xrSkin4W* skin4W_func;
 
 struct SKIN_PARAMS

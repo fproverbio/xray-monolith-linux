@@ -896,6 +896,21 @@ inline long _InterlockedCompareExchange(volatile long* dest, long exchange, long
 	return __sync_val_compare_and_swap(dest, comparand, exchange);
 }
 
+// _InterlockedExchange/_InterlockedDecrement: same MSVC <intrin.h> family
+// as _InterlockedCompareExchange above (xrCPU_Pipe/ttapi.cpp's worker-
+// thread-pool spinlock flags/queue-size counter) - GCC/Clang's
+// __sync_lock_test_and_set/__sync_sub_and_fetch builtins have identical
+// semantics (full memory barrier, atomic exchange/decrement, return the
+// new/previous value per each function's real MSVC contract).
+inline long _InterlockedExchange(volatile long* dest, long value)
+{
+	return __sync_lock_test_and_set(dest, value);
+}
+inline long _InterlockedDecrement(volatile long* dest)
+{
+	return __sync_sub_and_fetch(dest, 1);
+}
+
 // Keyboard-layout/toggle-key-state queries (line_edit_control.cpp's
 // caps-lock/num-lock display and layout-switch hotkey) - real values (the
 // documented winuser.h virtual-key codes / HKL_NEXT), but no live
