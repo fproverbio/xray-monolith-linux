@@ -755,11 +755,9 @@ void CActor::Hit(SHit* pHDS)
 		HDS.add_wound = true;
 		inherited::Hit(&HDS);
 
-		if (OnServer() && !g_Alive() && HDS.hit_type == ALife::eHitTypeExplosion)
-		{
-			game_PlayerState* ps = Game().GetPlayerByGameID(ID());
-			Game().m_WeaponUsageStatistic->OnExplosionKill(ps, HDS);
-		}
+		// WeaponUsageStatistic::OnExplosionKill: MP-only team-scoring hook,
+		// dead in this singleplayer-only port - WeaponUsageStatistic is never
+		// instantiated here, see game_cl_GameState ctor in game_cl_base.cpp.
 	}
 }
 

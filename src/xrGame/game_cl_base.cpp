@@ -10,8 +10,6 @@
 #include "ui/UIMessagesWindow.h"
 #include "ui/UIDialogWnd.h"
 #include "string_table.h"
-#include "game_cl_base_weapon_usage_statistic.h"
-#include "game_sv_mp_vote_flags.h"
 
 EGameIDs ParseStringToGameType(LPCSTR str);
 LPCSTR GameTypeToString(EGameIDs gt, bool bShort);
@@ -31,7 +29,12 @@ game_cl_GameState::game_cl_GameState()
 	m_u16VotingEnabled = 0;
 	m_bServerControlHits = true;
 
-	m_WeaponUsageStatistic = xr_new<WeaponUsageStatistic>();
+	// WeaponUsageStatistic: MP-only killcount/team-scoring bookkeeping (its
+	// virtual methods, e.g. OnExplosionKill, do a genuinely live
+	// smart_cast<game_cl_mp*> - see commit dc0123f0), never left instantiated
+	// in this singleplayer-only port. All other read/write touchpoints
+	// (net_import_state, OnSwitchPhase, shedule_Update, Actor.cpp,
+	// Level_bullet_manager_firetrace.cpp) were removed/no-op'd to match.
 }
 
 game_cl_GameState::~game_cl_GameState()
@@ -42,7 +45,6 @@ game_cl_GameState::~game_cl_GameState()
 	players.clear();
 
 	shedule_unregister();
-	xr_delete(m_WeaponUsageStatistic);
 	xr_delete(local_player);
 }
 
@@ -119,7 +121,9 @@ void game_cl_GameState::net_import_state(NET_Packet& P)
 	P.r_u32(m_start_time);
 	m_u16VotingEnabled = u16(P.r_u8());
 	m_bServerControlHits = !!P.r_u8();
-	m_WeaponUsageStatistic->SetCollectData(!!P.r_u8());
+	P.r_u8(); // WeaponUsageStatistic::SetCollectData flag - MP-only, discarded
+	// here to preserve packet layout; WeaponUsageStatistic is never
+	// instantiated in this singleplayer-only port, see game_cl_GameState ctor.
 
 	// Players
 	u16 p_count;
@@ -351,8 +355,9 @@ void game_cl_GameState::shedule_Update(u32 dt)
 	{
 	case GAME_PHASE_INPROGRESS:
 		{
-			if (!IsGameTypeSingle())
-				m_WeaponUsageStatistic->Update();
+			// WeaponUsageStatistic::Update: MP-only statistic tick, dead in
+			// this singleplayer-only port (IsGameTypeSingle() is always true
+			// here), see game_cl_GameState ctor.
 		}
 		break;
 	default:
@@ -422,7 +427,8 @@ void game_cl_GameState::OnSwitchPhase(u32 old_phase, u32 new_phase)
 	{
 	case GAME_PHASE_INPROGRESS:
 		{
-			m_WeaponUsageStatistic->Clear();
+			// WeaponUsageStatistic::Clear: MP-only statistic reset, dead in
+			// this singleplayer-only port, see game_cl_GameState ctor.
 		}
 		break;
 	default:

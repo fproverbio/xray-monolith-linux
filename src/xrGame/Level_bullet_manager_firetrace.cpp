@@ -331,16 +331,10 @@ void CBulletManager::DynamicObjectHit(CBulletManager::_event& E)
 	{
 		//-------------------------------------------------
 		bool AddStatistic = false;
-		if (GameID() != eGameIDSingle && E.bullet.flags.allow_sendhit && smart_cast<CActor*>(E.R.O)
-			&& Game().m_WeaponUsageStatistic->CollectData())
-		{
-			CActor* pActor = smart_cast<CActor*>(E.R.O);
-			if (pActor) // && pActor->g_Alive())
-			{
-				Game().m_WeaponUsageStatistic->OnBullet_Hit(&E.bullet, E.R.O->ID(), (s16)E.R.element, E.point);
-				AddStatistic = true;
-			};
-		};
+		// WeaponUsageStatistic::OnBullet_Hit: MP-only hit-statistic collection,
+		// dead in this singleplayer-only port (GameID() is always eGameIDSingle
+		// here, and WeaponUsageStatistic is never instantiated - see
+		// game_cl_GameState ctor in game_cl_base.cpp).
 
 		SHit Hit = SHit((E.bullet.parent_id == 0 ? hit_param.power * hit_modifier : hit_param.power), //Make sure only damage dealt by actor is modified
 		                original_dir,

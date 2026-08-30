@@ -1702,7 +1702,6 @@ target_sources_grouped(
 #   DemoInfo.cpp
 #   game_cl_base_weapon_usage_statistic.cpp
 #   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
-#   game_cl_base.cpp                              - game_sv_mp_vote_flags.h
 #   game_sv_base.cpp                              - xrGameSpyServer.h
 # Level_Bullet_Manager.cpp (2026-08-30): un-excluded - its two game_cl_mp.h
 # touchpoints (CBulletManager::AddBullet's reward-generator/WeaponUsageStatistic
@@ -2618,6 +2617,37 @@ target_sources_grouped(
   NAME "Game4_RootBatch22"
   FILES
   WeaponFire.cpp
+)
+
+# game_cl_base.cpp (2026-08-30): un-excluded - its only genuinely-missing
+# header, game_sv_mp_vote_flags.h, turned out to be a dead/unused #include:
+# nothing in the file actually names a type or macro from it, and the vote
+# handling it sits next to (IP->m_bCurrentVoteAgreed/OnPlayerVoted, called
+# unconditionally in net_import_state/net_import_update) uses only
+# game_base.h's m_bCurrentVoteAgreed member and OnPlayerVoted's empty inline
+# virtual default from game_cl_base.h - neither needs the missing header.
+# The include was simply dropped.
+# Separately, game_cl_GameState (this file's class) used to unconditionally
+# construct/destroy m_WeaponUsageStatistic (and call SetCollectData/Clear/
+# Update on it) even in this SP-only port. Unlike the plain data members
+# elsewhere in this file, WeaponUsageStatistic is a polymorphic type whose
+# vtable/typeinfo are owned by whichever TU defines its first virtual method
+# (OnBullet_Hit) - and that class's virtual methods (OnExplosionKill etc, in
+# the still-excluded game_cl_base_weapon_usage_statistic.cpp) do a genuinely
+# live smart_cast<game_cl_mp*> for MP team-deathmatch scoring (see commit
+# dc0123f0), so merely constructing the object would drag in that whole
+# MP-only file. Since nothing in the SP build ever reads back the collected
+# statistics, m_WeaponUsageStatistic is instead left permanently NULL and
+# never constructed: the ctor/dtor/net_import_state/OnSwitchPhase/
+# shedule_Update touchpoints in this file were removed/no-op'd, along with
+# the other two live call sites (Actor.cpp's OnExplosionKill hit-handler,
+# Level_bullet_manager_firetrace.cpp's OnBullet_Hit collector, the latter
+# already dead via its own GameID() gate).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch23"
+  FILES
+  game_cl_base.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)
