@@ -5,13 +5,9 @@
 #include "StdAfx.h"
 #include "Level.h"
 #include "Level_Bullet_Manager.h"
-#include "game_cl_base.h"
 #include "Actor.h"
 #include "GamePersistent.h"
 #include "mt_config.h"
-#include "game_cl_base_weapon_usage_statistic.h"
-#include "game_cl_mp.h"
-#include "reward_event_generator.h"
 #include "material_manager.h"
 #include "Weapon.h"
 
@@ -301,15 +297,6 @@ void CBulletManager::AddBullet(const Fvector& position,
 			-1
 		);
 		funct(table);
-	}
-
-	if (!IsGameTypeSingle())
-	{
-		if (SendHit)
-			Game().m_WeaponUsageStatistic->OnBullet_Fire(&bullet, cartridge);
-		game_cl_mp* tmp_cl_game = smart_cast<game_cl_mp*>(&Game());
-		if (tmp_cl_game->get_reward_generator())
-			tmp_cl_game->get_reward_generator()->OnBullet_Fire(sender_id, sendersweapon_id, position, direction);
 	}
 }
 
@@ -1122,12 +1109,12 @@ void CBulletManager::Render()
 		BulletPoints::const_iterator	e = m_bullet_points.end();
 		for ( ; i != e; i+=2) {
 			sphere.c					= *i;
-			renderer.draw_ellipse		(sphere, D3DCOLOR_XRGB(255, 0, 0));
+			renderer.draw_ellipse		(sphere, D3DCOLOR_XRGB(255, 0, 0), false);
 
-			renderer.draw_line			(Fidentity, *i, *(i + 1), D3DCOLOR_XRGB(0, 255, 0));
+			renderer.draw_line			(Fidentity, *i, *(i + 1), D3DCOLOR_XRGB(0, 255, 0), false);
 
 			sphere.c					= *(i + 1);
-			renderer.draw_ellipse		(sphere, D3DCOLOR_XRGB(255, 0, 0));
+			renderer.draw_ellipse		(sphere, D3DCOLOR_XRGB(255, 0, 0), false);
 		}
 
 		if (m_bullet_points.size() > 32768)
@@ -1147,7 +1134,7 @@ void CBulletManager::Render()
 		DRender->CacheSetXformWorld(Fidentity);
 		for(int i=0; i<3; ++i)
 			for(it=g_hit[i].begin();it!=g_hit[i].end();++it){
-				Level().debug_renderer().draw_aabb(*it,0.01f,0.01f,0.01f,C[i]);
+				Level().debug_renderer().draw_aabb(*it,0.01f,0.01f,0.01f,C[i],false);
 			}
 	}
 #endif
@@ -1301,8 +1288,6 @@ void CBulletManager::CommitEvents() // @ the start of frame
 					funct(table);
 				}
 
-				if (E.bullet.flags.allow_sendhit && GameID() != eGameIDSingle)
-					Game().m_WeaponUsageStatistic->OnBullet_Remove(&E.bullet);
 				m_Bullets[E.tgt_material] = m_Bullets.back();
 				m_Bullets.pop_back();
 			}

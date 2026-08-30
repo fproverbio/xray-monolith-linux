@@ -1700,11 +1700,21 @@ target_sources_grouped(
 # subsystem gaps from the same removal (commit 1d4ec53e) that produced
 # ui/'s exclusions, not case/path bugs:
 #   DemoInfo.cpp
-#   Level_Bullet_Manager.cpp
 #   WeaponFire.cpp game_cl_base_weapon_usage_statistic.cpp
 #   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
 #   game_cl_base.cpp                              - game_sv_mp_vote_flags.h
 #   game_sv_base.cpp                              - xrGameSpyServer.h
+# Level_Bullet_Manager.cpp (2026-08-30): un-excluded - its two game_cl_mp.h
+# touchpoints (CBulletManager::AddBullet's reward-generator/WeaponUsageStatistic
+# hook, and a WeaponUsageStatistic::OnBullet_Remove call in the bullet-removal
+# path) were each gated behind `!IsGameTypeSingle()`/`GameID() != eGameIDSingle`,
+# always false in this SP-only port (same precedent as GameObject.cpp/
+# Spectator.cpp's dead GameID()-gated block removals) - removed outright, along
+# with the now-unused game_cl_base.h/game_cl_base_weapon_usage_statistic.h/
+# game_cl_mp.h/reward_event_generator.h includes (the last of which doesn't
+# even exist anywhere in this tree - it was only ever reachable through the
+# same dead branch). Everything else in the file is real, load-bearing SP
+# bullet-physics/tracer code.
 # player_account.cpp (2026-08-30): un-excluded - its own login_manager.h/
 # profile_store.h/MainMenu.h touchpoints were 3 dead #includes with zero
 # live uses (load_account()'s only references to gamespy_gp::login_manager/
@@ -2577,6 +2587,13 @@ target_sources_grouped(
   NAME "Game4_RootBatch20"
   FILES
   player_account.cpp
+)
+
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch21"
+  FILES
+  Level_Bullet_Manager.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)
