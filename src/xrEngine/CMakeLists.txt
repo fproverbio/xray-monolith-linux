@@ -88,10 +88,16 @@ target_include_directories(xrEngine PUBLIC .)
 # equivalent, moot now that the renderer is called directly rather than
 # through a real LoadLibrary that could pop one anyway).
 #
-# mailSlot.cpp: real Windows named-mailslot IPC (CreateMailslot/
-# GetMailslotInfo/GlobalAlloc/WriteFile - a distinct mechanism from POSIX
-# message queues, no drop-in portable equivalent) - a genuine Windows API
-# with no portable equivalent, not a mechanical fix. Excluded.
+# mailSlot.cpp (2026-08-30): un-excluded - its named-mailslot IPC
+# (CreateMailslot/GetMailslotInfo/GlobalAlloc/WriteFile) is still a genuine
+# Windows API with no portable equivalent, but it only exists to let an
+# external process inject console commands into a running DEBUG build -
+# not worth a real IPC port, so msCreate()/msRead() (the two functions
+# Engine.cpp/EventAPI.cpp actually call) were stubbed to no-ops instead of
+# ported; msWrite() (the unused write side of the same mechanism) was
+# dropped outright, matching this port's established practice of stubbing
+# rather than porting Windows-only debug diagnostics with no real use here
+# (see e.g. the SEH/SetErrorMode/g_profiler removals elsewhere).
 #
 # IGame_Level.h/IGame_Persistent.h/Environment.h/CameraManager.h/bone.h/
 # motion.h/Rain.h (notes file section 24, Part A) turned out to be the
@@ -258,6 +264,7 @@ target_sources_grouped(
   XR_IOConsole_callback.cpp
   line_edit_control.cpp
   line_editor.cpp
+  mailSlot.cpp
 )
 
 # SDL2/Vulkan window+device bootstrap - see the file comment above.
