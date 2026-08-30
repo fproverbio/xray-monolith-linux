@@ -2354,4 +2354,82 @@ target_sources_grouped(
   ../xrServerEntities/xrServer_Objects_Abstract.cpp
 )
 
+# xrServerEntities batch 5 (final): the last 3 real files, plus one more
+# deliberate exclusion. The xrServerEntities module (58 real files total,
+# discovered never wired in at all - see the batch 1 comment above) is
+# now fully accounted for: 55 wired in across 5 batches, 2 confirmed
+# genuinely dead (smart_cast.cpp/smart_cast_stats.cpp, §batch1),
+# 1 confirmed permanently unreachable in this build (lua_studio.cpp,
+# below).
+#   - character_info.cpp: the lowercase `#include "stdafx.h"` case bug
+#     again (65 reported errors, all one cascade from the same wrong
+#     xrCore/stdafx.h resolution as batch 3/4's files) - fixing the one
+#     include resolved every one of them.
+#   - specific_character.cpp: same lowercase `stdafx.h` cascade (855(!)
+#     reported errors, by far the largest single-fix payoff this project
+#     has seen - one character swap resolved 847 of them), plus 5 real
+#     `luabind::object::type()`/`::object::iterator` API-drift bugs (same
+#     class already fixed a dozen+ times across xrGame, e.g.
+#     xrGame/smart_cover_loophole.cpp - `luabind::iterator` is a free type
+#     alias constructible from an object, not a nested `object::iterator`
+#     type, and `type()` is a free function, not a method).
+#   - object_factory_register.cpp: after the same lowercase-`stdafx.h` fix
+#     and 2 directory-case include fixes (`ai/monsters/Burer/burer.h` ->
+#     `burer/burer.h`, `PseudoGigant` -> `pseudogigant`) plus one
+#     backslash-separated Windows-style include
+#     (`..\xrGame\HolderEntityObject.h` -> `../xrGame/HolderEntityObject.h`,
+#     GCC never treats `\` as a path separator), real MP/SP triage was
+#     needed: this file mixes real singleplayer object registrations with
+#     several genuinely-dead MP-only game modes and one dead artefact
+#     item, all confirmed absent anywhere in this source tree via grep -
+#     `game_sv_deathmatch.h`/`game_sv_teamdeathmatch.h`/
+#     `game_sv_ArtefactHunt.h`/`game_sv_capture_the_artefact.h` and their
+#     `game_cl_*` client-side counterparts (Deathmatch/TeamDeathmatch/
+#     ArtefactHunt/CaptureTheArtefact game-mode classes), `UIGameDM.h`/
+#     `UIGameTDM.h`/`UIGameAHunt.h`/`UIGameCTA.h` (their UI counterparts -
+#     UIGameDM.h/UIGameTDM.h were never even in the original include list,
+#     already broken before this pass touched the file, just masked by
+#     the earlier fatal include errors), `cta_game_artefact.h`
+#     (CtaGameArtefact, an MP-only artefact item - its one registration
+#     was ALREADY commented out elsewhere in this same file, confirming
+#     the precedent), and `actor_mp_server.h`/`actor_mp_client.h`
+#     (CActorMP/CSE_ActorMP, the MP-aware actor variant used even in the
+#     nominally-singleplayer code path via
+#     `CObjectItemClientServerSingleMp<CActor, CActorMP, ...>` since
+#     NO_SINGLE is never defined in this build). Removed each dead
+#     include and commented out or replaced its corresponding
+#     registration - for the actor specifically, changed to register the
+#     plain singleplayer `CActor` directly (`ADD(CActor,
+#     CSE_ALifeCreatureActor, CLSID_OBJECT_ACTOR, "actor")`, the same call
+#     the file's own `#else // NO_XR_GAME` branch already uses) instead of
+#     wrapping it in the now-unavailable MP variant.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "ServerEntities_Batch5"
+  FILES
+  ../xrServerEntities/character_info.cpp
+  ../xrServerEntities/object_factory_register.cpp
+  ../xrServerEntities/specific_character.cpp
+)
+
+# lua_studio.cpp - deliberately excluded, same class of decision as
+# script_debugger.cpp above. It's the real client-side glue for the
+# "Lua Studio" third-party Lua IDE/debugger: dynamically LoadLibrary()s an
+# external plugin DLL and implements `cs::lua_studio::backend`'s
+# introspection interface against this fork's own luabind internals
+# (`class_rep::properties()`/`gettable()`, `object_rep::get_lua_table()`,
+# `luabind::internal_vector`, `detail::is_class_object`, `icon_type_*` -
+# the same now-removed old-luabind-internals API surface as §45's
+# script_engine_help.cpp, needing a real rewrite, not a bug fix). Real
+# code, but every consumer of it (`CScriptEngine::m_lua_studio_world`/
+# `debugger()`'s `cs::lua_studio::world*`-returning overload,
+# `initialize_lua_studio()`/`finalize_lua_studio()`) is guarded by
+# `#ifdef USE_LUA_STUDIO`, which - exactly like `script_debugger.cpp`'s
+# `USE_DEBUGGER` - is defined only under `#ifndef MASTER_GOLD` in
+# script_storage.h, and MASTER_GOLD is always defined in this build (see
+# batch 4's script_debugger.cpp comment for the xrCore.h ordering bug
+# that causes this). Permanently unreachable here; even if reachability
+# were somehow restored, it depends on a Windows-only third-party IDE
+# plugin DLL that has no meaning on Linux anyway. Excluding it costs
+# nothing at link time.
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

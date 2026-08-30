@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+﻿#include "StdAfx.h"
 #include "specific_character.h"
 
 #ifdef  XRGAME_EXPORTS
@@ -138,13 +138,13 @@ void CSpecificCharacter::load_shared(LPCSTR)
 		}
 		auto character_name = item_data.id.c_str();
 		::luabind::object output = funct(character_name, table);
-		if (output && output.type() == LUA_TTABLE) {
+		if (output && luabind::type(output) == LUA_TTABLE) {
 			data()->m_ActorDialogs.clear();
-			::luabind::object::iterator i = output.begin();
-			::luabind::object::iterator e = output.end();
+			::luabind::iterator i(output);
+			::luabind::iterator e;
 			for (; i != e; ++i) {
 				::luabind::object v = *i;
-				if (v.type() == LUA_TSTRING) {
+				if (luabind::type(v) == LUA_TSTRING) {
 					shared_str dialog_name = ::luabind::object_cast<LPCSTR>(v);
 					//Msg("character_id %s, dialog_name %s", character_name, dialog_name.c_str());
 					data()->m_ActorDialogs.push_back(dialog_name);
@@ -296,7 +296,7 @@ void CSpecificCharacter::load_shared(LPCSTR)
 		table["money_infinitive"] = MoneyDef().inf_money;
 		auto character_name = item_data.id.c_str();
 		::luabind::object output = init_funct(character_name, table);
-		if (output && output.type() == LUA_TTABLE) {
+		if (output && luabind::type(output) == LUA_TTABLE) {
 			data()->m_sGameName = ::luabind::object_cast<LPCSTR>(output["name"]);
 			data()->m_sBioText = CStringTable().translate(::luabind::object_cast<LPCSTR>(output["bio"]));
 
@@ -305,7 +305,7 @@ void CSpecificCharacter::load_shared(LPCSTR)
 				Debug.fatal(DEBUG_INFO, "wrong 'community' '%s' in specific character %s ", ::luabind::object_cast<LPCSTR>(output["community"]), *m_OwnId);
 
 			data()->m_icon_name = ::luabind::object_cast<LPCSTR>(output["icon"]);
-			data()->m_StartDialog = output["start_dialog"].type() == LUA_TSTRING ? ::luabind::object_cast<LPCSTR>(output["start_dialog"]) : NULL;
+			data()->m_StartDialog = luabind::type(output["start_dialog"]) == LUA_TSTRING ? ::luabind::object_cast<LPCSTR>(output["start_dialog"]) : NULL;
 			data()->m_fPanic_threshold = ::luabind::object_cast<float>(output["panic_threshold"]);
 			data()->m_fHitProbabilityFactor = ::luabind::object_cast<float>(output["hit_probability_factor"]);
 			data()->m_crouch_type = ::luabind::object_cast<int>(output["crouch_type"]);

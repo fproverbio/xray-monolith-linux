@@ -33,8 +33,8 @@
 #	include "ai/monsters/boar/boar.h"
 #	include "ai/monsters/pseudodog/pseudodog.h"
 #	include "ai/monsters/pseudodog/psy_dog.h"
-#	include "ai/monsters/Burer/burer.h"
-#	include "ai/monsters/PseudoGigant/pseudo_gigant.h"
+#	include "ai/monsters/burer/burer.h"
+#	include "ai/monsters/pseudogigant/pseudo_gigant.h"
 #	include "ai/monsters/controller/controller.h"
 #	include "ai/monsters/poltergeist/poltergeist.h"
 #	include "ai/monsters/zombie/zombie.h"
@@ -73,7 +73,10 @@
 #	include "RustyHairArtifact.h"
 #	include "GalantineArtifact.h"
 #	include "GraviArtifact.h"
-#	include "cta_game_artefact.h"
+// cta_game_artefact.h (CtaGameArtefact, MP-only "Capture The Artefact"
+// item) confirmed absent anywhere in this source tree - same GameSpy/MP
+// removal class as this project's other documented exclusions. Its one
+// registration below is commented out to match.
 
 #	include "WeaponFN2000.h"
 #	include "WeaponAK74.h"
@@ -157,30 +160,26 @@
 #	include "DestroyablePhysicsObject.h"
 
 #	include "game_sv_single.h"
-#	include "game_sv_deathmatch.h"
-#	include "game_sv_teamdeathmatch.h"
-#	include "game_sv_ArtefactHunt.h"
-#	include "game_sv_capture_the_artefact.h"
-
+// game_sv_deathmatch.h/game_sv_teamdeathmatch.h/game_sv_ArtefactHunt.h/
+// game_sv_capture_the_artefact.h, their game_cl_* client-side
+// counterparts, UIGameAHunt.h/UIGameCTA.h, and actor_mp_server.h/
+// actor_mp_client.h are all confirmed absent anywhere in this source
+// tree (MP-only game modes/UI/actor variant, same removal class as this
+// project's other documented MP/GameSpy exclusions). Their registrations
+// below are commented out or, for the actor, changed to register the
+// plain singleplayer CActor directly instead of the MP-aware
+// CObjectItemClientServerSingleMp<CActor, CActorMP, ...> wrapper.
 #	include "game_cl_single.h"
-#	include "game_cl_deathmatch.h"
-#	include "game_cl_teamdeathmatch.h"
-#	include "game_cl_ArtefactHunt.h"
-#	include	"game_cl_capture_the_artefact.h"
 
 #	include "UIGameSP.h"
-#	include "UIGameAHunt.h"
-#	include "UIGameCTA.h"
 #	include	"ClimableObject.h"
 #	include "space_restrictor.h"
 #	include "smart_zone.h"
 #	include "InventoryBox.h"
 
-#	include "actor_mp_server.h"
-#	include "actor_mp_client.h"
 #	include "smart_cover_object.h"
 
-#include "..\xrGame\HolderEntityObject.h"
+#include "../xrGame/HolderEntityObject.h"
 
 #include "Flashlight.h"
 #include "Dosimeter.h"
@@ -207,35 +206,25 @@ void CObjectFactory::register_classes()
 #ifndef NO_SINGLE
 	add<game_sv_Single>(CLSID_SV_GAME_SINGLE, "game_sv_single");
 #endif // #ifndef NO_SINGLE
-#ifndef	BENCHMARK_BUILD
-	add<game_sv_Deathmatch>(CLSID_SV_GAME_DEATHMATCH, "game_sv_deathmatch");
-	add<game_sv_TeamDeathmatch>(CLSID_SV_GAME_TEAMDEATHMATCH, "game_sv_team_deathmatch");
-	add<game_sv_ArtefactHunt>(CLSID_SV_GAME_ARTEFACTHUNT, "game_sv_artefact_hunt");
-	add<game_sv_CaptureTheArtefact>(CLSID_SV_GAME_CAPTURETHEARTEFACT, "game_sv_capture_the_artefact");
-#endif	//	BENCHMARK_BUILD
+	// game_sv_Deathmatch/TeamDeathmatch/ArtefactHunt/CaptureTheArtefact -
+	// MP-only, confirmed absent, not registered (see top-of-file comment).
 	//Client Game type
 #ifndef NO_SINGLE
 	add<game_cl_Single>(CLSID_CL_GAME_SINGLE, "game_cl_single");
 #endif // #ifndef NO_SINGLE
-#ifndef	BENCHMARK_BUILD
-	add<game_cl_Deathmatch>(CLSID_CL_GAME_DEATHMATCH, "game_cl_deathmatch");
-	add<game_cl_TeamDeathmatch>(CLSID_CL_GAME_TEAMDEATHMATCH, "game_cl_team_deathmatch");
-	add<game_cl_ArtefactHunt>(CLSID_CL_GAME_ARTEFACTHUNT, "game_cl_artefact_hunt");
-	add<game_cl_CaptureTheArtefact>(CLSID_CL_GAME_CAPTURETHEARTEFACT, "game_cl_capture_the_artefact");
-#endif	//	BENCHMARK_BUILD
+	// game_cl_Deathmatch/TeamDeathmatch/ArtefactHunt/CaptureTheArtefact -
+	// MP-only, confirmed absent, not registered (see top-of-file comment).
 
 
 	add<CUIGameSP>(CLSID_GAME_UI_SINGLE, "game_ui_single");
-	add<CUIGameDM>(CLSID_GAME_UI_DEATHMATCH, "game_ui_deathmatch");
-	add<CUIGameTDM>(CLSID_GAME_UI_TEAMDEATHMATCH, "game_ui_team_deathmatch");
-	add<CUIGameAHunt>(CLSID_GAME_UI_ARTEFACTHUNT, "game_ui_artefact_hunt");
-	add<CUIGameCTA>(CLSID_GAME_UI_CAPTURETHEARTEFACT, "game_ui_capture_the_artefact");
+	// CUIGameDM/CUIGameTDM/CUIGameAHunt/CUIGameCTA (UIGameDM.h/UIGameTDM.h/
+	// UIGameAHunt.h/UIGameCTA.h) - MP-only, confirmed absent, not registered.
 
-#	ifndef NO_SINGLE
-	ADD_MP(CActor, CActorMP, CSE_ALifeCreatureActor, CSE_ActorMP, CLSID_OBJECT_ACTOR, "actor");
-#	else // #ifndef NO_SINGLE
-		ADD(CActorMP,CSE_ActorMP	,CLSID_OBJECT_ACTOR				,"actor");
-#	endif // #ifndef NO_SINGLE
+	// CActorMP/CSE_ActorMP (actor_mp_server.h/actor_mp_client.h) are
+	// MP-only and confirmed absent - register the plain singleplayer
+	// CActor directly instead of the MP-aware
+	// CObjectItemClientServerSingleMp<CActor, CActorMP, ...> wrapper.
+	ADD(CActor, CSE_ALifeCreatureActor, CLSID_OBJECT_ACTOR, "actor");
 #else // NO_XR_GAME
 	ADD(CActor					,CSE_ALifeCreatureActor			,CLSID_OBJECT_ACTOR				,"actor");
 #endif // NO_XR_GAME
@@ -298,7 +287,7 @@ void CObjectFactory::register_classes()
 	ADD(CGalantineArtefact, CSE_ALifeItemArtefact, CLSID_AF_GALANTINE, "art_galantine");
 	ADD(CGraviArtefact, CSE_ALifeItemArtefact, CLSID_AF_GRAVI, "art_gravi");
 	ADD(CGraviArtefact, CSE_ALifeItemArtefact, CLSID_ARTEFACT, "artefact");
-	ADD(CtaGameArtefact, CSE_ALifeItemArtefact, CLSID_AF_CTA, "art_cta");
+	//	ADD(CtaGameArtefact			,CSE_ALifeItemArtefact			,CLSID_AF_CTA					,"art_cta"); // MP-only, cta_game_artefact.h confirmed absent
 
 	//  [8/15/2006]
 	ADD(CWeaponMagazined, CSE_ALifeItemWeaponMagazined, CLSID_OBJECT_W_MAGAZINED, "wpn_wmagaz");
