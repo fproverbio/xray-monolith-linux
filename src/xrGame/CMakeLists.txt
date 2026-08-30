@@ -1692,20 +1692,39 @@ target_sources_grouped(
   xrgame_dll_detach.cpp
 )
 
-# xrGame root: 12 files OUT OF SCOPE by deliberate project decision, not a
+# xrGame root: 11 files OUT OF SCOPE by deliberate project decision, not a
 # TODO - same reasoning as ui/'s 5 exclusions above (this port targets
-# singleplayer only, no functional multiplayer). The first 12 fatal-error
+# singleplayer only, no functional multiplayer). The first 11 fatal-error
 # on a `#include` for a header confirmed (via `find -iname`, not just a
 # guess) to not exist anywhere in this source tree - genuine MP/GameSpy
 # subsystem gaps from the same removal (commit 1d4ec53e) that produced
 # ui/'s exclusions, not case/path bugs:
 #   DemoInfo.cpp
-#   Level_Bullet_Manager.cpp Spectator.cpp
+#   Level_Bullet_Manager.cpp
 #   WeaponFire.cpp game_cl_base_weapon_usage_statistic.cpp
 #   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
 #   game_cl_base.cpp                              - game_sv_mp_vote_flags.h
 #   game_sv_base.cpp                              - xrGameSpyServer.h
 #   player_account.cpp                             - login_manager.h
+# Spectator.cpp (2026-08-30): un-excluded - CSpectator is real SP-load-bearing
+# code (HUDManager.cpp/GamePersistent.cpp/ShootingObject.cpp/
+# Level_network_Demo.cpp all smart_cast to it outside any MP guard), and its
+# game_cl_mp.h touchpoints were each either a dead `GameID() != eGameIDSingle`
+# block (UpdateCL), a `smart_cast<game_cl_mp*>` result that was already a
+# guaranteed-null no-op in this SP-only fork (kWPN_ZOOM case in
+# IR_OnKeyboardPress - `if (!pMPGame) break;` always fired - and net_Spawn's
+# `if (!pMPGame || ...)` - always took the `!pMPGame` arm, so both were
+# simplified to their always-taken branch/removed outright), or the same
+# already-permanently-unreachable-body pattern as game_cl_base_weapon_usage_
+# statistic_save.cpp's early return (SelectNextPlayerToLook's
+# `if (GameID() == eGameIDSingle) return false;` made its whole per-player-
+# selection body dead, reduced to just the early return). One real latent
+# bug rode along and was fixed rather than papered over:
+# IR_OnKeyboardHold dereferenced its (always-null-in-SP) pMPGame without a
+# null check (`pMPGame->Is_Spectator_Camera_Allowed(...)`), a genuine
+# null-pointer-deref reachable whenever the free-fly camera is active -
+# dropped that always-crashing MP-only permission check, keeping the
+# PS-spectator-flag check it was `||`-ed with.
 # xrServer.cpp, Level_start.cpp, xrServer_Connect.cpp, Level_network_Demo.cpp
 # (2026-08-30): un-excluded - SP genuinely runs through the same
 # xrServer/CLevel client+server object-lifecycle API as MP, just over a
@@ -2529,6 +2548,18 @@ target_sources_grouped(
   NAME "Game4_RootBatch18"
   FILES
   ui_export_script.cpp
+)
+
+# Spectator.cpp (2026-08-30): un-excluded - see the "11 files OUT OF SCOPE"
+# comment block above for the full per-touchpoint rationale (dead
+# GameID()-gated blocks removed, already-null-guaranteed smart_cast<game_cl_mp*>
+# branches simplified to their always-taken arm, and one real latent
+# null-deref bug in IR_OnKeyboardHold fixed).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch19"
+  FILES
+  Spectator.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)
