@@ -9,7 +9,7 @@
 #include "../xrGame/xr_level_controller.h"
 #include "../xrCore/os_clipboard.h"
 
-#include "render.h"
+#include "Render.h"
 #include "../xrGame/UICursor.h"
 
 namespace xr_imgui
@@ -20,15 +20,6 @@ namespace xr_imgui
     {
         char* clipboard_text_data;
     };
-
-    static void ImGui_UpdateKeyboardCodePage(UINT32& keyboard_code_page)
-    {
-        // Retrieve keyboard code page, required for handling of non-Unicode Windows.
-        HKL keyboard_layout = ::GetKeyboardLayout(0);
-        LCID keyboard_lcid = MAKELCID(HIWORD(keyboard_layout), SORT_DEFAULT);
-        if (::GetLocaleInfoA(keyboard_lcid, (LOCALE_RETURN_NUMBER | LOCALE_IDEFAULTANSICODEPAGE), (LPSTR)&keyboard_code_page, sizeof(keyboard_code_page)) == 0)
-            keyboard_code_page = CP_ACP; // Fallback to default ANSI code page when fails.
-    }
 
     void ide::InitBackend()
     {
@@ -50,8 +41,6 @@ namespace xr_imgui
                 return bd.clipboard_text_data;
             };
         io.ClipboardUserData = m_backend_data;
-
-        ImGui_UpdateKeyboardCodePage(keyboard_code_page);
     }
 
     void ide::ShutdownBackend()
@@ -86,7 +75,7 @@ namespace xr_imgui
         io.MouseDrawCursor = true;
 
         Ivector2 p;
-        IR_GetMousePosReal(Device.m_hWnd, p);
+        IR_GetMousePosReal(p);
         ImGui::TeleportMousePos(ImVec2{(float)p.x, (float)p.y});
 
         xray_cursor_state = GetUICursor().IsVisible();
@@ -134,7 +123,7 @@ namespace xr_imgui
         // x and y are relative
         // ImGui accepts absolute coordinates
         Ivector2 p;
-        IR_GetMousePosReal(Device.m_hWnd, p);
+        IR_GetMousePosReal(p);
 
         ImGuiIO& io = ImGui::GetIO();
         io.AddMousePosEvent(static_cast<float>(p.x), static_cast<float>(p.y));
@@ -222,19 +211,18 @@ namespace xr_imgui
         io.AddKeyEvent(imkey, false);
     }
 
-    void ide::UpdateInputLang()
-    {
-        ImGui_UpdateKeyboardCodePage(keyboard_code_page);
-    }
-
-    void ide::InputChar(WPARAM param)
+    // Win32's WM_CHAR delivered one UTF-16 code unit per message, needing a
+    // codepage-aware MultiByteToWideChar() conversion of the active
+    // keyboard layout's ANSI codepage. SDL_TEXTINPUT (Device_wndproc.cpp)
+    // delivers a whole null-terminated UTF-8 string per event instead -
+    // ImGui's own io.AddInputCharactersUTF8() is the direct, simpler
+    // portable equivalent, no codepage lookup needed at all.
+    void ide::InputChar(const char* utf8)
     {
         ImGuiIO& io = ImGui::GetIO();
         if (!io.WantTextInput) return;
 
-        wchar_t wch = 0;
-        ::MultiByteToWideChar(keyboard_code_page, MB_PRECOMPOSED, (char*)&param, 1, &wch, 1);
-        io.AddInputCharacter(wch);
+        io.AddInputCharactersUTF8(utf8);
     }
 
     void ide::EnableInput(bool bInput)

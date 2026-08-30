@@ -38,18 +38,32 @@ target_include_directories(xrEngine PUBLIC .)
 # linked implementations above. x_ray.h's CApplication does not - see the
 # x_ray.cpp exclusion note below, its one remaining blocker.
 #
-# imgui_base_input.cpp, FDemoRecord.cpp: the only 2 of 185 files that
-# #include xrGame directly (both just toggle a cursor via
-# Game().Level().CurrentEntity()-adjacent calls) - deferred until xrGame
-# exists.
+# FDemoRecord.cpp: 1 of the original 2 files that #include xrGame directly
+# (just toggles a cursor via a Game().Level().CurrentEntity()-adjacent
+# call) - still deferred; MP-diagnostics/demo-recording code, out of scope
+# for now regardless of xrGame's availability (see the deliberate MP
+# exclusion elsewhere in xrGame/CMakeLists.txt).
 #
 # tntQAVI.h/.cpp: Video-for-Windows AVI playback, needs a real replacement
 # codec, not a mechanical fix - deferred.
 #
 # imgui_base.cpp, imgui_helper.cpp: Dear ImGui now has a real CMake
 # target (sdk/include/imgui, commit a0382f3c) - both compile clean
-# against it with zero further changes. imgui_base_input.cpp stays
-# excluded above (unrelated reason - direct ../xrGame/ includes).
+# against it with zero further changes.
+#
+# imgui_base_input.cpp (2026-08-30): the other of the original 2 xrGame-
+# including files - now wired in, xrGame exists. Needed one real fix
+# beyond just resolving its ../xrGame/ includes: ImGui_UpdateKeyboardCodePage()
+# used several Win32-only APIs (GetKeyboardLayout/MAKELCID/GetLocaleInfoA)
+# to convert a single legacy WM_CHAR UTF-16 code unit via the active
+# keyboard layout's ANSI codepage - entirely unnecessary here, since
+# Device_wndproc.cpp's SDL_TEXTINPUT handler already receives a whole
+# UTF-8 string per event (its own comment already flagged this exact
+# follow-up). Switched ide::InputChar() to take that UTF-8 string
+# directly and forward it to ImGui's own io.AddInputCharactersUTF8() -
+# dropped the codepage lookup entirely rather than porting it, along with
+# the now-fully-unused UpdateInputLang()/keyboard_code_page member (no
+# other call site referenced either).
 #
 # EngineAPI.cpp, Engine.cpp: the STATIC_RENDERER_R1..4 decision (notes
 # section 21a point 3 / section 24 Part B) is now made - STATIC_RENDERER_R4
@@ -332,6 +346,7 @@ target_sources_grouped(
   NAME "ImGui"
   FILES
   imgui_base.cpp
+  imgui_base_input.cpp
   imgui_helper.cpp
 )
 

@@ -20,7 +20,7 @@ namespace xr_imgui
     static bool imgui_metrics = false;
 
     ide::ide()
-        : keyboard_code_page(CP_ACP), m_backend_data(nullptr), m_input(false), m_render(nullptr), m_shown(false), firstframe(true)
+        : m_backend_data(nullptr), m_input(false), m_render(nullptr), m_shown(false), firstframe(true)
     {
         ImGui::SetAllocatorFunctions(
             [](size_t size, void* /*user_data*/)

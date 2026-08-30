@@ -74,16 +74,11 @@ bool CRenderDevice::ProcessEvent(const SDL_Event& event)
 
 	// WM_CHAR. Win32's WM_CHAR delivered one UTF-16 code unit per message;
 	// SDL_TEXTINPUT delivers a whole (usually 1-char, but not always)
-	// null-terminated UTF-8 string per event. imgui_base.h's InputChar()
-	// still has the old single-WPARAM-code-unit shape (imgui_base.cpp
-	// itself isn't ported yet, see this batch's CMakeLists.txt exclusion
-	// list), so this only forwards the first byte for now - correct for
-	// plain ASCII text, not a real UTF-8 decode. Whoever ports
-	// imgui_base.cpp should switch this to ImGui's own
-	// io.AddInputCharactersUTF8(event.text.text)-style full-string API
-	// instead of trying to make InputChar() UTF-8-aware.
+	// null-terminated UTF-8 string per event - InputChar() now takes that
+	// whole string and forwards it to ImGui's own io.AddInputCharactersUTF8(),
+	// a real UTF-8-aware path, not a single-byte truncation.
 	case SDL_TEXTINPUT:
-		Device.imgui().InputChar(static_cast<WPARAM>(event.text.text[0]));
+		Device.imgui().InputChar(event.text.text);
 		return false;
 
 	// WM_SYSKEYDOWN / WM_SYSCOMMAND(SC_MOVE/SC_SIZE/SC_MAXIMIZE/

@@ -65,8 +65,7 @@ namespace xr_imgui
         void IR_OnMouseHold(int key) final {};
         void IR_OnKeyboardHold(int key) final {};
 
-        void InputChar(WPARAM param);
-        void UpdateInputLang();
+        void InputChar(const char* utf8);
 
         ImFont* GetFont(LPCSTR name);
         ImFontConfig LoadImGuiFontConfig(string_path path, LPCSTR name);
@@ -87,7 +86,6 @@ namespace xr_imgui
         bool m_shown;
         bool m_input;
         bool firstframe;
-        UINT32 keyboard_code_page;
         xr_vector<IReader*> ImGuiFontsPtr;
         xr_map<shared_str, ImFont*> ImFonts;
     };
