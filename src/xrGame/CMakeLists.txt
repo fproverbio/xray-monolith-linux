@@ -1705,7 +1705,17 @@ target_sources_grouped(
 #   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
 #   game_cl_base.cpp                              - game_sv_mp_vote_flags.h
 #   game_sv_base.cpp                              - xrGameSpyServer.h
-#   player_account.cpp                             - login_manager.h
+# player_account.cpp (2026-08-30): un-excluded - its own login_manager.h/
+# profile_store.h/MainMenu.h touchpoints were 3 dead #includes with zero
+# live uses (load_account()'s only references to gamespy_gp::login_manager/
+# gamespy_profile::profile_store were already fully commented out); the
+# gamespy_profile::enum_awards_t/award_data types actually used by
+# net_Import/net_Export/skip_Import already come from profile_data_types.h,
+# which was already included. Same dead-GameSpy-include pattern as
+# ui_export_script.cpp below - player_account genuinely implements a real
+# GameSpy account object (net_Import/net_Export/load_account), and
+# game_base.cpp's m_account member needs it for real, SP-relevant player
+# name/profile state, but none of that requires the missing headers.
 # Spectator.cpp (2026-08-30): un-excluded - CSpectator is real SP-load-bearing
 # code (HUDManager.cpp/GamePersistent.cpp/ShootingObject.cpp/
 # Level_network_Demo.cpp all smart_cast to it outside any MP guard), and its
@@ -2560,6 +2570,13 @@ target_sources_grouped(
   NAME "Game4_RootBatch19"
   FILES
   Spectator.cpp
+)
+
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch20"
+  FILES
+  player_account.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)

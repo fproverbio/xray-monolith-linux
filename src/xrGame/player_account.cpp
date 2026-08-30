@@ -1,8 +1,5 @@
 #include "StdAfx.h"
 #include "player_account.h"
-#include "MainMenu.h"
-#include "login_manager.h"
-#include "profile_store.h"
 
 using namespace gamespy_profile;
 
