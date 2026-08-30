@@ -13,8 +13,6 @@
 #include "Level.h"
 #include "MainMenu.h"
 #include "../xrEngine/x_ray.h"
-#include "file_transfer.h"
-#include "screenshot_server.h"
 #include "../xrNetServer/NET_AuthCheck.h"
 #pragma warning(push)
 #pragma warning(disable:4995)

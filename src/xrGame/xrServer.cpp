@@ -16,8 +16,7 @@
 
 #include "../xrEngine/XR_IOConsole.h"
 #include "ui/UIInventoryUtilities.h"
-#include "file_transfer.h"
-#include "screenshot_server.h"
+#include "filetransfer_common.h"
 #include "xrServer_info.h"
 #include <functional>
 
@@ -55,8 +54,8 @@ xrClientData::~xrClientData()
 
 xrServer::xrServer() : IPureServer(Device.GetTimerGlobal(), g_dedicated_server)
 {
-	m_file_transfers = NULL;
 	m_aDelayedPackets.clear();
+	m_file_transfers = NULL;
 	m_server_logo = NULL;
 	m_server_rules = NULL;
 	m_last_updates_size = 0;
@@ -374,11 +373,6 @@ void xrServer::SendUpdatesToAll()
 #endif
 		m_last_update_time = Device.dwTimeGlobal;
 	}
-	if (m_file_transfers)
-	{
-		m_file_transfers->update_transfer();
-		m_file_transfers->stop_obsolete_receivers();
-	}
 }
 
 xr_vector<shared_str> _tmp_log;
@@ -442,11 +436,6 @@ u32 xrServer::OnDelayedMessage(NET_Packet& P, ClientID sender) // Non-Zero means
 				P_answ.w_stringZ("you dont have admin rights");
 				SendTo(sender, P_answ, net_flags(TRUE,TRUE));
 			}
-		}
-		break;
-	case M_FILE_TRANSFER:
-		{
-			m_file_transfers->on_message(&P, sender);
 		}
 		break;
 	}
@@ -1191,59 +1180,6 @@ void xrServer::KickCheaters()
 		Level().Server->SendBroadcast(tmp_client_id, P);
 	}
 	m_cheaters.clear();
-}
-
-void xrServer::MakeScreenshot(ClientID const& admin_id, ClientID const& cheater_id)
-{
-	if ((cheater_id == SV_Client->ID) && g_dedicated_server)
-	{
-		return;
-	}
-	for (int i = 0; i < sizeof(m_screenshot_proxies) / sizeof(clientdata_proxy*); ++i)
-	{
-		if (!m_screenshot_proxies[i]->is_active())
-		{
-			m_screenshot_proxies[i]->make_screenshot(admin_id, cheater_id);
-			Msg("* admin [%d] is making screeshot of client [%d]", admin_id, cheater_id);
-			return;
-		}
-	}
-	Msg("! ERROR: SV: not enough file transfer proxies for downloading screenshot, please try later ...");
-}
-
-void xrServer::MakeConfigDump(ClientID const& admin_id, ClientID const& cheater_id)
-{
-	if ((cheater_id == SV_Client->ID) && g_dedicated_server)
-	{
-		return;
-	}
-	for (int i = 0; i < sizeof(m_screenshot_proxies) / sizeof(clientdata_proxy*); ++i)
-	{
-		if (!m_screenshot_proxies[i]->is_active())
-		{
-			m_screenshot_proxies[i]->make_config_dump(admin_id, cheater_id);
-			Msg("* admin [%d] is making config dump of client [%d]", admin_id, cheater_id);
-			return;
-		}
-	}
-	Msg("! ERROR: SV: not enough file transfer proxies for downloading file, please try later ...");
-}
-
-
-void xrServer::initialize_screenshot_proxies()
-{
-	for (int i = 0; i < sizeof(m_screenshot_proxies) / sizeof(clientdata_proxy*); ++i)
-	{
-		m_screenshot_proxies[i] = xr_new<clientdata_proxy>(m_file_transfers);
-	}
-}
-
-void xrServer::deinitialize_screenshot_proxies()
-{
-	for (int i = 0; i < sizeof(m_screenshot_proxies) / sizeof(clientdata_proxy*); ++i)
-	{
-		xr_delete(m_screenshot_proxies[i]);
-	}
 }
 
 struct PlayerInfoWriter

@@ -83,7 +83,6 @@ namespace file_transfer
 	class server_site;
 }; //namespace file_transfer
 
-class clientdata_proxy;
 class server_info_uploader;
 
 class xrServer : public IPureServer
@@ -94,10 +93,23 @@ private:
 	xr_vector<u16> conn_spawned_ids;
 	cheaters_t m_cheaters;
 
+	// m_file_transfers is used by GetServerInfoUploader() below (still
+	// compiled, since file_transfer::server_site is a real linked type in
+	// file_transfer.cpp), but is never actually assigned a real value
+	// anywhere in the tree - the MP-only bring-up step that used to do so was
+	// already removed (see the comment in xrServer_Connect.cpp's Connect()).
+	// GetServerInfoUploader() itself is unreachable in this SP-only port
+	// (its only caller, SendServerInfoToClient(), early-returns whenever
+	// IsGameTypeSingle(), which is always true here), so this stays
+	// permanently NULL and unused - harmless, unlike the screenshot/config-
+	// dump tooling (2026-08-30, removed below: MakeScreenshot/MakeConfigDump/
+	// clientdata_proxy screenshot proxies, built on screenshot_server.cpp,
+	// one of this port's genuine MP/GameSpy source-tree gaps, commit
+	// 1d4ec53e) whose only call site was gated behind `if (m_file_transfers)`
+	// and whose class had no definition left in the tree at all. See
+	// xrServer.cpp's OnDelayedMessage for a latent null-deref this same dead
+	// m_file_transfers state used to cause.
 	file_transfer::server_site* m_file_transfers;
-	clientdata_proxy* m_screenshot_proxies[MAX_PLAYERS_COUNT * 2];
-	void initialize_screenshot_proxies();
-	void deinitialize_screenshot_proxies();
 
 	typedef server_updates_compressor::send_ready_updates_t::const_iterator update_iterator_t;
 	update_iterator_t m_update_begin;
@@ -290,8 +302,6 @@ public:
 	virtual bool HasPassword() { return false; }
 	virtual bool HasProtected() { return false; }
 	void AddCheater(shared_str const& reason, ClientID const& cheaterID);
-	void MakeScreenshot(ClientID const& admin_id, ClientID const& cheater_id);
-	void MakeConfigDump(ClientID const& admin_id, ClientID const& cheater_id);
 
 	virtual void GetServerInfo(CServerInfo* si);
 	void SendPlayersInfo(ClientID const& to_client);
