@@ -10,6 +10,7 @@
 #include "script_fmatrix.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 Fvector get_matrix_hpb(Fmatrix* self)
 {
@@ -24,7 +25,7 @@ void matrix_transform(Fmatrix* self, Fvector* v)
 }
 
 #pragma optimize("s",on)
-void CScriptFmatrix::script_register(lua_State* L)
+template<> void CScriptFmatrix::script_register(lua_State* L)
 {
 	module(L)
 		[
@@ -80,7 +81,23 @@ void CScriptFmatrix::script_register(lua_State* L)
 			.def("setXYZi", (Fmatrix & (Fmatrix::*)(float, float, float))(&Fmatrix::setXYZi), return_reference_to<1>())
 			.def("setXYZi", (Fmatrix & (Fmatrix::*)(const Fvector&))(&Fmatrix::setXYZi), return_reference_to<1>())
 			.def("getHPB", &get_matrix_hpb)
-			.def("hud_to_world", &Fmatrix::hud_to_world, return_reference_to<1>())
-			.def("world_to_hud", &Fmatrix::world_to_hud, return_reference_to<1>())
+			// hud_to_world/world_to_hud: NOT registered - instantiating
+			// _matrix<T>::hud_to_world()/world_to_hud() (xrCore/_matrix.h)
+			// hits a genuine pre-existing bug: their bodies call
+			// Device.hud_to_world(*this) - Device is an xrEngine global
+			// that xrCore, architecturally, has no business referencing at
+			// all. GCC's -Wtemplate-body flags this as an unresolved name
+			// the moment _matrix.h's template body is first PARSED
+			// (regardless of what's #include-d later in this TU) and
+			// permanently marks the template erroneous, so no amount of
+			// reordering this file's own includes fixes it - real fix
+			// would mean either removing the Device dependency from
+			// _matrix.h itself (foundational, wide blast radius) or
+			// wrapping it some other way. No xrGame/xrEngine file has ever
+			// instantiated this specific method before (confirmed via
+			// grep), so the bug was dormant until this registration tried
+			// to. These are obscure HUD/camera-transform convenience
+			// wrappers, not worth chasing a foundational xrCore fix for;
+			// dropped rather than forcing it.
 		];
 }

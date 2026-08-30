@@ -2045,4 +2045,100 @@ target_sources_grouped(
   script_engine_help.cpp
 )
 
+# xrServerEntities: a whole ~60-file module (script engine core, ALife
+# entity/trader/character classes, xrServer object replication) that was
+# NEVER wired into this port's build at all - discovered only once a real
+# executable link was first attempted (2026-08-30). The original
+# xrGame.vcxproj confirms these files were always meant to compile
+# directly into xrGame itself (58 <ClCompile Include="..\xrServerEntities\...">
+# entries, no separate project) - not a separate module boundary, so they're
+# added here via relative path rather than as their own CMake target.
+# smart_cast.cpp/smart_cast_stats.cpp are the only 2 on-disk files genuinely
+# absent from the real vcxproj (only smart_cast.h is <ClInclude>-listed) -
+# console_commands.cpp's show_smart_cast_stats()/clear_smart_cast_stats()
+# calls are apparently dead in the real upstream build too, not just this
+# port; not investigated further.
+#
+# First batch, 25 of 58 files, wired via the same recon-scan-then-fix
+# discipline as every other module's first batch:
+#   - the same case-sensitive #include bug already fixed project-wide for
+#     xrGame's own root files (§37) recurred here verbatim (level.h/Level.h,
+#     Script_Game_Object.h/script_game_object.h, xrServer_Objects_ALife_
+#     Smartcovers.h/xrServer_Objects_Alife_Smartcovers.h, etc.) - never
+#     swept before since this module was never in the build to sweep.
+#   - the same missing-`template<>`-before-an-explicit-member-specialization
+#     bug (§37) recurred in all 6 script_f*/script_reader/script_net_packet
+#     "primitive type script export" files (class_exporter<T>::script_register
+#     defined out-of-line per-T without the required template<> keyword).
+#   - `Flags16::or`/`Flags16::and`/`Flags32::or`/`Flags32::and` (real member
+#     names) collide with the C++ alternative-token keywords `or`/`and` -
+#     MSVC never enforces these as keywords by default, GCC always does.
+#     The real methods are named `or_`/`and_` (xrCore/_flags.h) - someone
+#     already anticipated this exact collision when writing the class, the
+#     .cpp registering them just hadn't been updated to match.
+#   - `&set<Flags16>` ambiguous against `std::set` once <set> becomes
+#     visible transitively - qualified as `&::set<Flags16>` (the real
+#     free function template is file-local, at global scope).
+#   - `class_<T>::scope` is a data member (`detail::static_scope<self_t>`),
+#     not a method - `.scope()[...]` needed to become `.scope[...]`.
+#   - the out_value/pure_out_value-policy-missing-on-a-reference-out-param
+#     bug (§44) recurred at scale: NET_Packet's and IReader's many typed
+#     r_*(T&)-shaped accessors were registered with no policy at all.
+#     NOTE: NET_Packet and IReader do NOT share the same overload set for
+#     r_angle16/r_angle8/r_float_q16/r_float_q8 despite identical names -
+#     NET_Packet's take a `float&` out-param, IReader's (inherited from
+#     IReaderBase<T>, xrCore/FS.h) return by value with no out-param at
+#     all. Copying one file's fix onto the other by name-pattern alone is
+#     wrong; always check the real declaration per class.
+#   - `_matrix<T>::hud_to_world()`/`world_to_hud()` and their `_vector3<T>`
+#     equivalents (xrCore/_matrix.h, _vector3d.h) call a `Device.*` method -
+#     `Device` is an xrEngine global that xrCore, architecturally, has no
+#     business referencing. GCC's `-Wtemplate-body` poisons the whole
+#     template the instant its body is first PARSED (not instantiated),
+#     regardless of what the including TU does afterward - not fixable by
+#     reordering includes. Dropped the 6 Lua registrations that would have
+#     instantiated these (2 in script_fmatrix_script.cpp, 4 in
+#     script_fvector_script.cpp) rather than chasing a foundational xrCore
+#     fix for obscure HUD/camera-transform convenience wrappers nothing
+#     else has ever needed.
+#   - `IReader::r_float_q16`/`r_float_q8` (script_reader_script.cpp) do NOT
+#     need any out_value-family policy at all (return-by-value, no
+#     reference param) - adding one produces a confusing several-layers-
+#     deep template error that looks unrelated to the real mistake.
+# Remaining 33 files (higher error counts: character_info.cpp 65,
+# lua_studio.cpp 82, specific_character.cpp reaches script_game_object.h's
+# 156-includer hub once its own case-#include bug is fixed, several
+# xrServer_Objects_ALife_* files with 3-13 errors each) not yet
+# investigated - good next batch.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "ServerEntities_Batch1"
+  FILES
+  ../xrServerEntities/PHNetState.cpp
+  ../xrServerEntities/alife_human_brain.cpp
+  ../xrServerEntities/alife_monster_brain.cpp
+  ../xrServerEntities/alife_space.cpp
+  ../xrServerEntities/pch_script.cpp
+  ../xrServerEntities/script_callStack.cpp
+  ../xrServerEntities/script_debugger_threads.cpp
+  ../xrServerEntities/script_fcolor_script.cpp
+  ../xrServerEntities/script_flags_script.cpp
+  ../xrServerEntities/script_fmatrix_script.cpp
+  ../xrServerEntities/script_fvector_script.cpp
+  ../xrServerEntities/script_ini_file.cpp
+  ../xrServerEntities/script_lua_helper.cpp
+  ../xrServerEntities/script_net_packet_script.cpp
+  ../xrServerEntities/script_process.cpp
+  ../xrServerEntities/script_reader_script.cpp
+  ../xrServerEntities/script_rtoken_list_script.cpp
+  ../xrServerEntities/script_stack_tracker.cpp
+  ../xrServerEntities/script_thread.cpp
+  ../xrServerEntities/script_token_list.cpp
+  ../xrServerEntities/script_token_list_script.cpp
+  ../xrServerEntities/xrServer_Objects_ALife.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_Items.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_Monsters.cpp
+  ../xrServerEntities/xrServer_Objects_Alife_Smartcovers.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)

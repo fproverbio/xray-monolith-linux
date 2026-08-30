@@ -10,9 +10,10 @@
 #include "script_fcolor.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 #pragma optimize("s",on)
-void CScriptFcolor::script_register(lua_State* L)
+template<> void CScriptFcolor::script_register(lua_State* L)
 {
 	module(L)
 	[

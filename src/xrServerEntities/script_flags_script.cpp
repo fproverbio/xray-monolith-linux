@@ -10,6 +10,7 @@
 #include "script_flags.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 template <typename T>
 T& set(T* self, const typename T::TYPE mask, bool value)
@@ -54,7 +55,7 @@ void one(T* self)
 }
 
 #pragma optimize("s",on)
-void CScriptFlags::script_register(lua_State* L)
+template<> void CScriptFlags::script_register(lua_State* L)
 {
 	module(L)
 	[
@@ -89,11 +90,11 @@ void CScriptFlags::script_register(lua_State* L)
 		.def("invert", (Flags16& (Flags16::*)(const Flags16::TYPE))(&Flags16::invert))
 		.def("assign", (Flags16& (Flags16::*)(const Flags16&))(&Flags16::assign))
 		.def("assign", (Flags16& (Flags16::*)(const Flags16::TYPE))(&Flags16::assign))
-		.def("or", (Flags16& (Flags16::*)(const Flags16::TYPE))(&Flags16::or))
-		.def("or", (Flags16& (Flags16::*)(const Flags16&, const Flags16::TYPE))(&Flags16::or))
-		.def("and", (Flags16& (Flags16::*)(const Flags16::TYPE))(&Flags16::and))
-		.def("and", (Flags16& (Flags16::*)(const Flags16&, const Flags16::TYPE))(&Flags16::and))
-		.def("set", &set<Flags16>)
+		.def("or", (Flags16& (Flags16::*)(const Flags16::TYPE))(&Flags16::or_))
+		.def("or", (Flags16& (Flags16::*)(const Flags16&, const Flags16::TYPE))(&Flags16::or_))
+		.def("and", (Flags16& (Flags16::*)(const Flags16::TYPE))(&Flags16::and_))
+		.def("and", (Flags16& (Flags16::*)(const Flags16&, const Flags16::TYPE))(&Flags16::and_))
+		.def("set", &::set<Flags16>)
 		.def("is", &is<Flags16>)
 		.def("is_any", &is_any<Flags16>)
 		.def("test", &test<Flags16>)
@@ -110,11 +111,11 @@ void CScriptFlags::script_register(lua_State* L)
 		.def("invert", (Flags32& (Flags32::*)(const Flags32::TYPE))(&Flags32::invert))
 		.def("assign", (Flags32& (Flags32::*)(const Flags32&))(&Flags32::assign))
 		.def("assign", (Flags32& (Flags32::*)(const Flags32::TYPE))(&Flags32::assign))
-		.def("or", (Flags32& (Flags32::*)(const Flags32::TYPE))(&Flags32::or))
-		.def("or", (Flags32& (Flags32::*)(const Flags32&, const Flags32::TYPE))(&Flags32::or))
-		.def("and", (Flags32& (Flags32::*)(const Flags32::TYPE))(&Flags32::and))
-		.def("and", (Flags32& (Flags32::*)(const Flags32&, const Flags32::TYPE))(&Flags32::and))
-		.def("set", &set<Flags32>)
+		.def("or", (Flags32& (Flags32::*)(const Flags32::TYPE))(&Flags32::or_))
+		.def("or", (Flags32& (Flags32::*)(const Flags32&, const Flags32::TYPE))(&Flags32::or_))
+		.def("and", (Flags32& (Flags32::*)(const Flags32::TYPE))(&Flags32::and_))
+		.def("and", (Flags32& (Flags32::*)(const Flags32&, const Flags32::TYPE))(&Flags32::and_))
+		.def("set", &::set<Flags32>)
 		.def("is", &is<Flags32>)
 		.def("is_any", &is_any<Flags32>)
 		.def("test", &test<Flags32>)

@@ -10,15 +10,16 @@
 #include "script_fvector.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 #pragma optimize("s",on)
-void CScriptFvector::script_register(lua_State* L)
+template<> void CScriptFvector::script_register(lua_State* L)
 {
 	module(L)
 	[
 		class_<Fvector>("vector")
 		// demonized: new exports of static functions, in Lua use like this: vector.generate_orthonormal_basis(a, b, c)
-		.scope()[
+		.scope[
 			def("generate_orthonormal_basis", &Fvector::generate_orthonormal_basis),
 			def("generate_orthonormal_basis_normalized", &Fvector::generate_orthonormal_basis_normalized)
 		]
@@ -106,11 +107,14 @@ void CScriptFvector::script_register(lua_State* L)
 
 		// demonized: new exports
 		.def("project", (Fvector & (Fvector::*)(const Fvector&, const Fvector&))(&Fvector::project), return_reference_to<1>())
-		.def("project", (Fvector & (Fvector::*)(const Fvector&))(&Fvector::project), return_reference_to<1>())
-		.def("hud_to_world", &Fvector::hud_to_world, return_reference_to<1>())
-		.def("world_to_hud", &Fvector::world_to_hud, return_reference_to<1>())
-		.def("hud_to_world_dir", &Fvector::hud_to_world_dir, return_reference_to<1>())
-		.def("world_to_hud_dir", &Fvector::world_to_hud_dir, return_reference_to<1>()),
+		.def("project", (Fvector & (Fvector::*)(const Fvector&))(&Fvector::project), return_reference_to<1>()),
+		// hud_to_world/world_to_hud/hud_to_world_dir/world_to_hud_dir: NOT
+		// registered - same pre-existing xrCore bug as script_fmatrix_script.cpp's
+		// identical drop (see comment there): _vector3<T>::hud_to_world() etc.
+		// (xrCore/_vector3d.h) call Device.hud_to_world(*this)/friends, and
+		// Device is an xrEngine global xrCore has no business referencing.
+		// GCC poisons the whole template the moment its body is first parsed,
+		// regardless of what this TU includes afterward - not fixable here.
 
 		class_<Fvector2>("vector2")
 		.def_readwrite("x", &Fvector2::x)
