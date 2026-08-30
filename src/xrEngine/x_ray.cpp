@@ -1377,6 +1377,177 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
 	return (0);
 }
+#else // _WIN32
+
+// Linux entry point. Modeled on OpenXRay's own src/xr_3da/entry_point.cpp
+// (argv -> single command-line string, try/catch instead of SEH) but
+// adapted to this fork's own, more monolithic CApplication/CEngineAPI
+// bootstrap sequence rather than OpenXRay's already-refactored
+// RendererModule[]-based CApplication constructor.
+//
+// RunApplication() below is a stripped-down copy of WinMain_impl's real
+// bootstrap sequence above, keeping every portable call in the same
+// order (Core._initialize -> InitSettings -> InitEngine/InitInput/
+// InitConsole -> Engine.External.CreateRendererList()/Initialize() ->
+// Startup() -> Core._destroy()) and dropping only the genuinely
+// Windows-only conveniences that have no Linux equivalent and are not
+// required for the engine to run: the splash dialog (CreateDialog and
+// friends), the single-instance mutex check, DPI awareness, and the
+// launch-on-exit CreateProcess call. The dedicated-server branch is
+// also not carried over here - only the normal client bootstrap path.
+//
+// NOTE (found while writing this, not yet acted on): WinMain above calls
+// XR_EARLY_INIT() (declared extern "C" at the top of this file) before
+// anything else, but no definition exists anywhere in this tree - it's
+// a pre-existing gap in the *Windows* path too (nothing has ever linked
+// a real xray-monolith executable to notice), not something introduced
+// here. Deliberately NOT called from this Linux path: it's described in
+// WinMain's own comment as "initialize LuaJIT low-memory pool... before
+// any DLLs load and fragment the lower 2GB address space", an x86/
+// Windows-address-space workaround that may not even apply to a Linux
+// x86-64 process's mmap layout - needs a real decision (define a no-op,
+// port the real pool allocator, or confirm it's Windows-only) before
+// either path can actually link.
+int RunApplication(LPCSTR lpCmdLine)
+{
+	LPCSTR fsgame_ltx_name = "-fsltx ";
+	string_path fsgame = "";
+	if (strstr(lpCmdLine, fsgame_ltx_name))
+	{
+		int sz = xr_strlen(fsgame_ltx_name);
+		sscanf(strstr(lpCmdLine, fsgame_ltx_name) + sz, "%[^ ] ", fsgame);
+	}
+
+	compute_build_id();
+	Core._initialize("xray", NULL, TRUE, fsgame[0] ? fsgame : NULL);
+
+	InitSettings();
+	Msg(XRAY_MONOLITH_VERSION);
+
+	// Adjust player & computer name for Asian
+	if (pSettings->line_exist("string_table", "no_native_input"))
+	{
+		xr_strcpy(Core.UserName, sizeof(Core.UserName), "Player");
+		xr_strcpy(Core.CompName, sizeof(Core.CompName), "Computer");
+	}
+
+	FPU::m24r();
+	InitEngine();
+
+	InitInput();
+
+	InitConsole();
+
+	Engine.External.CreateRendererList();
+
+	LPCSTR benchName = "-batch_benchmark ";
+	if (strstr(lpCmdLine, benchName))
+	{
+		int sz = xr_strlen(benchName);
+		string64 b_name;
+		sscanf(strstr(Core.Params, benchName) + sz, "%[^ ] ", b_name);
+		doBenchmark(b_name);
+		return 0;
+	}
+
+	extern bool ignore_verify;
+	ignore_verify = !strstr(Core.Params, "-dbgdev");
+
+	Msg("command line %s", Core.Params);
+	LPCSTR sashName = "-openautomate ";
+	if (strstr(lpCmdLine, sashName))
+	{
+		int sz = xr_strlen(sashName);
+		string512 sash_arg;
+		sscanf(strstr(Core.Params, sashName) + sz, "%[^ ] ", sash_arg);
+		g_SASH.Init(sash_arg);
+		g_SASH.MainLoop();
+		return 0;
+	}
+
+	if (strstr(lpCmdLine, "-launcher"))
+	{
+		int l_res = doLauncher();
+		if (l_res != 0)
+			return 0;
+	}
+
+	if (strstr(Core.Params, "-r2a"))
+		Console->Execute("renderer renderer_r2a");
+	else if (strstr(Core.Params, "-r2"))
+		Console->Execute("renderer renderer_r2");
+	else
+	{
+		CCC_LoadCFG_custom* pTmp = xr_new<CCC_LoadCFG_custom>("renderer ");
+		pTmp->Execute(Console->ConfigFile);
+		xr_delete(pTmp);
+	}
+
+	Engine.External.Initialize();
+	Console->Execute("stat_memory");
+
+	Startup();
+	Core._destroy();
+
+	return 0;
+}
+
+extern BOOL DllMainXrPhysics(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved);
+
+int main(int argc, char* argv[])
+{
+	// No DllMainXrCore call here: xrCore.cpp guards its whole body under
+	// #ifndef XRCORE_STATIC (a pre-existing, deliberate project decision -
+	// see xrCore/CMakeLists.txt), and this build defines XRCORE_STATIC, so
+	// the function doesn't even exist in this configuration. WinMain above
+	// still calls it - a latent bug in the Windows path (only ever
+	// exercised once XRCORE_STATIC was introduced, matching the same
+	// "nothing has ever linked a real executable to notice" pattern as
+	// several other bugs found this project - see notes §41), not
+	// something to carry over here.
+	DllMainXrPhysics(NULL, DLL_PROCESS_ATTACH, NULL);
+
+	int result = EXIT_FAILURE;
+	char* commandLine = nullptr;
+
+	try
+	{
+		if (argc > 1)
+		{
+			size_t sum = 1;
+			for (int i = 1; i < argc; ++i)
+				sum += xr_strlen(argv[i]) + 1;
+
+			commandLine = (char*)xr_malloc(sum);
+			commandLine[0] = 0;
+			for (int i = 1; i < argc; ++i)
+			{
+				strcat(commandLine, argv[i]);
+				strcat(commandLine, " ");
+			}
+
+			result = RunApplication(commandLine);
+			xr_free(commandLine);
+		}
+		else
+		{
+			result = RunApplication("");
+		}
+	}
+	catch (const std::exception& e)
+	{
+		string1024 msg;
+		xr_sprintf(msg, sizeof(msg), "exception: %s", e.what());
+		FATAL(msg);
+	}
+	catch (...)
+	{
+	}
+
+	DllMainXrPhysics(NULL, DLL_PROCESS_DETACH, NULL);
+
+	return result;
+}
 #endif // _WIN32
 
 LPCSTR _GetFontTexName(LPCSTR section) { return GetFontTextureName(section); }
