@@ -2053,11 +2053,24 @@ target_sources_grouped(
 # directly into xrGame itself (58 <ClCompile Include="..\xrServerEntities\...">
 # entries, no separate project) - not a separate module boundary, so they're
 # added here via relative path rather than as their own CMake target.
-# smart_cast.cpp/smart_cast_stats.cpp are the only 2 on-disk files genuinely
-# absent from the real vcxproj (only smart_cast.h is <ClInclude>-listed) -
-# console_commands.cpp's show_smart_cast_stats()/clear_smart_cast_stats()
-# calls are apparently dead in the real upstream build too, not just this
-# port; not investigated further.
+# smart_cast.cpp/smart_cast_stats.cpp were genuinely absent from the real
+# vcxproj too (only smart_cast.h is <ClInclude>-listed) - console_commands.cpp's
+# show_smart_cast_stats()/clear_smart_cast_stats() calls (registered under
+# #ifdef DEBUG, which this build's Debug config does define) were an
+# unnoticed link-time landmine in the real upstream engine too, not just
+# this port. UPDATE (2026-08-30, roadmap step 4): smart_cast_stats.cpp's
+# entire body turned out to be commented out, including its own #ifdef
+# SMART_CAST_STATS/#else guards - SMART_CAST_STATS/SMART_CAST_STATS_ALL are
+# never defined anywhere in this tree, so the file's real stats-tracking
+# code was already permanently dead upstream. Resurrected just the 3
+# extern function signatures console_commands.cpp needs
+# (show_smart_cast_stats/clear_smart_cast_stats/release_smart_cast_stats)
+# with the file's own already-written #else-branch behavior (an
+# "SMART_CAST_STATS is not defined, stats is disabled" log message) made
+# real instead of a comment - not a new feature, just the documented
+# fallback path finally compiled. See ServerEntities_Batch6 below.
+# smart_cast.cpp remains excluded - real smart_cast<> dispatch itself,
+# not a diagnostics/landmine file, out of scope to touch here.
 #
 # First batch, 25 of 58 files, wired via the same recon-scan-then-fix
 # discipline as every other module's first batch:
@@ -2432,4 +2445,24 @@ target_sources_grouped(
 # were somehow restored, it depends on a Windows-only third-party IDE
 # plugin DLL that has no meaning on Linux anyway. Excluding it costs
 # nothing at link time.
+#
+# smart_cast_stats.cpp - roadmap step 4 (2026-08-30). The single-file
+# holdout from ServerEntities_Batch1's exclusion note above: its entire
+# body was commented out (even its own #ifdef guards), but
+# console_commands.cpp's #ifdef DEBUG-only debug console commands still
+# extern-declare and call show_smart_cast_stats()/clear_smart_cast_stats()
+# unconditionally - a link-time landmine confirmed to exist in the real
+# upstream engine too (smart_cast_stats.cpp is absent from the real
+# xrGame.vcxproj), not something this port introduced. Fixed by
+# resurrecting just the file's own already-written "SMART_CAST_STATS is
+# not defined" fallback branch as real, uncommented code - not restoring
+# the disabled stats-tracking feature itself, which stays permanently off
+# exactly as upstream left it.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "ServerEntities_Batch6"
+  FILES
+  ../xrServerEntities/smart_cast_stats.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
