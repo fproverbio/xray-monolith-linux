@@ -1699,7 +1699,6 @@ target_sources_grouped(
 # guess) to not exist anywhere in this source tree - genuine MP/GameSpy
 # subsystem gaps from the same removal (commit 1d4ec53e) that produced
 # ui/'s exclusions, not case/path bugs:
-#   DemoInfo.cpp
 #   game_cl_base_weapon_usage_statistic.cpp
 #   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
 # Level_Bullet_Manager.cpp (2026-08-30): un-excluded - its two game_cl_mp.h
@@ -2665,6 +2664,31 @@ target_sources_grouped(
   NAME "Game4_RootBatch24"
   FILES
   game_sv_base.cpp
+)
+
+# DemoInfo.cpp (2026-08-30): un-excluded - see the "11 files OUT OF SCOPE" note
+# above. Re-investigated after the sibling xrEngine feature it's bundled with
+# in the undefined-symbol analysis, CDemoRecord (FDemoRecord.cpp, the
+# demo_record console command's free-camera fly/teleport tool), turned out to
+# be genuinely useful debug tooling worth keeping, not dead weight - prompting
+# a closer look at this file instead of assuming the whole group was MP-only.
+# Its two game_cl_mp.h/game_sv_mp.h-dependent functions,
+# demo_player_info::load_from_player and demo_info::load_from_game, were
+# confirmed via tree-wide grep to have zero callers anywhere - genuinely dead
+# code, not merely MP-gated-but-reachable - and were removed outright, along
+# with their now-unused game_sv_mp.h/game_cl_mp.h includes and the
+# GameTypeToString forward declaration (see DemoInfo.h/.cpp). Everything else
+# in the file (ctors/dtors, read_from_file/write_to_file, sort_players,
+# get_player, both script_register functions) is real, always-reachable SP
+# code: Level_network_Demo.cpp's SaveDemoHeader/LoadDemoHeader use
+# demo_info::max_demo_info_size/read_from_file unconditionally for demo
+# save/load, and script_engine_export.cpp/ui_export_script.cpp need both
+# script_register functions and demo_info's typeinfo for Lua registration.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch25"
+  FILES
+  DemoInfo.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)

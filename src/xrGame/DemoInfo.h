@@ -31,7 +31,6 @@ public:
 
 	void read_from_file(CStreamReader* file_to_read);
 	void write_to_file(IWriter* file_to_write) const;
-	void load_from_player(game_PlayerState* player_state);
 
 	LPCSTR get_name() const { return m_name.c_str(); };
 	s16 const get_frags() const { return m_frags; };
@@ -67,7 +66,6 @@ public:
 	void read_from_file(CStreamReader* file_to_read);
 	void write_to_file(IWriter* file_to_write) const;
 	void sort_players(sorting_less_comparator sorting_comparator);
-	void load_from_game();
 
 	LPCSTR get_map_name() const { return m_map_name.c_str(); };
 	LPCSTR get_map_version() const { return m_map_version.c_str(); };
