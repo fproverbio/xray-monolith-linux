@@ -77,6 +77,13 @@ LPCSTR file_header = 0;
 
 #ifndef NO_XRGAME_SCRIPT_ENGINE
 #	include "ai_debug.h"
+// psAI_Flags/aiLua - see alife_level_registry_inline.h's comment (ai_debug.h's
+// own `extern Flags32 psAI_Flags;`/`#define aiLua` are dead under
+// MASTER_GOLD in this build).
+extern Flags32 psAI_Flags;
+#	ifndef aiLua
+#		define aiLua (1<<6)
+#	endif
 #endif //!NO_XRGAME_SCRIPT_ENGINE
 
 #ifdef USE_DEBUGGER
@@ -162,6 +169,7 @@ u32 game_lua_memory_usage()
 #endif //!USE_DL_ALLOCATOR
 
 static void* __cdecl luabind_allocator(
+	void* context,
 	const void* pointer,
 	size_t const size
 )
@@ -192,7 +200,7 @@ static void* __cdecl luabind_allocator(
 
 void setup_luabind_allocator()
 {
-	::luabind::set_allocator(&luabind_allocator);
+	::luabind::allocator = &luabind_allocator;
 }
 
 #ifdef USE_LUAJIT_ONE //  [1/14/2015 Andrey]
@@ -369,7 +377,7 @@ bool LoadKernelScriptToGlobal(lua_State* L, const char* name)
 			if (l_iErrorCode)
 			{
 #ifdef DEBUG
-				g_pScriptEngine->print_output(L, name, l_iErrorCode);
+				CScriptStorage::print_output(L, name, l_iErrorCode);
 #endif
 				lua_settop(L, start);
 				return false;
@@ -730,31 +738,24 @@ bool CScriptStorage::load_buffer(lua_State* L, LPCSTR caBuffer, size_t tSize, LP
 		LPSTR script = 0;
 		bool dynamic_allocation = false;
 
-		__try
+		// __try/__except(GetExceptionCode() == STATUS_STACK_OVERFLOW) was
+		// Win32 SEH, used only to retry with a heap allocation if the fast
+		// _alloca() path overflowed the stack - no portable equivalent
+		// (SEH isn't a thing on Linux, and there's no _resetstkoflw()
+		// either); the < 768KB threshold below already keeps _alloca()
+		// well clear of any realistic stack size, so this is dropped
+		// rather than ported.
+		if (total_size < 768 * 1024)
+			script = (LPSTR)_alloca(total_size);
+		else
 		{
-			if (total_size < 768 * 1024)
-				script = (LPSTR)_alloca(total_size);
-			else
-			{
 #ifdef DEBUG
-                script = (LPSTR)Memory.mem_alloc(total_size, "lua script file");
+			script = (LPSTR)Memory.mem_alloc(total_size, "lua script file");
 #else //!DEBUG
-				script = (LPSTR)Memory.mem_alloc(total_size);
-#endif //-DEBUG
-				dynamic_allocation = true;
-			}
-		}
-		__except (GetExceptionCode() == STATUS_STACK_OVERFLOW)
-		{
-			int errcode = _resetstkoflw();
-			R_ASSERT2(errcode, "Could not reset the stack after \"Stack overflow\" exception!");
-#ifdef DEBUG
-            script					= (LPSTR)Memory.mem_alloc(total_size, "lua script file (after exception)");
-#else //#ifdef DEBUG
 			script = (LPSTR)Memory.mem_alloc(total_size);
-#endif //#ifdef DEBUG
+#endif //-DEBUG
 			dynamic_allocation = true;
-		};
+		}
 
 		xr_strcpy(script, total_size, insert);
 		CopyMemory(script + str_len, caBuffer, u32(tSize));
@@ -1161,7 +1162,7 @@ bool CScriptStorage::object(LPCSTR namespace_name, LPCSTR identifier, int type)
 	string256 S1;
 	xr_strcpy(S1, namespace_name);
 	LPSTR S = S1;
-	::luabind::object lua_namespace = ::luabind::get_globals(lua());
+	::luabind::object lua_namespace = ::luabind::globals(lua());
 	for (;;)
 	{
 		if (!xr_strlen(S))
@@ -1189,10 +1190,10 @@ struct raii_guard : private xray::noncopyable
 
 	~raii_guard()
 	{
-#ifdef DEBUG
+#if defined(DEBUG) && defined(USE_DEBUGGER)
         bool lua_studio_connected = !!ai().script_engine().debugger();
         if (!lua_studio_connected)
-#endif //-DEBUG
+#endif //-DEBUG && USE_DEBUGGER
 		{
 #ifdef DEBUG
             static bool const break_on_assert	= !!strstr(Core.Params,"-break_on_assert");

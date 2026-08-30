@@ -2285,4 +2285,73 @@ target_sources_grouped(
   ../xrServerEntities/xrserver_objects_alife_monsters_script3.cpp
 )
 
+# xrServerEntities batch 4: 6 more files wired in, plus one deliberate
+# exclusion.
+#   - object_factory.cpp/xrServer_Factory.cpp/xrServer_Object_Base.cpp/
+#     xrServer_Objects.cpp/xrServer_Objects_Abstract.cpp: all 5 hit the
+#     same `#include "stdafx.h"` (lowercase) case bug as batch 3's
+#     LevelGameDef.cpp/gametype_chooser.cpp - every reported error
+#     (DLL_Pure/CLIENT_BASE_CLASS/ECORE_API/Device/smart_cast, all looking
+#     unrelated at first glance) was a downstream cascade from resolving to
+#     the narrower xrCore/stdafx.h instead of xrGame/StdAfx.h. Fixing the
+#     one include resolved 4 of the 5 files outright; xrServer_Object_Base.cpp
+#     additionally had `static enum EGameTypes {...}` - storage-class
+#     specifiers don't apply to type definitions, only to objects and
+#     functions - MSVC apparently tolerated this, GCC doesn't; dropped the
+#     stray `static`.
+#   - script_storage.cpp needed several independent fixes: the same
+#     psAI_Flags/aiLua-dead-under-MASTER_GOLD workaround already
+#     established for xrGame/CustomMonster.cpp et al. (see that file's own
+#     comment for why); `luabind::set_allocator(fn)` doesn't exist in this
+#     fork's bundled luabind - it's a plain assignable global,
+#     `luabind::allocator = fn`, whose function-pointer type also grew a
+#     leading `void* context` parameter that the existing allocator
+#     callback didn't have; a dangling `g_pScriptEngine->print_output(...)`
+#     (no such global anywhere in the tree) where every other call site in
+#     this same file calls the identical method as the static
+#     `CScriptStorage::print_output(...)` it is; a `__try`/`__except
+#     (GetExceptionCode() == STATUS_STACK_OVERFLOW)` SEH block working
+#     around a stack-overflowing `_alloca()` - genuinely unportable (no SEH,
+#     no `_resetstkoflw()` on Linux) and dropped following the same
+#     established precedent as xrGame/script_game_object.cpp's and
+#     xrGame/physics_game.cpp's own already-documented SEH removals, kept
+#     safe here by the pre-existing < 768KB threshold that already keeps
+#     `_alloca()` well clear of any realistic stack size; `luabind::get_globals`
+#     -> `luabind::globals` (renamed); and the same missing-`USE_DEBUGGER`-
+#     guard bug as batch 3's script_engine_script.cpp, recurring twice more
+#     in this file.
+#   - script_debugger.cpp (CScriptDebugger's actual implementation, using
+#     Win32 Mailslot IPC - mslotutils.h's CreateMailslot/WriteFile/
+#     LPSECURITY_ATTRIBUTES/etc, and MSVC's _splitpath family) is
+#     deliberately NOT wired in. Investigating why exposed a real, subtle
+#     finding: script_storage.h defines `USE_DEBUGGER`+`USE_LUA_STUDIO`
+#     together, always, under one `#ifndef MASTER_GOLD` - and MASTER_GOLD
+#     itself ends up always defined regardless of DEBUG, because xrCore.h
+#     checks `#ifndef DEBUG` to set MASTER_GOLD (line ~5) *before* it
+#     derives `DEBUG` from the compiler's own `_DEBUG` (line ~90) later in
+#     the same file - so by the time MASTER_GOLD's guard runs, DEBUG isn't
+#     defined yet no matter the build config. Every call site that reaches
+#     `CScriptEngine::debugger()`'s `CScriptDebugger*`-returning overload is
+#     itself guarded by `#if defined(USE_DEBUGGER) && !defined(USE_LUA_STUDIO)`
+#     (e.g. xrGame/console_commands.cpp's CCC_ScriptDbg, already confirmed
+#     compiled out via `-E` preprocessor inspection) or by
+#     `#ifndef USE_LUA_STUDIO` alone (script_engine.cpp/script_engine_inline.h) -
+#     both permanently false here, so CScriptDebugger is real, working code
+#     that is simply never reachable in this build configuration. No
+#     currently-compiling file calls any of its methods (script_callStack.cpp/
+#     script_lua_helper.cpp only ever store a `CScriptDebugger*` they're
+#     handed, never dereference it), so excluding script_debugger.cpp costs
+#     nothing at link time.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "ServerEntities_Batch4"
+  FILES
+  ../xrServerEntities/object_factory.cpp
+  ../xrServerEntities/script_storage.cpp
+  ../xrServerEntities/xrServer_Factory.cpp
+  ../xrServerEntities/xrServer_Object_Base.cpp
+  ../xrServerEntities/xrServer_Objects.cpp
+  ../xrServerEntities/xrServer_Objects_Abstract.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
