@@ -19,9 +19,10 @@
 #include "script_reader.h"
 #include "script_net_packet.h"
 #include "object_factory.h"
+#include "ai_sounds.h" // must precede script_sound_type.h: ESoundTypes is only forward-declared there
 #include "script_sound_type.h"
 #include "xrServer_Objects_ALife_All.h"
-#include "xrServer_Objects_ALife_Smartcovers.h"
+#include "xrServer_Objects_Alife_Smartcovers.h"
 
 
 #ifndef XRGAME_EXPORTS
@@ -44,8 +45,8 @@
 #	include "script_world_property.h"
 #	include "ai/stalker/ai_stalker.h"
 #	include "script_effector.h"
-#	include "particlesobject.h"
-#	include "level.h"
+#	include "ParticlesObject.h"
+#	include "Level.h"
 #	include "memory_space.h"
 #	include "script_render_device.h"
 #	include "script_game_object.h"
@@ -63,7 +64,7 @@
 #	include "script_entity_action.h"
 #	include "helicopter.h"
 #	include "game_base.h"
-#	include "demoinfo.h"
+#	include "DemoInfo.h"
 #	include "script_ui_registrator.h"
 #	include "key_binding_registrator.h"
 #	include "fs_registrator.h"
@@ -100,11 +101,11 @@
 #	ifdef	DEBUG
 #		include "PHDebug.h"
 #	endif
-#	include "hit.h"
+#	include "Hit.h"
 #	include "PHDestroyable.h"
-#	include "car.h"
+#	include "Car.h"
 #	include "script_lanim.h"
-#	include "artefact.h"
+#	include "Artefact.h"
 #	include "game_cl_single.h"
 #	include "alife_human_brain.h"
 #	include "alife_monster_brain.h"
@@ -121,7 +122,7 @@
 #	include "Torch.h"
 #	include "WeaponAK74.h"
 #	include "WeaponBinoculars.h"
-#	include "WeaponBM16.h"
+#	include "weaponBM16.h"
 #	include "WeaponFN2000.h"
 #	include "WeaponFORT.h"
 #	include "WeaponGroza.h"
@@ -140,18 +141,20 @@
 #	include "WeaponVintorez.h"
 #	include "WeaponWalther.h"
 #	include "saved_game_wrapper.h"
-#	include "mincer.h"
-#	include "mosquitobald.h"
+#	include "Mincer.h"
+#	include "MosquitoBald.h"
 #	include "HairsZone.h"
 #	include "ai/trader/ai_trader.h"
 #	include "space_restrictor.h"
-#	include "physicobject.h"
+#	include "PhysicObject.h"
 #	include "smart_cover_object.h"
 //#	include "ui/FactionState.h"
-#	include "actor.h"
-#	include "login_manager.h"
-#	include "account_manager.h"
-#	include	"profile_store.h"
+#	include "Actor.h"
+// login_manager.h/account_manager.h/profile_store.h - dead GameSpy account
+// system, confirmed absent anywhere in this source tree (same removal as
+// xrGame/CMakeLists.txt's documented GameSpy exclusions); their only
+// consumers here were the gamespy_* script_register() calls in
+// script_engine_export.cpp, which have been dropped accordingly.
 #	include	"profile_data_types.h"
 #	include "script_light.h"
 #	include "script_wallmarks_manager.h"

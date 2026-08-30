@@ -2141,4 +2141,82 @@ target_sources_grouped(
   ../xrServerEntities/xrServer_Objects_Alife_Smartcovers.cpp
 )
 
+# xrServerEntities batch 2: 14 files, unlocked almost entirely by a single
+# root-cause fix rather than per-file triage. `xrServer_script_macroses.h`'s
+# `luabind_class_*N` macro family (used by every server-entity class's Lua
+# binding registration) expands to `DEFINE_LUABIND_CLASS_WRAPPER_N`, which
+# passed the polymorphism-dispatch wrapper type (CWrapperAbstractItem<T> et
+# al., a luabind::wrap_base subclass) as class_<>'s 3rd template argument
+# (HolderType) instead of its 4th (WrapperType) - see
+# script_export_macroses.h's own comment above DEFINE_LUABIND_CLASS_WRAPPER_0
+# for the full mechanism. This macro system predates the 4-parameter
+# class_<T, BaseOrBases, HolderType, WrapperType> shape in this fork's
+# bundled luabind; every registration compiled by luck only because
+# WrapperType silently defaulted to null_type, so add_wrapper_cast() and
+# constructor_registration() never actually needed the real wrapper type's
+# definition - until a class with both a real constructor registration and
+# this positional bug got exercised (xrServer_Objects_ALife_Items_script3.cpp
+# et al.), which failed deep in luabind/detail/constructor.hpp trying to
+# construct e.g. `CWrapperAbstractItem<CSE_ALifeItemWeaponMagazinedWGL>`
+# directly from a raw T* (it only has `explicit CWrapperXxx(LPCSTR)`).
+# Moving `wrapper` to the 4th slot (and passing `luabind::null_type`
+# explicitly for the 3rd) fixed the root cause for all 5 macro arities in
+# one place.
+# Fixing that exposed a second, previously-dormant bug in the same header:
+# CWrapperAbstractItem<T> (and its siblings) is a real class template
+# defined at global scope, and every INHERIT_ITEM/INHERIT_MONSTER/etc-
+# generated method called the free function `call_member<ret_type>(this,
+# ...)` completely unqualified. `call_member` is only ever found via ADL
+# (deferred to instantiation/phase 2), but the compiler must already know
+# at phase 1 whether a name denotes a template to parse the following `<`
+# as a template-argument-list opener rather than less-than - and ordinary
+# (non-ADL) lookup at the template's definition point (before any .cpp's
+# own `using namespace luabind;`, which comes too late to help a header
+# parsed earlier) finds nothing. GCC's -Wtemplate-body flags this
+# ambiguity as a warning at first parse but then hard-poisons the template,
+# turning any real instantiation into "instantiating erroneous template" -
+# the same poisoning mechanism as the already-documented Device/_matrix.h
+# finding above, different root cause. Fixed by qualifying every
+# `call_member<...>` call in script_export_macroses.h as
+# `luabind::call_member<...>` (a qualified-id is unambiguous regardless of
+# lookup phase); `call<...>` calls were untouched since those are member
+# calls on the non-dependent `wrap_base` base and were never affected.
+# Two other small independent fixes landed alongside this batch:
+#   - object_factory_script.cpp: `instance = std::move(instance).enum_(...)
+#     [...]` tried to assign back into a luabind::class_<>, whose
+#     operator= is private (same class of bug as this file's own
+#     console_commands.cpp precedent above) - dropped the redundant
+#     self-assignment, since enum_()'s operator[] already mutates and
+#     returns the original object by reference.
+#   - script_engine_export.h/.cpp: several case-#include bugs (particlesobject.h/
+#     level.h -> ParticlesObject.h/Level.h, demoinfo.h -> DemoInfo.h, etc.,
+#     xrServer_Objects_ALife_Smartcovers.h -> ...Alife...); an include-order
+#     bug (script_sound_type.h's `enum ESoundTypes;` is a use of an enum
+#     only ever fully declared in ai_sounds.h, which the header included
+#     too late - moved ai_sounds.h first); and 10 dead
+#     gamespy_*::script_register() calls plus their 3 dead includes
+#     (login_manager.h/account_manager.h/profile_store.h - confirmed absent
+#     anywhere in this source tree, same GameSpy-removal class as this
+#     file's other documented exclusions) - all 10 types have zero
+#     definitions anywhere in the tree, so the calls were simply dead code.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "ServerEntities_Batch2"
+  FILES
+  ../xrServerEntities/object_factory_script.cpp
+  ../xrServerEntities/script_engine_export.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_Items_script.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_Items_script2.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_Items_script3.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_Monsters_script.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_Monsters_script2.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_Monsters_script4.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_script.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_script2.cpp
+  ../xrServerEntities/xrServer_Objects_ALife_script3.cpp
+  ../xrServerEntities/xrServer_Objects_Alife_Smartcovers_script.cpp
+  ../xrServerEntities/xrServer_Objects_script.cpp
+  ../xrServerEntities/xrServer_Objects_script2.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
