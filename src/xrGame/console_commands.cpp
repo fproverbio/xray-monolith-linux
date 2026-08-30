@@ -329,7 +329,6 @@ BOOL	g_bDebugNode = FALSE;
 u32		g_dwDebugNodeSource = 0;
 u32		g_dwDebugNodeDest = 0;
 extern	BOOL	g_bDrawBulletHit;
-extern	BOOL	g_bDrawFirstBulletCrosshair;
 
 float	debug_on_frame_gather_stats_frequency = 0.f;
 #endif
@@ -2918,7 +2917,6 @@ void CCC_RegisterCommands()
 	CMD3(CCC_Mask, "dbg_draw_ph_ray_motions", &ph_dbg_draw_mask, phDbgDrawRayMotions);
 	CMD4(CCC_Float, "dbg_ph_vel_collid_damage_to_display", &dbg_vel_collid_damage_to_display, 0.f, 1000.f);
 	CMD4(CCC_DbgBullets, "dbg_draw_bullet_hit", &g_bDrawBulletHit, 0, 1);
-	CMD4(CCC_Integer, "dbg_draw_fb_crosshair", &g_bDrawFirstBulletCrosshair, 0, 1);
 	CMD1(CCC_DbgPhTrackObj, "dbg_track_obj");
 	CMD3(CCC_Mask, "dbg_ph_actor_restriction", &ph_dbg_draw_mask1, ph_m1_DbgActorRestriction);
 	CMD3(CCC_Mask, "dbg_draw_ph_hit_anims", &ph_dbg_draw_mask1, phDbgHitAnims);
