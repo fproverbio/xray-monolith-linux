@@ -9,7 +9,6 @@
 #pragma once
 
 #include "script_export_space.h"
-
-enum ESoundTypes;
+#include "ai_sounds.h" // ESoundTypes is only forward-declared without this; real declaration lives here
 
 typedef enum_exporter<ESoundTypes> CScriptSoundType;

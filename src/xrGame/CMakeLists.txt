@@ -2219,4 +2219,70 @@ target_sources_grouped(
   ../xrServerEntities/xrServer_Objects_script2.cpp
 )
 
+# xrServerEntities batch 3: 8 files, mostly narrow independent bugs.
+#   - xrserver_objects_alife_monsters_script3.cpp: `return_stl_iterator`
+#     used bare instead of instantiated (`return_stl_iterator()` - it's a
+#     type alias, not a value), plus the usual missing
+#     `using namespace luabind::policy;`.
+#   - LevelGameDef.cpp/gametype_chooser.cpp: both `#include "stdafx.h"`
+#     (lowercase) instead of the real `xrGame/StdAfx.h` (capitalized) -
+#     quoted-include search is case-sensitive and, given this build's
+#     include-path order, silently resolves to the much narrower
+#     `xrCore/stdafx.h` instead, which doesn't define `ECORE_API` -
+#     LevelGameDef.h and Include/xrRender/DrawUtils.h (via
+#     xrServer_Objects_Abstract.h) both use it. Fixed by capitalizing the
+#     include; most other xrServerEntities files with this same lowercase
+#     include happen to compile fine regardless, since their headers never
+#     need anything from the wider xrGame/StdAfx.h chain.
+#   - script_engine.cpp: `LUABIND_TYPE_INFO` (the old luabind's opaque
+#     type-info typedef) no longer exists - this fork's bundled luabind's
+#     cast-failed callback is `void(*)(lua_State*, luabind::type_id
+#     const&)`; updated `lua_cast_failed`'s signature and `info->name()` ->
+#     `info.name()` (type_id is passed by reference, not pointer) to match.
+#   - script_sound_type.h: same enum-forward-declared-without-a-real-
+#     declaration-in-scope bug already fixed once in script_engine_export.h
+#     for this same include chain, but here it's a bug in the shared header
+#     itself, not a downstream includer - fixed at the source instead of
+#     per-includer, by including ai_sounds.h (the real declaration)
+#     directly. Unlocked script_sound_type_script.cpp, which still needed
+#     its own separate missing-`template<>` fix.
+#   - object_item_script.h/.cpp: `luabind::object::operator()` (this fork's
+#     bundled luabind) isn't const-qualified, but `m_client_creator`/
+#     `m_server_creator` are invoked from const methods to call into Lua -
+#     marked both members `mutable` (calling a stored Lua factory doesn't
+#     change its identity). Also `luabind::adopt<luabind::result>()` - both
+#     the type (needs `luabind::policy::` qualification, or `using
+#     namespace luabind::policy;`) and the `result` constant (removed;
+#     0 is its direct positional equivalent - already established in
+#     xrGame/script_game_object_script2.cpp) needed updating.
+#   - script_ini_file_script.cpp: `luabind::internal_string` doesn't exist
+#     in this fork's bundled luabind - replaced with `luabind::string`
+#     (`std::basic_string` with luabind's allocator), which is exactly
+#     what internal_string aliased to in the original API and is already
+#     used the same way elsewhere (xrGame/script_engine_help.cpp); plus the
+#     same `adopt<result>()` -> `adopt<0>()` fix as object_item_script.cpp.
+#   - script_engine_script.cpp: a real, narrow pre-existing bug - ErrorLog()
+#     called `ai().script_engine().debugger()` guarded only by `#ifdef
+#     DEBUG`, when `debugger()` only exists at all under `#ifdef
+#     USE_DEBUGGER` (not defined in this build) - every other call site in
+#     the same function correctly guards on USE_DEBUGGER too. Fixed by
+#     adding the missing guard. Separately, `.def(tostring(self))` on
+#     profile_timer_script needs `operator<<(ostream&, T const&)` to exist,
+#     which was present in the source but commented out (non-const
+#     signature) - restored it with a const-correct signature matching
+#     luabind's tostring_operator<T>(T const&).
+target_sources_grouped(
+  TARGET xrGame
+  NAME "ServerEntities_Batch3"
+  FILES
+  ../xrServerEntities/LevelGameDef.cpp
+  ../xrServerEntities/gametype_chooser.cpp
+  ../xrServerEntities/object_item_script.cpp
+  ../xrServerEntities/script_engine.cpp
+  ../xrServerEntities/script_engine_script.cpp
+  ../xrServerEntities/script_ini_file_script.cpp
+  ../xrServerEntities/script_sound_type_script.cpp
+  ../xrServerEntities/xrserver_objects_alife_monsters_script3.cpp
+)
+
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
