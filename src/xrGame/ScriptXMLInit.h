@@ -21,7 +21,6 @@ class CUIEditBox;
 class CUIMultiTextStatic;
 class CUIAnimatedStatic;
 class CUISleepStatic;
-class CServerList;
 class CUIMapList;
 class CUITrackBar;
 class CUIMapInfo;
@@ -63,7 +62,6 @@ public:
 	CUI3tButton* Init3tButton(LPCSTR path, CUIWindow* parent);
 
 	CUITabControl* InitTab(LPCSTR path, CUIWindow* parent);
-	CServerList* InitServerList(LPCSTR path, CUIWindow* parent);
 	CUIMapList* InitMapList(LPCSTR path, CUIWindow* parent);
 	CUIMapInfo* InitMapInfo(LPCSTR path, CUIWindow* parent);
 	CUITrackBar* InitTrackBar(LPCSTR path, CUIWindow* parent);

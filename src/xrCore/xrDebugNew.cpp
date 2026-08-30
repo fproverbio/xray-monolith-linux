@@ -161,7 +161,7 @@ public:
 };
 #endif
 extern void printLuaStack();
-void LogStackTrace(LPCSTR header = nullptr, bool printStack = false)
+void LogStackTrace(LPCSTR header, bool printStack)
 {
 	if (!shared_str_initialized)
 		return;

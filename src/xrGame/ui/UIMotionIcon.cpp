@@ -2,7 +2,15 @@
 #include "UIMainIngameWnd.h"
 #include "UIMotionIcon.h"
 #include "UIXmlInit.h"
-#include "../Actor.cpp"
+
+// GetActorVisibility() is a free function defined in Actor.cpp (already
+// compiled as its own translation unit) with no header declaration
+// anywhere - the original code #included the whole .cpp file to reach
+// it, which would produce a duplicate-definition link error once this
+// file is actually compiled as its own separate translation unit (as
+// it always should have been). A plain extern declaration is the real
+// fix, not the include.
+extern float GetActorVisibility();
 
 const LPCSTR MOTION_ICON_XML = "motion_icon.xml";
 

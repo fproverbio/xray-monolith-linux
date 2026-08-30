@@ -95,7 +95,13 @@ IC std::string __cdecl make_string(LPCSTR format, ...)
 
 extern XRCORE_API xrDebug Debug;
 
-XRCORE_API void LogStackTrace(LPCSTR header);
+// The real definition (xrDebugNew.cpp) takes a 2nd `bool printStack`
+// parameter this declaration was missing entirely - a genuine signature
+// mismatch (not just a default-argument gap), so every real call site
+// (which only ever passes 1 arg) was mangled against this declaration's
+// 1-parameter symbol name, which xrDebugNew.cpp's actual 2-parameter
+// definition can never satisfy.
+XRCORE_API void LogStackTrace(LPCSTR header, bool printStack = false);
 
 #include "xrDebug_macros.h"
 

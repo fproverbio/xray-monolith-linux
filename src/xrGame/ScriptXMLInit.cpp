@@ -9,7 +9,6 @@
 #include "ui/UITabControl.h"
 #include "ui/UIFrameWindow.h"
 //#include "ui\UILabel.h"
-#include "ui\ServerList.h"
 #include "ui/UIMapList.h"
 #include "ui/UIKeyBinding.h"
 #include "ui/UIEditBox.h"
@@ -282,14 +281,11 @@ CUITabControl* CScriptXmlInit::InitTab(LPCSTR path, CUIWindow* parent)
 }
 
 
-CServerList* CScriptXmlInit::InitServerList(LPCSTR path, CUIWindow* parent)
-{
-	CServerList* pWnd = xr_new<CServerList>();
-	pWnd->InitFromXml(m_xml, path);
-	_attach_child(pWnd, parent);
-	return pWnd;
-}
-
+// InitServerList (CServerList, ui/ServerList.h) removed: MP-only server-
+// browser UI, confirmed absent from this tree (see the exclusion note in
+// xrGame/CMakeLists.txt this file used to be listed under) - this was
+// the file's one and only MP-only touchpoint, isolated from everything
+// else here the same way object_factory_register.cpp's was.
 CUIMapList* CScriptXmlInit::InitMapList(LPCSTR path, CUIWindow* parent)
 {
 	CUIMapList* pWnd = xr_new<CUIMapList>();
@@ -392,7 +388,6 @@ void CScriptXmlInit::script_register(lua_State* L)
 		.def("InitSpinText", &CScriptXmlInit::InitSpinText)
 		.def("InitComboBox", &CScriptXmlInit::InitComboBox)
 		.def("InitTab", &CScriptXmlInit::InitTab)
-		.def("InitServerList", &CScriptXmlInit::InitServerList)
 		.def("InitMapList", &CScriptXmlInit::InitMapList)
 		.def("InitMapInfo", &CScriptXmlInit::InitMapInfo)
 		.def("InitTrackBar", &CScriptXmlInit::InitTrackBar)

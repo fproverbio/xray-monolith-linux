@@ -463,6 +463,7 @@ target_sources_grouped(
   ui/UIMap.cpp
   ui/UIMapInfo.cpp
   ui/UIMapInfo_script.cpp
+  ui/UIMotionIcon.cpp
   ui/UIMapLegend.cpp
   ui/UIMapList.cpp
   ui/UIMapWnd2.cpp
@@ -1706,8 +1707,13 @@ target_sources_grouped(
 #   game_sv_base.cpp Level_start.cpp              - xrGameSpyServer.h
 #   player_account.cpp ui_export_script.cpp       - login_manager.h
 #   Level_network_Demo.cpp                        - UIGameDM.h
-#   ScriptXMLInit.cpp                             - ui\ServerList.h
 #   xrServer_Connect.cpp                          - game_sv_deathmatch.h
+# ScriptXMLInit.cpp (2026-08-30): un-excluded - ui\ServerList.h (CServerList,
+# the MP server-browser UI) was its only dead touchpoint, isolated the same
+# way object_factory_register.cpp's was (one method + one .def() registration
+# removed, everything else here is real generic XML/UI-init scripting glue
+# used throughout, e.g. XMLLuaCallback, needed by the already-wired-in
+# xrXMLParser.cpp).
 # A 17th, game_cl_base_weapon_usage_statistic_save.cpp, is different in
 # kind: it compiles fine on its own merits but both its functions
 # (SaveData()/SaveDataLtx()) are called from nowhere in this entire
@@ -2463,6 +2469,21 @@ target_sources_grouped(
   NAME "ServerEntities_Batch6"
   FILES
   ../xrServerEntities/smart_cast_stats.cpp
+)
+
+# ScriptXMLInit.cpp (2026-08-30): un-excluded from the root-sweep sixth-
+# batch MP list above - see that comment for the triage detail (one dead
+# CServerList/ui\ServerList.h touchpoint removed, everything else here is
+# real, needed generic XML/UI-init scripting glue, e.g. XMLLuaCallback).
+# ui/UIMotionIcon.cpp (2026-08-30): wired in separately, alongside the
+# other ui/ files above - its own dead #include "../Actor.cpp" (working
+# around a free function with no header declaration) was replaced with a
+# plain extern declaration instead.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch16"
+  FILES
+  ScriptXMLInit.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
