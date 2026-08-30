@@ -157,7 +157,10 @@ private:
 	xr_string m_sConnectResult;
 
 public:
-	void OnGameSpyChallenge(NET_Packet* P);
+	// OnGameSpyChallenge (2026-08-30): removed - GameSpy CD-key validation
+	// challenge handler, MP-only, no definition left anywhere in the tree
+	// (MP/GameSpy removal, commit 1d4ec53e). M_GAMESPY_CDKEY_VALIDATION_CHALLENGE
+	// is never sent to a client in this SP-only port.
 	void OnBuildVersionChallenge();
 	void OnConnectResult(NET_Packet* P);
 	// Static particles
