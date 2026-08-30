@@ -40,15 +40,23 @@ namespace soundSmoothingParams {
 	float pitchVariationPower = 0.f;
 	float power = 1.8;
 	int steps = 15;
-	float alpha = getAlpha();
-	IC float getAlpha() {
+	// Sound.h declares these 3 as plain `extern` (no body) and calls them
+	// from its own inline methods, used across many other translation
+	// units - `IC` (inline) here meant the only body ever existed inside
+	// this one .cpp file, invisible to every other TU, so any call site
+	// outside this file (i.e. every real one) was left with a genuine
+	// undefined reference at link time. Real, single, out-of-line
+	// definitions instead, matching how every other soundSmoothingParams
+	// member here already works.
+	float getAlpha() {
 		return 2.0f / (steps + 1);
 	}
-	IC float getTimeDeltaSmoothing() {
+	float alpha = getAlpha();
+	float getTimeDeltaSmoothing() {
 		return alpha;
 		//return min(1.0f, alpha * (Device.fTimeDelta / steps));
 	}
-	IC float getSmoothedValue(float target, float current, float smoothing = getTimeDeltaSmoothing()) {
+	float getSmoothedValue(float target, float current, float smoothing) {
 		return current + smoothing * (target - current);
 	}
 };

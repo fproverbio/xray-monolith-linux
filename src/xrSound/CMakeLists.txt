@@ -9,23 +9,26 @@ target_include_directories(xrSound PUBLIC .)
 # renderer backend is OpenAL, not DirectSound - dsound.h doesn't exist
 # on Linux and nothing in this build references these GUIDs anyway.
 #
-# SoundRender_Core.cpp/SoundRender_CoreA.cpp intentionally excluded for
-# this pass: SoundRender_CoreA.cpp needs the real CConsole (extern
-# CConsole* Console; Console->Execute(...)) from ../xrEngine/XR_IOConsole.h
-# to register reverb/EAX console commands - xrEngine's console subsystem
-# isn't ported yet. SoundRender_Core.cpp's ../xrEngine/xrLevel.h include
-# looks vestigial (no symbol from it is actually referenced in the file)
-# but excluded alongside CoreA for now since they're the two halves of
-# the same CSoundRender_Core class. Revisit alongside xrEngine.
-#
-# NotificationClient.cpp/.h intentionally excluded: a Windows COM/WASAPI
-# IMMNotificationClient implementation (audio-device hotplug detection),
-# built on <mmdeviceapi.h> which doesn't exist on Linux at all - not a
-# portability shim job, a real feature that only makes sense per-backend
-# (OpenAL's own device enumeration already covers the "which device"
-# question; hotplug notification would be a real ALSA/PulseAudio-specific
-# feature to add later). Only referenced from SoundRender_Core(A), both
-# already excluded above, so nothing else needs it.
+# SoundRender_Core.cpp/SoundRender_CoreA.cpp (2026-08-30): wired in for
+# real. Both were excluded pending xrEngine's console subsystem
+# (SoundRender_CoreA.cpp's Console->Execute(...) call, ../xrEngine/
+# XR_IOConsole.h) - that's long since wired in (xr_ioc_cmd.cpp already
+# registers all of the psReverb*/psSound*/snd_efx_* console commands
+# these two files define the backing globals for, which is exactly why
+# their absence surfaced as undefined-symbol link errors, not a compile
+# gap). SoundRender_Core.cpp's ../xrEngine/xrLevel.h include turned out
+# to compile fine as-is (xrEngine now exists in full). The one real fix
+# needed: NotificationClient.h/.cpp (Windows COM/WASAPI audio-device
+# hotplug detection, IMMNotificationClient/<mmdeviceapi.h> - a real,
+# per-backend feature with no portable Win32-shim equivalent, not
+# something to blanket-port) is replaced by a trivial stub class with the
+# same name and a no-op constructor/destructor - SoundRender_Core.h's
+# own bPendingDefaultDeviceSwitch/bPendingDeviceListRefresh flags (already
+# polled every frame by the already-wired-in SoundRender_Core_Processor.cpp)
+# simply never get set, so hotplug is silently unimplemented rather than
+# half-wired; OpenAL's own device enumeration (OpenALDeviceList.cpp)
+# already covers the primary "which device" question regardless. The real
+# NotificationClient.cpp (COM-based) stays on disk, unbuilt.
 target_sources_grouped(
   TARGET xrSound
   NAME "Sound"
@@ -33,9 +36,11 @@ target_sources_grouped(
   OpenALDeviceList.cpp
   sound.cpp
   SoundRender_Cache.cpp
+  SoundRender_Core.cpp
   SoundRender_Core_Processor.cpp
   SoundRender_Core_SourceManager.cpp
   SoundRender_Core_StartStop.cpp
+  SoundRender_CoreA.cpp
   SoundRender_Emitter.cpp
   SoundRender_Emitter_FSM.cpp
   SoundRender_Emitter_StartStop.cpp

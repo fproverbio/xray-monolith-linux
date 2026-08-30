@@ -4,7 +4,6 @@
 #include "SoundRender_Core.h"
 #include "SoundRender_Source.h"
 #include "../xrCore/ScopeLock.hpp"
-#include <tbb/parallel_for_each.h>
 
 CSoundRender_Source* CSoundRender_Core::i_create_source(LPCSTR name)
 {
@@ -67,7 +66,18 @@ void CSoundRender_Core::i_create_all_sources()
 		lock.Leave();
 	};
 
-	tbb::parallel_for_each(flist, processFile);
+	// Real TBB usage here (tbb::parallel_for_each) is a genuine, real
+	// third-party dependency (Intel oneTBB) - this port only vendors its
+	// headers (API-compatibility for the real, unbuilt tbb.dll, same
+	// category as the Discord SDK/vTune prebuilt-native-library gaps
+	// elsewhere in this port) with no source or Linux build anywhere in
+	// this tree. This is the only tbb call site in xrSound, reached only
+	// from the opt-in "-prefetch_sounds" command-line flag (a debug/
+	// startup-time convenience, not a hot path) - a plain sequential loop
+	// is a correct, if less optimal, substitute rather than pulling in a
+	// whole new third-party build dependency for one call site.
+	for (const FS_File& file : flist)
+		processFile(file);
 
 	Msg("Finished creating %d sound sources. Duration: %d ms", s_sources.size() - sizeBefore, T.GetElapsed_ms());
 }
