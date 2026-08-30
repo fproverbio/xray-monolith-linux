@@ -1123,16 +1123,25 @@ void xrServer::PerformCheckClientsForMaxPing()
 	ForEachClientDoSender(temp_functor);
 }
 
-extern s32 g_sv_dm_dwFragLimit;
-extern s32 g_sv_ah_dwArtefactsNum;
-extern s32 g_sv_dm_dwTimeLimit;
-extern int g_sv_ah_iReinforcementTime;
-extern int g_sv_mp_iDumpStatsPeriod;
-extern BOOL g_bCollectStatisticData;
-
-//xr_token game_types[];
 LPCSTR GameTypeToString(EGameIDs gt, bool bShort);
 
+// GetServerInfo (2026-08-30): the deathmatch/team-deathmatch/artefact-hunt/
+// capture-the-artefact branches this used to have, plus the "time limit" and
+// "statistic period" display blocks, all read cvars (g_sv_dm_dwFragLimit,
+// g_sv_ah_dwArtefactsNum, g_sv_dm_dwTimeLimit, g_sv_ah_iReinforcementTime,
+// g_sv_mp_iDumpStatsPeriod, g_bCollectStatisticData) whose defining file was
+// deleted in the same MP/GameSpy removal as the other exclusions in this
+// CMakeLists.txt - there is no source left anywhere in the tree that sets
+// them. They're also genuinely unreachable in this SP-only fork regardless:
+// game->Type() can only ever be eGameIDSingle here, since the MP game-state
+// subclasses game_getCLASS_ID() would dispatch to for the other EGameIDs
+// values (SV_DM/CL_DM/etc., see game_base.cpp's getCLASS_ID) were removed
+// along with everything else MP, so those class IDs have no registered
+// factory to construct from (mirrors the existing
+// `if (game->Type() == eGameIDSingle) return false;` early-return this same
+// file already relies on elsewhere, e.g. xrServer::OnGameSpyChallenge-style
+// checks). This was pure MP server-administration display text with no SP
+// equivalent, so it's dropped rather than reinvented.
 void xrServer::GetServerInfo(CServerInfo* si)
 {
 	string32 tmp;
@@ -1143,52 +1152,13 @@ void xrServer::GetServerInfo(CServerInfo* si)
 		c_str();
 	si->AddItem("Uptime", time, RGB(255, 228, 0));
 
-	//	xr_strcpy( tmp256, get_token_name(game_types, game->Type() ) );
 	xr_strcpy(tmp256, GameTypeToString(game->Type(), true));
-	if (game->Type() == eGameIDDeathmatch || game->Type() == eGameIDTeamDeathmatch)
-	{
-		xr_strcat(tmp256, " [");
-		xr_strcat(tmp256, itoa(g_sv_dm_dwFragLimit, tmp, 10));
-		xr_strcat(tmp256, "] ");
-	}
-	else if (game->Type() == eGameIDArtefactHunt || game->Type() == eGameIDCaptureTheArtefact)
-	{
-		xr_strcat(tmp256, " [");
-		xr_strcat(tmp256, itoa(g_sv_ah_dwArtefactsNum, tmp, 10));
-		xr_strcat(tmp256, "] ");
-		g_sv_ah_iReinforcementTime;
-	}
-
-	//if ( g_sv_dm_dwTimeLimit > 0 )
-	{
-		xr_strcat(tmp256, " time limit [");
-		xr_strcat(tmp256, itoa(g_sv_dm_dwTimeLimit, tmp, 10));
-		xr_strcat(tmp256, "] ");
-	}
-	if (game->Type() == eGameIDArtefactHunt || game->Type() == eGameIDCaptureTheArtefact)
-	{
-		xr_strcat(tmp256, " RT [");
-		xr_strcat(tmp256, itoa(g_sv_ah_iReinforcementTime, tmp, 10));
-		xr_strcat(tmp256, "]");
-	}
 	si->AddItem("Game type", tmp256, RGB(128, 255, 255));
 
 	if (g_pGameLevel)
 	{
 		time = InventoryUtilities::GetGameTimeAsString(InventoryUtilities::etpTimeToMinutes).c_str();
-
-		xr_strcpy(tmp256, time);
-		if (g_sv_mp_iDumpStatsPeriod > 0)
-		{
-			xr_strcat(tmp256, " statistic [");
-			xr_strcat(tmp256, itoa(g_sv_mp_iDumpStatsPeriod, tmp, 10));
-			xr_strcat(tmp256, "]");
-			if (g_bCollectStatisticData)
-			{
-				xr_strcat(tmp256, "[weapons]");
-			}
-		}
-		si->AddItem("Game time", tmp256, RGB(205, 228, 178));
+		si->AddItem("Game time", time, RGB(205, 228, 178));
 	}
 }
 
