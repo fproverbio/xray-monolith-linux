@@ -38,11 +38,20 @@ target_include_directories(xrEngine PUBLIC .)
 # linked implementations above. x_ray.h's CApplication does not - see the
 # x_ray.cpp exclusion note below, its one remaining blocker.
 #
-# FDemoRecord.cpp: 1 of the original 2 files that #include xrGame directly
-# (just toggles a cursor via a Game().Level().CurrentEntity()-adjacent
-# call) - still deferred; MP-diagnostics/demo-recording code, out of scope
-# for now regardless of xrGame's availability (see the deliberate MP
-# exclusion elsewhere in xrGame/CMakeLists.txt).
+# FDemoRecord.cpp (2026-08-30): un-excluded. Its one xrGame dependency,
+# ../xrGame/UICursor.h, is trivial - just GetUICursor().Show()/Hide() calls
+# to toggle cursor visibility - same shape as imgui_base_input.cpp's
+# xrGame include below, now that xrGame exists as a real target. Needed
+# 4 mechanical fixes: two case-sensitivity #includes (xr_ioconsole.h ->
+# XR_IOConsole.h, render.h -> Render.h - Windows/MSVC filesystems are
+# case-insensitive, Linux's isn't), one Windows-ism function name
+# (_unlink -> unlink, the MSVC-prefixed name for the POSIX call already
+# reachable via unistd.h), and one Windows-ism typedef (INT -> s32,
+# GetLM_BBox's Step parameter - INT doesn't exist in this port's xrCore).
+# Kept rather than deleted as MP dead weight: this backs the demo_record
+# console command, a genuinely useful SP debug tool (free-camera fly-
+# through and teleport to any point in the loaded map) - not MP-only
+# diagnostics, worth having for development regardless of multiplayer.
 #
 # tntQAVI.h/.cpp: Video-for-Windows AVI playback, needs a real replacement
 # codec, not a mechanical fix - deferred.
@@ -316,6 +325,7 @@ target_sources_grouped(
   Environment_render.cpp
   thunderbolt.cpp
   FDemoPlay.cpp
+  FDemoRecord.cpp
   Feel_Touch.cpp
   Feel_Vision.cpp
   GameFont.cpp

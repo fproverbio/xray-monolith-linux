@@ -4,10 +4,10 @@
 
 #include "GameFont.h"
 #include "FDemoRecord.h"
-#include "xr_ioconsole.h"
+#include "XR_IOConsole.h"
 #include "xr_input.h"
 #include "xr_object.h"
-#include "render.h"
+#include "Render.h"
 #include "CustomHUD.h"
 #include "CameraManager.h"
 #include "../xrGame/UICursor.h"
@@ -76,7 +76,7 @@ CDemoRecord::CDemoRecord(const char* name, float life_time, BOOL return_ctrl_inp
 	 psHUD_Flags.set(HUD_CROSSHAIR, FALSE);
 	 */
 	m_b_redirect_input_to_level = false;
-	_unlink(name);
+	unlink(name);
 	file = FS.w_open(name);
 	isInputBlocked = FALSE;
 	pDemoRecords = nullptr;
@@ -213,7 +213,7 @@ void CDemoRecord::MakeScreenshotFace()
 }
 
 
-void GetLM_BBox(Fbox& bb, INT Step)
+void GetLM_BBox(Fbox& bb, s32 Step)
 {
 	float half_x = bb.min.x + (bb.max.x - bb.min.x) / 2;
 	float half_z = bb.min.z + (bb.max.z - bb.min.z) / 2;
