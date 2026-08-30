@@ -989,17 +989,11 @@ public:
 		xyz.mul(-1.f);
 	}
 
-	IC SelfRef hud_to_world()
-	{
-		Device.hud_to_world(*this);
-		return *this;
-	}
-
-	IC SelfRef world_to_hud()
-	{
-		Device.world_to_hud(*this);
-		return *this;
-	}
+	// hud_to_world()/world_to_hud() used to live here - see
+	// _vector3d.h's identical removal note (same architectural-layering
+	// bug: an unresolvable xrEngine `Device` reference poisoning every
+	// translation unit that transitively includes this header, not just
+	// these 2 dead, zero-real-caller methods).
 };
 
 typedef _matrix<float> Fmatrix;

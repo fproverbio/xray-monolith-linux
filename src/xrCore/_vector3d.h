@@ -706,47 +706,25 @@ public:
 		}
 	}
 
-	IC SelfRef hud_to_world()
-	{
-		Device.hud_to_world(*this);
-		return *this;
-	}
-
-	IC SelfRef world_to_hud()
-	{
-		Device.world_to_hud(*this);
-		return *this;
-	}
-
-	IC SelfRef hud_to_world_dir()
-	{
-		Device.hud_to_world_dir(*this);
-		return *this;
-	}
-
-	IC SelfRef world_to_hud_dir()
-	{
-		Device.world_to_hud_dir(*this);
-		return *this;
-	}
-
-    // demonized: EMA smoothing
-    IC SelfRef ema(Self& target, unsigned int steps) {
-        float smoothing_alpha = 2.0f / (steps + 1);
-        float delta = Device.dwTimeDelta;
-
-        if (steps <= 1 || (fis_zero(x) && fis_zero(y) && fis_zero(z))) {
-            x = target.x;
-            y = target.y;
-            z = target.z;
-            return *this;
-        }
-
-        x = x + std::min(1.f, smoothing_alpha * (delta / steps)) * (target.x - x);
-        y = y + std::min(1.f, smoothing_alpha * (delta / steps)) * (target.y - y);
-        z = z + std::min(1.f, smoothing_alpha * (delta / steps)) * (target.z - z);
-        return *this;
-    }
+	// hud_to_world()/world_to_hud()/hud_to_world_dir()/world_to_hud_dir()/
+	// ema() used to live here - HUD/camera-transform convenience wrappers
+	// (and an unrelated EMA-smoothing helper) that called the xrEngine
+	// global `Device` directly from xrCore, which architecturally has no
+	// business referencing it at all. `Device` is unresolvable at the
+	// point this header is first parsed (xrCore has no xrEngine include),
+	// so GCC's two-phase lookup treats it as a hard error under strict
+	// mode and a silently-tolerated warning under -fpermissive - except
+	// the poisoning happens at first PARSE of the template body, not at
+	// instantiation, so merely including this header (transitively, by
+	// nearly every translation unit in the engine) was enough to corrupt
+	// unrelated later template instantiations in the same TU (confirmed:
+	// this was silently breaking luabind::object_cast<T>() everywhere,
+	// not just these 5 dead methods). Removed rather than fixed in place
+	// - grep-confirmed zero real callers anywhere in this tree (every
+	// real Device.hud_to_world(...)-shaped call site calls
+	// CRenderDevice's own method directly, passing the vector/matrix as
+	// an argument, an entirely different calling convention from these
+	// no-arg member wrappers).
 };
 
 typedef _vector3<float> Fvector;

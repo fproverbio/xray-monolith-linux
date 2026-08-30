@@ -135,23 +135,13 @@ public:
 //-----------------------------------------------------------------------------------------------------------
 extern ENGINE_API IGame_Level* g_pGameLevel;
 
-template <typename _class_type>
-void relcase_register(_class_type* self, void (xr_stdcall _class_type::* function_to_bind)(CObject*))
-{
-	g_pGameLevel->Objects.relcase_register(
-		CObjectList::RELCASE_CALLBACK(
-			self,
-			function_to_bind)
-	);
-}
-
-template <typename _class_type>
-void relcase_unregister(_class_type* self, void (xr_stdcall _class_type::* function_to_bind)(CObject*))
-{
-	g_pGameLevel->Objects.relcase_unregister(
-		CObjectList::RELCASE_CALLBACK(
-			self,
-			function_to_bind)
-	);
-}
+// The free relcase_register<T>/relcase_unregister<T> templates that used
+// to live here are dead code with no real callers anywhere in this tree
+// (grep-confirmed) - they also predate CObjectList::relcase_register()/
+// relcase_unregister() gaining a required `int* id` registration-handle
+// parameter (xr_object_list.h), which they have no way to supply (they're
+// free functions, nothing to store the id in) - structurally broken, not
+// just stale. The real, actively-used mechanism is the pure_relcase base
+// class (pure_relcase.h), which does store an id (m_ID) and is what every
+// real caller (e.g. Feel_Vision.cpp's Vision) already inherits from.
 #endif

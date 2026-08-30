@@ -201,21 +201,21 @@ public:
 	typename inherited::const_reference operator[](typename inherited::size_type _Pos) const
 	{
 		{
-			VERIFY2(_Pos < size(),
-			        make_string("index is out of range: index requested[%d], size of container[%d]", _Pos, size()).c_str
+			VERIFY2(_Pos < this->size(),
+			        make_string("index is out of range: index requested[%d], size of container[%d]", _Pos, this->size()).c_str
 			        ());
 		}
-		return (*(begin() + _Pos));
+		return (*(this->begin() + _Pos));
 	}
 
 	typename inherited::reference operator[](typename inherited::size_type _Pos)
 	{
 		{
-			VERIFY2(_Pos < size(),
-			        make_string("index is out of range: index requested[%d], size of container[%d]", _Pos, size()).c_str
+			VERIFY2(_Pos < this->size(),
+			        make_string("index is out of range: index requested[%d], size of container[%d]", _Pos, this->size()).c_str
 			        ());
 		}
-		return (*(begin() + _Pos));
+		return (*(this->begin() + _Pos));
 	}
 };
 
@@ -228,7 +228,7 @@ private:
 
 public:
 	u32 size() const { return (u32)inherited::size(); }
-	void clear() { erase(begin(), end()); }
+	void clear() { this->erase(this->begin(), this->end()); }
 };
 
 template <typename allocator>
@@ -239,7 +239,7 @@ private:
 
 public:
 	u32 size() const { return (u32)inherited::size(); }
-	void clear() { erase(begin(), end()); }
+	void clear() { this->erase(this->begin(), this->end()); }
 };
 
 // deque
