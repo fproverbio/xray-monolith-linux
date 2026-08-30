@@ -89,4 +89,11 @@ set(XRAY_USE_LUAJIT ON)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 add_subdirectory("src/3rd party/luabind")
 
+# lua-extensions - luaopen_lua_extensions() (script_storage.cpp) is called
+# unconditionally on every Lua VM init, a real, mandatory startup
+# dependency, not optional - see src/3rd party/lua-extensions/CMakeLists.txt
+# for the full investigation (why it was never wired in, and why its two
+# debug-only functions are stubbed rather than the whole module ported).
+add_subdirectory("src/3rd party/lua-extensions")
+
 add_subdirectory(src)

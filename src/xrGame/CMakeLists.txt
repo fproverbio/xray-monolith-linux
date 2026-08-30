@@ -2486,4 +2486,4 @@ target_sources_grouped(
   ScriptXMLInit.cpp
 )
 
-target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer)
+target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)

@@ -2,7 +2,38 @@
 //#include "StdAfx.h"
 #include "script_additional_libs.h"
 #include <random>
+#include <cstdio>
 #include "../../build_config_defines.h"
+
+// _itoa: MSVC CRT integer-to-string with arbitrary radix, used below only
+// for base 2/16. This module deliberately doesn't include xrCore (which
+// already has a portable _itoa shim, win32_compat.h) to stay a small,
+// self-contained unit against just LuaJIT's own headers - a local,
+// equivalent-behavior implementation instead of pulling that in.
+static char* _itoa(long value, char* buf, int radix)
+{
+	if (radix == 10)
+	{
+		std::sprintf(buf, "%ld", value);
+		return buf;
+	}
+	unsigned long uvalue = static_cast<unsigned long>(value);
+	char tmp[80];
+	int i = 0;
+	if (uvalue == 0)
+		tmp[i++] = '0';
+	while (uvalue != 0)
+	{
+		int digit = uvalue % radix;
+		tmp[i++] = (digit < 10) ? static_cast<char>('0' + digit) : static_cast<char>('a' + digit - 10);
+		uvalue /= static_cast<unsigned long>(radix);
+	}
+	int j = 0;
+	while (i > 0)
+		buf[j++] = tmp[--i];
+	buf[j] = '\0';
+	return buf;
+}
 
 /******************** BIT ********************/
 int ROL(int a, int n)
@@ -198,11 +229,11 @@ int open_string(lua_State *L)
 /******************** MATH ********************/
 std::random_device ndrng;
 std::mt19937 intgen;
-std::uniform_real<float> float_random_01;
+std::uniform_real_distribution<float> float_random_01;
 
 int gen_random_in_range(int a1, int a2)
 {	//unsigned?
-    std::uniform_int<> dist(a1, a2);
+    std::uniform_int_distribution<> dist(a1, a2);
     return dist(intgen);
 }
 
