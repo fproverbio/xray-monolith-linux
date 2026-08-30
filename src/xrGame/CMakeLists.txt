@@ -1705,7 +1705,7 @@ target_sources_grouped(
 #   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
 #   game_cl_base.cpp                              - game_sv_mp_vote_flags.h
 #   game_sv_base.cpp                              - xrGameSpyServer.h
-#   player_account.cpp ui_export_script.cpp       - login_manager.h
+#   player_account.cpp                             - login_manager.h
 # xrServer.cpp, Level_start.cpp, xrServer_Connect.cpp, Level_network_Demo.cpp
 # (2026-08-30): un-excluded - SP genuinely runs through the same
 # xrServer/CLevel client+server object-lifecycle API as MP, just over a
@@ -2512,6 +2512,23 @@ target_sources_grouped(
   Level_start.cpp
   xrServer_Connect.cpp
   Level_network_Demo.cpp
+)
+
+# ui_export_script.cpp (2026-08-30): un-excluded from the "12 files OUT OF
+# SCOPE" list above - unlike its former list-mate player_account.cpp (which
+# genuinely implements a GameSpy account object), this file's only
+# `login_manager.h`/`account_manager.h`/`profile_store.h` touchpoints were 3
+# dead #includes with zero live uses (its only references, the
+# GetLoginMngr/GetAccountMngr/GetProfileStore .def() registrations, were
+# already commented out) - same dead-GameSpy-include pattern already found
+# and removed from MainMenu.cpp in Game4_RootBatch5 above, just never
+# applied here. Includes dropped; everything else in the file (generic
+# luabind UI class registration) was already real, needed code.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch18"
+  FILES
+  ui_export_script.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)
