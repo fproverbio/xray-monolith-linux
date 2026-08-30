@@ -218,8 +218,9 @@ void CGameObject::OnEvent(NET_Packet& P, u16 type)
 			{
 			case GE_HIT_STATISTIC:
 				{
-					if (GameID() != eGameIDSingle)
-						Game().m_WeaponUsageStatistic->OnBullet_Check_Request(&HDS);
+					// WeaponUsageStatistic::OnBullet_Check_Request: MP-only hit-check
+					// request, dead in this singleplayer-only port (GameID() is
+					// always eGameIDSingle here), see commit 1d4ec53e.
 				}
 				break;
 			default:

@@ -1700,7 +1700,7 @@ target_sources_grouped(
 # subsystem gaps from the same removal (commit 1d4ec53e) that produced
 # ui/'s exclusions, not case/path bugs:
 #   DemoInfo.cpp
-#   WeaponFire.cpp game_cl_base_weapon_usage_statistic.cpp
+#   game_cl_base_weapon_usage_statistic.cpp
 #   screenshot_manager.cpp screenshot_server.cpp  - all game_cl_mp.h
 #   game_cl_base.cpp                              - game_sv_mp_vote_flags.h
 #   game_sv_base.cpp                              - xrGameSpyServer.h
@@ -2594,6 +2594,30 @@ target_sources_grouped(
   NAME "Game4_RootBatch21"
   FILES
   Level_Bullet_Manager.cpp
+)
+
+# WeaponFire.cpp (2026-08-30): un-excluded - its game_cl_mp.h/
+# reward_event_generator.h touchpoint (first-bullet-accuracy correction +
+# reward-generator hook in FireTrace) was entirely inside an
+# `if (!IsGameTypeSingle())` block, always false in this SP-only port -
+# removed outright, same precedent as Level_Bullet_Manager.cpp/
+# GameObject.cpp/Spectator.cpp. game_cl_base_weapon_usage_statistic.cpp
+# stays excluded - unlike the dead calls above, its WeaponUsageStatistic::
+# ConvertToTeamIndex (called from several genuinely live, non-MP-gated
+# methods: OnWeaponBought, OnExplosionKill, OnBleedKill, OnPlayerKilled,
+# SVUpdateAliveTimes) does a real, load-bearing smart_cast<game_cl_mp*>
+# for team-deathmatch scoring - actually MP-only, not dead code to strip.
+# The 5 WeaponUsageStatistic:: symbols this left undefined turned out to be
+# referenced only from dead `GameID() != eGameIDSingle`-gated call sites in
+# 4 already-compiled files (Actor_Network.cpp's OnBullet_Check_Result,
+# GameObject.cpp's OnBullet_Check_Request, Level_network_messages.cpp's
+# On_Check_Respond, Level.cpp's OnUpdateRequest and Send_Check_Respond) -
+# each removed at the call site, same GameID()-gated-block pattern.
+target_sources_grouped(
+  TARGET xrGame
+  NAME "Game4_RootBatch22"
+  FILES
+  WeaponFire.cpp
 )
 
 target_link_libraries(xrGame PUBLIC xrCore xrCDB xrSound xrEngine xrPhysics xrNetServer lua-extensions)

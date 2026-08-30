@@ -899,8 +899,9 @@ void CLevel::ProcessGameEvents()
 			case M_STATISTIC_UPDATE:
 				{
 					PROF_EVENT("ProcessGameEvents M_STATISTIC_UPDATE");
-					if (GameID() != eGameIDSingle)
-						Game().m_WeaponUsageStatistic->OnUpdateRequest(&P);
+					// WeaponUsageStatistic::OnUpdateRequest: MP-only statistic
+					// update request, dead in this singleplayer-only port
+					// (GameID() is always eGameIDSingle here), see commit 1d4ec53e.
 					break;
 				}
 			case M_FILE_TRANSFER:
@@ -934,8 +935,9 @@ void CLevel::ProcessGameEvents()
 	}
 #endif
 
-	if (OnServer() && GameID() != eGameIDSingle)
-		Game().m_WeaponUsageStatistic->Send_Check_Respond();
+	// WeaponUsageStatistic::Send_Check_Respond: MP-only hit-check respond,
+	// dead in this singleplayer-only port (GameID() is always eGameIDSingle
+	// here), see commit 1d4ec53e.
 }
 
 #ifdef DEBUG_MEMORY_MANAGER

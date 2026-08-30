@@ -454,9 +454,9 @@ void CLevel::ClientReceive()
 			break;
 		case M_BULLET_CHECK_RESPOND:
 			{
-				if (!game) break;
-				if (GameID() != eGameIDSingle)
-					Game().m_WeaponUsageStatistic->On_Check_Respond(P);
+				// WeaponUsageStatistic::On_Check_Respond: MP-only hit-check
+				// respond, dead in this singleplayer-only port (GameID() is
+				// always eGameIDSingle here), see commit 1d4ec53e.
 			}
 			break;
 		case M_STATISTIC_UPDATE:

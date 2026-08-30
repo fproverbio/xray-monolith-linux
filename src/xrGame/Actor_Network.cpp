@@ -1918,8 +1918,9 @@ void CActor::OnCriticalHitHealthLoss()
 	P.w_u8(u8(SpecialHit));
 	u_EventSend(P);
 	//-------------------------------------------
-	if (GameID() != eGameIDSingle)
-		Game().m_WeaponUsageStatistic->OnBullet_Check_Result(true);
+	// WeaponUsageStatistic::OnBullet_Check_Result: MP-only hit-check reporting,
+	// dead in this singleplayer-only port (GameID() is always eGameIDSingle
+	// here), see commit 1d4ec53e.
 };
 
 void CActor::OnPlayHeadShotParticle(NET_Packet P)
