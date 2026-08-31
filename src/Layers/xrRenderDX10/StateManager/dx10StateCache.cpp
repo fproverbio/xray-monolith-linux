@@ -148,3 +148,13 @@ dx10StateCache< ID3DxxBlendState , D3D_BLEND_DESC >
 	}
 }
 */
+
+// Explicit instantiation: ClearStateArray() is only odr-used here via the
+// destructor's call to it, and gets fully inlined into that destructor's
+// body. Without an explicit instantiation, the compiler doesn't emit a
+// separate out-of-line definition for it, so dx10HW.cpp's direct calls to
+// RSManager/DSSManager/BSManager.ClearStateArray() are left as undefined
+// references at link time.
+template class dx10StateCache<ID3DRasterizerState, D3D_RASTERIZER_DESC>;
+template class dx10StateCache<ID3DDepthStencilState, D3D_DEPTH_STENCIL_DESC>;
+template class dx10StateCache<ID3DBlendState, D3D_BLEND_DESC>;
