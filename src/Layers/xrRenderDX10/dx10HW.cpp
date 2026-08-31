@@ -1076,10 +1076,6 @@ DXGI_RATIONAL CHW::selectRefresh(u32 dwWidth, u32 dwHeight, DXGI_FORMAT fmt)
     return res;
 }
 
-extern bool use_reshade;
-extern bool init_reshade();
-extern void unregister_reshade();
-
 void CHW::OnAppActivate()
 {
 #if defined(USE_DX11)
@@ -1118,9 +1114,6 @@ void CHW::OnAppActivate()
 
         UpdateViews();
 #endif
-
-		if (use_reshade)
-            init_reshade();
     }
 }
 
@@ -1134,9 +1127,6 @@ void CHW::OnAppDeactivate()
 
 	if (m_pSwapChain && !is_windowed)
 	{
-		if (use_reshade)
-            unregister_reshade();
-		
         m_pSwapChain->SetFullscreenState(FALSE, NULL);
 
 #ifdef USE_DX11

@@ -55,8 +55,6 @@ void dxApplicationRender::KillHW()
 }
 
 u32 calc_progress_color(u32, u32, int, int);
-extern bool use_reshade;
-extern void render_reshade_effects();
 
 void dxApplicationRender::load_draw_internal(CApplication& owner)
 {
@@ -73,9 +71,6 @@ void dxApplicationRender::load_draw_internal(CApplication& owner)
 #else	//	USE_DX10
 	CHK_DX(HW.pDevice->Clear(0,0,D3DCLEAR_TARGET,D3DCOLOR_ARGB(0,0,0,0),1,0));
 #endif	//	USE_DX10
-
-	if (use_reshade)
-		render_reshade_effects();
 
 	if (!sh_progress)
 	{
