@@ -330,7 +330,11 @@ inline HRESULT D3DX11LoadTextureFromTexture(ID3D11DeviceContext* pContext, ID3D1
 	{
 		const DirectX::TexMetadata& meta = pResized->GetMetadata();
 		if (DirectX::IsCompressed(dstDesc.Format))
-			hr = DirectX::Compress(device, pResized->GetImages(), pResized->GetImageCount(), meta, dstDesc.Format,
+			// CPU/software compressor, not the ID3D11Device-based DirectCompute one: the only
+			// format ever requested here is DXGI_FORMAT_BC1_UNORM (r__screenshot.cpp's
+			// SM_FOR_GAMESAVE/SM_FOR_MPSENDING paths), which the software BC1 encoder handles
+			// fine, and `device` is already released by this point (see above) besides.
+			hr = DirectX::Compress(pResized->GetImages(), pResized->GetImageCount(), meta, dstDesc.Format,
 			                        DirectX::TEX_COMPRESS_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, converted);
 		else
 			hr = DirectX::Convert(pResized->GetImages(), pResized->GetImageCount(), meta, dstDesc.Format,
