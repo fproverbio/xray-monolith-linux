@@ -295,9 +295,9 @@ if(XR_DIRECTXTEX_DXVK_NATIVE)
   # the same way.
   target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/linux-compat>"
-    "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/3rd party/dxvk-native/include/native>"
-    "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/3rd party/dxvk-native/include/native/windows>"
-    "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/3rd party/dxvk-native/include/native/directx>")
+    "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/3rd party/dxvk/include/native>"
+    "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/3rd party/dxvk/include/native/windows>"
+    "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/3rd party/dxvk/include/native/directx>")
 endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
