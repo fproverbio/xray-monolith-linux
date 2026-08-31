@@ -2,17 +2,17 @@
 #pragma hdrstop
 
 #pragma warning(disable:4995)
-#include <d3dx9.h>
+#include "../xrRenderPC_R4/d3dx9_compat.h"
 #ifndef _EDITOR
 #pragma comment( lib, "d3dx9.lib"		)
-#include "../../xrEngine/render.h"
+#include "../../xrEngine/Render.h"
 #endif
 #pragma warning(default:4995)
 
 #include "ResourceManager.h"
 #include "tss.h"
-#include "blenders\blender.h"
-#include "blenders\blender_recorder.h"
+#include "blenders/Blender.h"
+#include "blenders/Blender_Recorder.h"
 
 void fix_texture_name(LPSTR fn);
 

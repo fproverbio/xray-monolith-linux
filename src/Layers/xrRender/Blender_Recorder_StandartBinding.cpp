@@ -3,15 +3,15 @@
 
 #pragma warning(push)
 #pragma warning(disable:4995)
-#include <d3dx9.h>
+#include "../xrRenderPC_R4/d3dx9_compat.h"
 #pragma warning(pop)
 
 #include "ResourceManager.h"
-#include "blenders\Blender_Recorder.h"
-#include "blenders\Blender.h"
+#include "blenders/Blender_Recorder.h"
+#include "blenders/Blender.h"
 
-#include "../../xrEngine/igame_persistent.h"
-#include "../../xrEngine/environment.h"
+#include "../../xrEngine/IGame_Persistent.h"
+#include "../../xrEngine/Environment.h"
 
 #include "dxRenderDeviceRender.h"
 
@@ -616,7 +616,7 @@ static class cl_screen_res : public R_constant_setup
 	}
 } binder_screen_res;
 
-static class cl_screen_params : public R_constant_setup
+class cl_screen_params : public R_constant_setup
 {
 	Fvector4 result;
 

@@ -6,14 +6,14 @@
 #pragma hdrstop
 
 #pragma warning(disable:4995)
-#include <d3dx9.h>
+#include "../xrRenderPC_R4/d3dx9_compat.h"
 #pragma warning(default:4995)
 
 #include "ResourceManager.h"
 #include "tss.h"
-#include "blenders\blender.h"
-#include "blenders\blender_recorder.h"
-#include <tbb\parallel_for_each.h>
+#include "blenders/Blender.h"
+#include "blenders/Blender_Recorder.h"
+#include <tbb/parallel_for_each.h>
 
 //	Already defined in Texture.cpp
 void fix_texture_name(LPSTR fn);
@@ -34,8 +34,8 @@ void fix_texture_name(LPSTR fn)
 template <class T>
 BOOL reclaim(xr_vector<T*>& vec, const T* ptr)
 {
-	xr_vector<T*>::iterator it = vec.begin();
-	xr_vector<T*>::iterator end = vec.end();
+	typename xr_vector<T*>::iterator it = vec.begin();
+	typename xr_vector<T*>::iterator end = vec.end();
 	for (; it != end; it++)
 		if (*it == ptr)
 		{

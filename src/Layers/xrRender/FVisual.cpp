@@ -6,11 +6,11 @@
 #pragma hdrstop
 
 #pragma warning(disable:4995)
-#include <d3dx9.h>
+#include "../xrRenderPC_R4/d3dx9_compat.h"
 #pragma warning(default:4995)
 
-#include "../../xrEngine/fmesh.h"
-#include "fvisual.h"
+#include "../../xrEngine/Fmesh.h"
+#include "FVisual.h"
 
 #include "../xrRenderDX10/dx10BufferUtils.h"
 

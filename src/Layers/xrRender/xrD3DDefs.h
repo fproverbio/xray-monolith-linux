@@ -4,7 +4,7 @@
 
 #if defined(USE_DX11) || defined(USE_DX10)
 
-#	include "..\xrRenderDX10\DXCommonTypes.h"
+#	include "../xrRenderDX10/DXCommonTypes.h"
 
 #else	//	USE_DX10
 

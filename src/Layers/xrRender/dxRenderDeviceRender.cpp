@@ -2,6 +2,7 @@
 #include "dxRenderDeviceRender.h"
 
 #include "ResourceManager.h"
+#include "../../xrEngine/MonitorList.h"
 
 dxRenderDeviceRender::dxRenderDeviceRender()
 	: Resources(0)
@@ -464,15 +465,18 @@ void free_vid_mode_list();
 // Windowed: keep user's pick if present in vid_mode_token, else monitor native.
 // Borderless/fullscreen: always monitor native.  Moves the window to match.
 // Caller must have set HW.m_pOutput / vid_mode_token to reflect the target
-// monitor before calling.
-static void FinalizeMonitorGeometry(const MONITORINFO& mi, HWND hWnd,
+// monitor before calling. Takes an SDL_Rect (from SDL_GetDisplayBounds) in
+// place of the Win32 MONITORINFO, and repositions via SDL2 instead of
+// SetWindowPos - see MonitorList.h/device.cpp's GetMonitorResolution() for
+// the same SDL_Rect-based monitor-geometry pattern used elsewhere.
+static void FinalizeMonitorGeometry(const SDL_Rect& mi, HWND hWnd,
                                     u32 g_screenmode_,
                                     u32& vidModeW, u32& vidModeH)
 {
-    const int monX = mi.rcMonitor.left;
-    const int monY = mi.rcMonitor.top;
-    const int monW = mi.rcMonitor.right  - mi.rcMonitor.left;
-    const int monH = mi.rcMonitor.bottom - mi.rcMonitor.top;
+    const int monX = mi.x;
+    const int monY = mi.y;
+    const int monW = mi.w;
+    const int monH = mi.h;
 
     u32 finalW = (u32)monW;
     u32 finalH = (u32)monH;
@@ -504,8 +508,14 @@ static void FinalizeMonitorGeometry(const MONITORINFO& mi, HWND hWnd,
         wx = monX;
         wy = monY;
     }
-    SetWindowPos(hWnd, HWND_TOP, wx, wy, ww, wh,
-                 SWP_FRAMECHANGED | SWP_NOCOPYBITS | SWP_DRAWFRAME);
+
+    SDL_Window* wnd = static_cast<SDL_Window*>(hWnd);
+    if (wnd)
+    {
+        SDL_SetWindowSize(wnd, ww, wh);
+        SDL_SetWindowPosition(wnd, wx, wy);
+        SDL_RaiseWindow(wnd);
+    }
 }
 
 bool dxRenderDeviceRender::SwitchOutputMonitor(HMONITOR hTargetMon, HWND hWnd,
@@ -515,11 +525,11 @@ bool dxRenderDeviceRender::SwitchOutputMonitor(HMONITOR hTargetMon, HWND hWnd,
     if (hTargetMon == NULL)
         return false;
 
-    MONITORINFO mi;
-    mi.cbSize = sizeof(mi);
-    if (!GetMonitorInfoA(hTargetMon, &mi))
+    SDL_Rect mi;
+    const int targetDisplay = xr_DisplayIndexFromMonitor(hTargetMon);
+    if (targetDisplay < 0 || SDL_GetDisplayBounds(targetDisplay, &mi) != 0)
     {
-        Msg("! vid_monitor: GetMonitorInfoA failed for target monitor");
+        Msg("! vid_monitor: SDL_GetDisplayBounds failed for target monitor");
         return false;
     }
 

@@ -5,10 +5,12 @@
 #pragma hdrstop
 
 #pragma warning(disable:4995)
-#include <d3dx9.h>
+#include "../xrRenderPC_R4/d3dx9_compat.h"
 #pragma warning(default:4995)
 #include "HW.h"
 #include "../../xrEngine/XR_IOConsole.h"
+#include "../../xrEngine/MonitorList.h"
+#include <SDL.h>
 
 #ifndef _EDITOR
 void fill_vid_mode_list(CHW* _hw);
@@ -272,7 +274,7 @@ void CHW::CreateDevice(HWND m_hWnd, bool move_window)
 
 	DevAdapter = D3DADAPTER_DEFAULT;
 	{
-		HMONITOR hWindowMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTOPRIMARY);
+		HMONITOR hWindowMonitor = xr_MonitorFromDisplayIndex(SDL_GetWindowDisplayIndex(static_cast<SDL_Window*>(m_hWnd)));
 		for (UINT Adapter = 0; Adapter < pD3D->GetAdapterCount(); Adapter++)
 		{
 			if (pD3D->GetAdapterMonitor(Adapter) == hWindowMonitor)

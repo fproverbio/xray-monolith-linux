@@ -3,8 +3,8 @@
 #include "stdafx.h"
 #pragma hdrstop
 
-#include "../../xrEngine/gamefont.h"
-#include "d3dutils.h"
+#include "../../xrEngine/GameFont.h"
+#include "D3DUtils.h"
 #include "du_box.h"
 #include "du_sphere.h"
 #include "du_sphere_part.h"
@@ -15,7 +15,7 @@
 
 #pragma warning(push)
 #pragma warning(disable:4995)
-#include "d3dx9.h"
+#include "../xrRenderPC_R4/d3dx9_compat.h"
 #pragma warning(pop)
 
 CDrawUtilities DUImpl;

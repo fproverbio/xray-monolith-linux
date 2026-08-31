@@ -70,7 +70,21 @@ add_subdirectory("src/3rd party/glslang")
 # clean regardless since SDL2 bundles its own Khronos headers for those
 # and loads the actual libraries via dlopen at runtime, same approach as
 # volk (src/3rd party/Vulkan) above.
-set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+#
+# SDL_SHARED is ON (not the usual static-everything convention for this
+# project - see BUILD_SHARED_LIBS below) because dxvk-native's own build
+# links SDL2 as well, for window/surface interop (SDL_Vulkan_CreateSurface
+# etc.). If the engine linked a static SDL2 and dxvk-native linked a
+# separately-built one, the process would end up with two independent SDL2
+# instances, each with its own internal window/video-device globals - a
+# window created through one instance would not be valid to the other.
+# Building our vendored SDL2 as a shared library and pointing dxvk-native's
+# build at that exact .so (rather than any system SDL2) makes both link
+# and load the same single instance at runtime. SDL2::SDL2 (used by
+# xrEngine, see src/xrEngine/CMakeLists.txt) automatically aliases this
+# shared target once SDL_SHARED is ON. SDL_STATIC is left ON too since
+# nothing else in the tree depends on it being off.
+set(SDL_SHARED ON CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_STATIC_PIC ON CACHE BOOL "" FORCE)
 set(SDL_TEST OFF CACHE BOOL "" FORCE)
@@ -95,5 +109,29 @@ add_subdirectory("src/3rd party/luabind")
 # for the full investigation (why it was never wired in, and why its two
 # debug-only functions are stubbed rather than the whole module ported).
 add_subdirectory("src/3rd party/lua-extensions")
+
+# DirectXTex - texture loading/DDS/format-conversion library used by the DX11
+# (xrRenderPC_R4) renderer tier in place of the D3DX9/D3DX11 texture
+# utilities the original engine relied on (removed from the DirectX SDK long
+# ago). BUILD_TOOLS/BUILD_SAMPLE/BUILD_DX12 are all Windows-toolchain-only
+# (texassemble/texconv/texdiag, the DDSView sample, and the D3D12 interop
+# path - nothing here uses D3D12) so they're forced off. libjpeg/libpng
+# support is forced on: DirectXTexWIC.cpp (Windows Imaging Component) is
+# WIN32-only (see src/3rd party/DirectXTex/CMakeLists.txt line ~124), so
+# JPEG/PNG loading on Linux goes through DirectXTexJPEG.cpp/DirectXTexPNG.cpp
+# instead, which need libjpeg-dev/libpng-dev installed (apt install
+# libjpeg-dev libpng-dev). XR_DIRECTXTEX_DXVK_NATIVE is this project's own,
+# honest macro (not a faked _WIN32 - see CMake/XRay.Compiler.cmake for why
+# that's specifically avoided) that steers DirectXTexP.h/DirectXTex.h to
+# reuse dxvk-native's own D3D11/COM headers, matching what xrRenderPC_R4
+# compiles against, instead of DirectX-Headers' independent (and
+# incompatible) wsl/wrladapter.h COM reimplementation.
+set(XR_DIRECTXTEX_DXVK_NATIVE ON CACHE BOOL "" FORCE)
+set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(BUILD_SAMPLE OFF CACHE BOOL "" FORCE)
+set(BUILD_DX12 OFF CACHE BOOL "" FORCE)
+set(ENABLE_LIBJPEG_SUPPORT ON CACHE BOOL "" FORCE)
+set(ENABLE_LIBPNG_SUPPORT ON CACHE BOOL "" FORCE)
+add_subdirectory("src/3rd party/DirectXTex")
 
 add_subdirectory(src)

@@ -42,6 +42,8 @@ using BYTE = unsigned char;
 using LPBYTE = unsigned char*;
 using WORD = unsigned short;
 using DWORD = unsigned int;
+using LPDWORD = unsigned int*;
+using LPWORD = unsigned short*;
 #define CALLBACK // __stdcall calling-convention marker, no-op on x86-64 (single calling convention)
 // `interface` - MSVC/COM's `#define interface struct` (from <unknwn.h>,
 // pulled in transitively by <windows.h>), used in this codebase as a
@@ -70,8 +72,15 @@ using DWORD = unsigned int;
 #define DLL_THREAD_ATTACH 2
 #define DLL_THREAD_DETACH 3
 #define DLL_PROCESS_DETACH 0
-using LONG = long;
-using ULONG = unsigned long;
+// LONG/ULONG are LLP64 types - always 32-bit on real Windows even on 64-bit
+// builds, same reasoning as DWORD above. Must be int32_t/uint32_t (not
+// `long`, which is 64-bit on Linux/LP64) both for genuine Win32-ABI
+// correctness and because dxvk-native's own windows_base.h (pulled in via
+// d3d9.h/d3d11.h in xrRenderPC_R4) independently defines these as
+// int32_t/uint32_t too - matching types make its redundant typedefs
+// harmless duplicate declarations instead of conflicting ones.
+using LONG = int32_t;
+using ULONG = uint32_t;
 using BOOL = int;
 #ifndef TRUE
 #define TRUE 1
@@ -105,8 +114,10 @@ using VOID = void;
 // HRESULT - the small subset actually used in this tree (xrNetServer's
 // message-handler-shaped return codes, never real COM error codes since
 // nothing here talks to real COM anymore). Standard values/macros, not a
-// behavior shim.
-using HRESULT = long;
+// behavior shim. int32_t (not `long`) for the same LLP64 reason as LONG
+// above - also keeps it a harmless duplicate, not a conflict, against
+// dxvk-native's windows_base.h HRESULT typedef.
+using HRESULT = int32_t;
 #define S_OK ((HRESULT)0L)
 #define S_FALSE ((HRESULT)1L)
 #define FAILED(hr) (((HRESULT)(hr)) < 0)
@@ -136,8 +147,13 @@ struct WAVEFORMATEX
 // D3DCOLOR_RGBA - real, well-documented d3d9types.h macro (ARGB byte
 // packing), not tied to any live D3D object - used here purely as a
 // color-packing helper (xr_ioc_cmd.h's console-variable-to-Fvector4
-// binding), safe to keep as-is once the renderer becomes Vulkan.
-using D3DCOLOR = unsigned long;
+// binding), safe to keep as-is once the renderer becomes Vulkan. Real
+// d3d9types.h defines D3DCOLOR as `typedef DWORD D3DCOLOR;` (DWORD is
+// always 32-bit) - uint32_t here (not `unsigned long`) matches that exactly,
+// making dxvk-native's own d3d9types.h D3DCOLOR typedef (pulled in via
+// xrRenderPC_R4's d3d9.h include) a harmless duplicate instead of a
+// conflicting redeclaration.
+using D3DCOLOR = uint32_t;
 #define D3DCOLOR_RGBA(r, g, b, a) \
 	((D3DCOLOR)((((a)&0xff) << 24) | (((r)&0xff) << 16) | (((g)&0xff) << 8) | ((b)&0xff)))
 // D3DCOLOR_XRGB - same d3d9types.h family, alpha forced to opaque (0xff).
@@ -221,11 +237,16 @@ enum { RelationProcessorCore = 0 };
 
 inline void* GetCurrentProcess() { return nullptr; } // pseudo-handle, value unused by any of our shims
 
+// Win32 SwitchToThread() yields the rest of the calling thread's timeslice
+// to another ready thread, returning nonzero iff it actually switched -
+// sched_yield() is the direct POSIX equivalent.
+inline BOOL SwitchToThread() { return sched_yield() == 0 ? TRUE : FALSE; }
+
 // Atomic exchange, returns the previous value - GCC/Clang's
 // __sync_lock_test_and_set builtin has identical semantics for this
 // exact use (a spinlock test-and-set), so no need to migrate the call
 // site to std::atomic.
-inline long InterlockedExchange(volatile long* target, long value)
+inline LONG InterlockedExchange(volatile LONG* target, LONG value)
 {
 	return __sync_lock_test_and_set(target, value);
 }
@@ -462,6 +483,7 @@ inline int strcmpi(const char* a, const char* b) { return strcasecmp(a, b); }
 inline long long _atoi64(const char* s) { return std::atoll(s); }
 inline unsigned long long _strtoui64(const char* s, char** end, int base) { return std::strtoull(s, end, base); }
 inline int _vsnprintf(char* buf, size_t n, const char* fmt, va_list args) { return vsnprintf(buf, n, fmt, args); }
+#define _snprintf snprintf
 inline int vsnprintf_s(char* dest, size_t destsz, size_t count, const char* fmt, va_list args)
 {
 	size_t n = (count < destsz) ? count : destsz - 1;
@@ -515,6 +537,18 @@ inline void _tzset() { tzset(); }
 // file in this port to need it.
 inline std::time_t _time64(std::time_t* dest) { return std::time(dest); }
 inline std::tm* _localtime64(const std::time_t* t) { return std::localtime(t); }
+
+// _time32/__time32_t - the 32-bit-explicit counterpart of _time64 above,
+// same rationale: real Win32 __time32_t is always a 32-bit signed count of
+// seconds, so int32_t is a genuine semantic match, not a stub.
+using __time32_t = int32_t;
+inline __time32_t _time32(__time32_t* dest)
+{
+	std::time_t t = std::time(nullptr);
+	if (dest)
+		*dest = static_cast<__time32_t>(t);
+	return static_cast<__time32_t>(t);
+}
 
 // timeGetTime() - <mmsystem.h>'s millisecond tick counter (device.cpp's
 // CRenderDevice::Run()/mt_Thread timer-delta calibration wants "some
@@ -850,18 +884,29 @@ using WPARAM = UINT_PTR;
 using LPARAM = LONG_PTR;
 using LRESULT = LONG_PTR;
 
+// _XR_RECT_DEFINED/_XR_POINT_DEFINED: project-invented guards (no real
+// Windows SDK equivalent exists for plain RECT/POINT - unlike GUID_DEFINED
+// below, which is a real SDK macro). xrRenderPC_R4 also pulls in
+// dxvk-native's windows_base.h (via d3d9.h/d3d11.h), which independently
+// defines RECT/POINT with identical layout; since this header is always
+// included first in that build (transitively via xrEngine/stdafx.h, ahead
+// of the D3D9/D3D11 headers), these defines let windows_base.h's copies
+// detect that and skip themselves (see the matching guards added there)
+// instead of hard-conflicting with these.
+#define _XR_RECT_DEFINED
 struct RECT
 {
-	long left;
-	long top;
-	long right;
-	long bottom;
+	LONG left;
+	LONG top;
+	LONG right;
+	LONG bottom;
 };
 
+#define _XR_POINT_DEFINED
 struct POINT
 {
-	long x;
-	long y;
+	LONG x;
+	LONG y;
 };
 
 // GDI object handles (Text_Console.h's CTextConsole - a GDI-rendered
@@ -933,9 +978,19 @@ inline HKL ActivateKeyboardLayout(HKL /*hkl*/, unsigned /*flags*/) { return null
 // ever actually made against them in this pass. Field layouts mirror the
 // real dinput.h structs closely enough for sizeof()/member-access sites
 // already in the codebase, but nothing here is wired to real HID input.
+// GUID_DEFINED: real Windows SDK guard macro (guiddef.h), meant for exactly
+// this situation - more than one header in the same translation unit
+// providing a GUID definition. dxvk-native's windows_base.h already checks
+// it (`#ifndef GUID_DEFINED`) before defining its own GUID, so defining it
+// here after this struct is enough to make that copy a no-op instead of a
+// conflicting redefinition. Data1 is uint32_t (not `unsigned long`, 8 bytes
+// on Linux/LP64) to match the real Win32 GUID ABI - same LLP64 reasoning as
+// LONG/ULONG above, and required for layout compatibility with
+// windows_base.h's own (uint32_t Data1) definition.
+#define GUID_DEFINED
 struct GUID
 {
-	unsigned long  Data1;
+	uint32_t       Data1;
 	unsigned short Data2;
 	unsigned short Data3;
 	unsigned char  Data4[8];

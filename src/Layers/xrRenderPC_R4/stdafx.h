@@ -7,7 +7,7 @@
 #pragma warning(disable:4995)
 #include "../../xrEngine/stdafx.h"
 #pragma warning(disable:4995)
-#include <d3dx9.h>
+#include "d3dx9_compat.h"
 #pragma warning(default:4995)
 #pragma warning(disable:4714)
 #pragma warning( 4 : 4018 )
@@ -17,8 +17,7 @@
 #include <d3d11.h>
 #include <d3d11_1.h>
 #include <d3d11_2.h>
-#include <D3Dx11core.h>
-#include <D3DCompiler.h>
+#include <d3dcompiler.h>
 
 #include "../xrRender/xrD3DDefs.h"
 
@@ -37,14 +36,14 @@
 #include "../xrRender/R_Backend.h"
 #include "../xrRender/R_Backend_Runtime.h"
 
-#include "../xrRender/resourcemanager.h"
+#include "../xrRender/ResourceManager.h"
 
 #include "../../xrEngine/vis_common.h"
-#include "../../xrEngine/render.h"
+#include "../../xrEngine/Render.h"
 #include "../../xrEngine/_d3d_extensions.h"
-#include "../../xrEngine/igame_level.h"
-#include "../xrRender/blenders\blender.h"
-#include "../xrRender/blenders\blender_clsid.h"
+#include "../../xrEngine/IGame_Level.h"
+#include "../xrRender/blenders/Blender.h"
+#include "../xrRender/blenders/Blender_CLSID.h"
 #include "../xrRender/xrRender_console.h"
 #include "r4.h"
 

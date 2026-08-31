@@ -6,7 +6,7 @@
 #pragma hdrstop
 
 #pragma warning(disable:4995)
-#include <d3dx9.h>
+#include "../xrRenderPC_R4/d3dx9_compat.h"
 #pragma warning(default:4995)
 
 #ifndef _EDITOR

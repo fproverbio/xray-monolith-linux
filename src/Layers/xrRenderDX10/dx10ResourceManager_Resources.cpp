@@ -2,19 +2,17 @@
 #pragma hdrstop
 
 #pragma warning(disable:4995)
-#include <d3dx9.h>
+#include "../xrRenderPC_R4/d3dx9_compat.h"
 #ifndef _EDITOR
 #pragma comment( lib, "d3dx9.lib"		)
-#include "../../xrEngine/render.h"
+#include "../../xrEngine/Render.h"
 #endif
 #pragma warning(default:4995)
 
-#include <D3DX10Core.h>
-
 #include "../xrRender/ResourceManager.h"
 #include "../xrRender/tss.h"
-#include "../xrRender/blenders/blender.h"
-#include "../xrRender/blenders/blender_recorder.h"
+#include "../xrRender/blenders/Blender.h"
+#include "../xrRender/blenders/Blender_Recorder.h"
 
 #include "../xrRenderDX10/dx10BufferUtils.h"
 #include "../xrRenderDX10/dx10ConstantBuffer.h"
@@ -58,8 +56,8 @@ void fix_texture_name(LPSTR fn);
 template <class T>
 BOOL reclaim(xr_vector<T*>& vec, const T* ptr)
 {
-	xr_vector<T*>::iterator it = vec.begin();
-	xr_vector<T*>::iterator end = vec.end();
+	typename xr_vector<T*>::iterator it = vec.begin();
+	typename xr_vector<T*>::iterator end = vec.end();
 	for (; it != end; it++)
 		if (*it == ptr)
 		{

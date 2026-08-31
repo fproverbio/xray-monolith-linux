@@ -1,17 +1,17 @@
 #include "stdafx.h"
 #pragma hdrstop
 
-#include "hwcaps.h"
-#include "hw.h"
+#include "HWCaps.h"
+#include "HW.h"
 
-#ifndef _EDITOR
+#if !defined(_EDITOR) && defined(_WIN32)
 #include <nvapi.h>
 //	#include "ATI/atimgpud.h"
 #endif
 
 namespace
 {
-#ifndef _EDITOR
+#if !defined(_EDITOR) && defined(_WIN32)
 	u32 GetNVGpuNum()
 	{
 		NvLogicalGpuHandle logicalGPUs[NVAPI_MAX_LOGICAL_GPUS];

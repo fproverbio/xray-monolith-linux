@@ -2,7 +2,7 @@
 #define	dxStatGraphRender_included
 #pragma once
 
-#include "..\..\Include\xrRender\StatGraphRender.h"
+#include "../../Include/xrRender/StatGraphRender.h"
 
 #include "../../xrEngine/StatGraph.h"
 

@@ -5,8 +5,8 @@
 #include "../xrRender/tga.h"
 #include "../../xrEngine/xrImage_Resampler.h"
 
-#if defined(USE_DX10) || defined(USE_DX11)
-#include "d3dx10tex.h"
+#if defined(USE_DX11)
+#include "../xrRenderPC_R4/d3dx11tex_compat.h"
 #endif	//	USE_DX10
 
 #define	GAMESAVE_SIZE	128

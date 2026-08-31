@@ -5,7 +5,7 @@
 #pragma hdrstop
 
 #pragma warning(disable:4995)
-#include <d3dx9.h>
+#include "../xrRenderPC_R4/d3dx9_compat.h"
 #ifdef USE_DX11
 # include <d3d11_4.h>
 # include <dxgi1_5.h>
@@ -13,11 +13,13 @@
 #pragma warning(default:4995)
 #include "../xrRender/HW.h"
 #include "../../xrEngine/XR_IOConsole.h"
+#include "../../xrEngine/MonitorList.h"
+#include <SDL.h>
 #include "../../Include/xrAPI/xrAPI.h"
 #include "../xrRender/xrRender_console.h"
 
-#include "StateManager\dx10SamplerStateCache.h"
-#include "StateManager\dx10StateCache.h"
+#include "StateManager/dx10SamplerStateCache.h"
+#include "StateManager/dx10StateCache.h"
 
 #ifndef _EDITOR
 void fill_vid_mode_list(CHW* _hw);
@@ -197,9 +199,9 @@ void CHW::CreateD3D()
 
     if (!m_pAdapter) {
 #if defined(USE_DX11)
-        SelectAdapterAndOutput(MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTOPRIMARY));
+        SelectAdapterAndOutput(xr_MonitorFromDisplayIndex(SDL_GetWindowDisplayIndex(static_cast<SDL_Window*>(m_hWnd))));
 #elif defined(USE_DX10)
-        const HMONITOR hTarget = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTOPRIMARY);
+        const HMONITOR hTarget = xr_MonitorFromDisplayIndex(SDL_GetWindowDisplayIndex(static_cast<SDL_Window*>(m_hWnd)));
         bool found = false;
         for (UINT ai = 0; !found; ++ai)
         {
@@ -799,8 +801,9 @@ void CHW::Reset(HWND hwnd)
 
     if (!bWindowed)
     {
-        ShowWindow(hwnd, SW_SHOWNORMAL);
-        SetForegroundWindow(hwnd);
+        SDL_Window* wnd = static_cast<SDL_Window*>(hwnd);
+        SDL_ShowWindow(wnd);
+        SDL_RaiseWindow(wnd);
     }
 
     m_pSwapChain->SetFullscreenState(!bWindowed, bWindowed ? NULL : m_pOutput);
@@ -961,10 +964,10 @@ void CHW::selectResolution(u32& dwWidth, u32& dwHeight, BOOL bWindowed)
 
 	if (g_screenmode == 0)
 	{
-		RECT clientRect;
-		GetClientRect(Device.m_hWnd, &clientRect);
-		dwWidth = clientRect.right;
-		dwHeight = clientRect.bottom;
+		int cw = 0, ch = 0;
+		SDL_GetWindowSize(Device.m_sdlWnd, &cw, &ch);
+		dwWidth = static_cast<u32>(cw);
+		dwHeight = static_cast<u32>(ch);
 	}
 	else if (g_screenmode == 1)
 	{
@@ -1090,7 +1093,7 @@ void CHW::OnAppActivate()
 
 	if (m_pSwapChain && !is_windowed)
 	{
-        ShowWindow(m_hWnd, SW_RESTORE);
+        SDL_RestoreWindow(static_cast<SDL_Window*>(m_hWnd));
         m_pSwapChain->SetFullscreenState(TRUE, m_pOutput);
 
 #ifdef USE_DX11
@@ -1165,7 +1168,7 @@ void CHW::OnAppDeactivate()
         UpdateViews();
 #endif
 
-        ShowWindow(m_hWnd, SW_MINIMIZE);
+        SDL_MinimizeWindow(static_cast<SDL_Window*>(m_hWnd));
     }
 }
 
@@ -1186,25 +1189,19 @@ void CHW::updateWindowProps(HWND m_hWnd)
 {
 	//	BOOL	bWindowed				= strstr(Core.Params,"-dedicated") ? TRUE : !psDeviceFlags.is	(rsFullscreen);
     BOOL bWindowed = (g_screenmode != 2);
+    SDL_Window* wnd = static_cast<SDL_Window*>(m_hWnd);
 
     // Set window properties depending on what mode were in.
 	if (bWindowed)
 	{
 		if (m_move_window)
 		{
-            u32 dwWindowStyle = 0;
-		    if (g_screenmode == 1)
-		    {
-		        dwWindowStyle |= WS_POPUP;
-		    }
-		    else
-		    {
-		        dwWindowStyle |= WS_BORDER | WS_OVERLAPPEDWINDOW;
-		        if (!strstr(Core.Params, "-no_dialog_header"))
-		            dwWindowStyle |= WS_DLGFRAME | WS_SYSMENU | WS_MINIMIZEBOX;
-		    }
-
-            SetWindowLong(m_hWnd, GWL_STYLE, dwWindowStyle);
+            // g_screenmode == 1 (borderless) gets no title bar/border, same
+            // as the old WS_POPUP style; everything else keeps the normal
+            // bordered/titled window (WS_BORDER | WS_OVERLAPPEDWINDOW [|
+            // WS_DLGFRAME | WS_SYSMENU | WS_MINIMIZEBOX]) - SDL2 doesn't
+            // expose that level of per-flag control, only bordered vs not.
+            SDL_SetWindowBordered(wnd, g_screenmode == 1 ? SDL_FALSE : SDL_TRUE);
             // When moving from fullscreen to windowed mode, it is important to
             // adjust the window size after recreating the device rather than
             // beforehand to ensure that you get the window size you want.  For
@@ -1221,40 +1218,31 @@ void CHW::updateWindowProps(HWND m_hWnd)
 
 		    if (psCurrentVidMode[0] == 0 || psCurrentVidMode[1] == 0)
 		        GetMonitorResolution(psCurrentVidMode[0], psCurrentVidMode[1]);
-		    LONG res_width = g_screenmode == 0 ? psCurrentVidMode[0] : monW;
-		    LONG res_height = g_screenmode == 0 ? psCurrentVidMode[1] : monH;
+		    long res_width = g_screenmode == 0 ? psCurrentVidMode[0] : monW;
+		    long res_height = g_screenmode == 0 ? psCurrentVidMode[1] : monH;
 
-		    RECT m_rcWindowBounds;
-			RECT DesktopRect;
+		    const long left = (long(monW) - res_width) / 2;
+		    const long top = (long(monH) - res_height) / 2;
 
-			GetClientRect(GetDesktopWindow(), &DesktopRect);
-
-			SetRect(&m_rcWindowBounds,
-                (LONG(monW) - res_width) / 2,
-                (LONG(monH) - res_height) / 2,
-                (monW + res_width) / 2,
-                (monH + res_height) / 2);
-
-			SetWindowPos(m_hWnd,
-                HWND_NOTOPMOST,
-                monX + m_rcWindowBounds.left,
-                monY + m_rcWindowBounds.top,
-                (m_rcWindowBounds.right - m_rcWindowBounds.left),
-                (m_rcWindowBounds.bottom - m_rcWindowBounds.top),
-                SWP_SHOWWINDOW | SWP_NOCOPYBITS | SWP_DRAWFRAME);
+			SDL_SetWindowSize(wnd, static_cast<int>(res_width), static_cast<int>(res_height));
+			SDL_SetWindowPosition(wnd, monX + static_cast<int>(left), monY + static_cast<int>(top));
+			SDL_ShowWindow(wnd);
         }
 	}
 	else
 	{
-        SetWindowLong(m_hWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+        SDL_SetWindowBordered(wnd, SDL_FALSE);
+        SDL_ShowWindow(wnd);
     }
 
-    ShowCursor(FALSE);
-    SetForegroundWindow(m_hWnd);
-    RECT winRect;
-    GetClientRect(m_hWnd, &winRect);
-    MapWindowPoints(m_hWnd, nullptr, reinterpret_cast<LPPOINT>(&winRect), 2);
-    ClipCursor(&winRect);
+    SDL_ShowCursor(SDL_DISABLE);
+    SDL_RaiseWindow(wnd);
+    // Replaces GetClientRect+MapWindowPoints+ClipCursor confining the OS
+    // cursor to the window's screen rect - SDL2's window grab achieves the
+    // same effect (cursor can't leave the window while grabbed), and is the
+    // same mechanism already used for this purpose elsewhere in the engine
+    // (see device.cpp/Device_destroy.cpp's SDL_SetWindowGrab calls).
+    SDL_SetWindowGrab(wnd, SDL_TRUE);
 }
 
 

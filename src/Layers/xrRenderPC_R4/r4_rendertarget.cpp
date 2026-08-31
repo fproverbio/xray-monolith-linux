@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "../xrRender/resourcemanager.h"
+#include "../xrRender/ResourceManager.h"
 #include "blender_light_occq.h"
 #include "blender_light_mask.h"
 #include "blender_light_direct.h"
@@ -12,7 +12,7 @@
 #include "blender_ssao.h"
 #include "dx11MinMaxSMBlender.h"
 #include "dx11HDAOCSBlender.h"
-#include "../xrRenderDX10/msaa/dx10MSAABlender.h"
+#include "../xrRenderDX10/MSAA/dx10MSAABlender.h"
 #include "../xrRenderDX10/DX10 Rain/dx10RainBlender.h"
 ////////////////////////////lvutner
 #include "blender_ss_sunshafts.h"
@@ -31,8 +31,6 @@
 
 #include "../xrRender/dxRenderDeviceRender.h"
 #include "../xrRender/xrRender_console.h"
-
-#include <D3DX10Tex.h>
 
 D3D_VIEWPORT custom_viewport[1] = { 0, 0, 0, 0, 0.f, 1.f };
 
@@ -1279,11 +1277,28 @@ CRenderTarget::CRenderTarget()
 				t_noise_mipped = dxRenderDeviceRender::Instance().Resources->_CreateTexture(r2_jitter_mipped);
 				t_noise_mipped->surface_set(t_noise_surf_mipped);
 
-				//	Update texture. Generate mips.
+				//	Generate the mip chain on the CPU straight from the jitter data used
+				//	for t_noise_surf[0] (point-filter decimation, matching the removed
+				//	D3DX10_FILTER_POINT call) and upload each level directly. Native
+				//	ID3D11DeviceContext::GenerateMips() isn't used here since it needs
+				//	D3D11_BIND_RENDER_TARGET + D3D11_RESOURCE_MISC_GENERATE_MIPS on the
+				//	texture and isn't guaranteed to work on SNORM formats.
+				u32 mipData[TEX_jitter * TEX_jitter];
+				memcpy(mipData, tempData[0], sizeof(mipData));
+				u32 mipSize = TEX_jitter;
 
-				HW.pContext->CopySubresourceRegion(t_noise_surf_mipped, 0, 0, 0, 0, t_noise_surf[0], 0, 0);
+				HW.pContext->UpdateSubresource(t_noise_surf_mipped, 0, 0, mipData, mipSize * sampleSize, 0);
 
-				D3DX11FilterTexture(HW.pContext, t_noise_surf_mipped, 0, D3DX10_FILTER_POINT);
+				for (u32 mip = 1; mipSize > 1; ++mip)
+				{
+					u32 nextSize = mipSize >> 1;
+					for (u32 y = 0; y < nextSize; ++y)
+						for (u32 x = 0; x < nextSize; ++x)
+							mipData[y * nextSize + x] = mipData[(y * 2) * mipSize + (x * 2)];
+
+					mipSize = nextSize;
+					HW.pContext->UpdateSubresource(t_noise_surf_mipped, mip, 0, mipData, mipSize * sampleSize, 0);
+				}
 			}
 		}
 	}

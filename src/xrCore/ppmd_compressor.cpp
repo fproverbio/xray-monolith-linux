@@ -15,7 +15,7 @@ void _STDCALL PrintInfo(_PPMD_FILE* DecodedFile, _PPMD_FILE* EncodedFile)
 }
 
 
-static LONG PPMd_Locked = 0;
+static volatile LONG PPMd_Locked = 0;
 
 static inline void
 PPMd_Lock()

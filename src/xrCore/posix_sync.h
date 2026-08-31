@@ -205,6 +205,17 @@ inline unsigned long GetLastError() { return static_cast<unsigned long>(errno); 
 inline int IsBadReadPtr(const void*, size_t) { return 0; }
 
 // --- QueryPerformanceCounter/Frequency (FTimer.h) ------------------------
+// _XR_LARGE_INTEGER_DEFINED: project-invented guard (see _XR_RECT_DEFINED
+// in win32_compat.h for the same pattern/rationale). xrRenderPC_R4 also
+// pulls in dxvk-native's windows_base.h (via d3d9.h/d3d11.h), which
+// independently defines LARGE_INTEGER as a union with a QuadPart member;
+// this plain-int64_t alias is a same-size, ABI-compatible stand-in for the
+// handful of DXGI/D3D9 struct fields and opaque pointer parameters that
+// reference LARGE_INTEGER in this build (none of which this codebase's own
+// call sites actually dereference via .QuadPart), so letting this
+// definition (included first) win and having windows_base.h's copy defer
+// to it is safe.
+#define _XR_LARGE_INTEGER_DEFINED
 using LARGE_INTEGER = int64_t;
 using PLARGE_INTEGER = int64_t*;
 

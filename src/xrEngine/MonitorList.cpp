@@ -28,7 +28,7 @@
 
 ENGINE_API xr_token* vid_monitor_token = nullptr;
 ENGINE_API xr_string vid_monitor_name = "Auto";
-ENGINE_API volatile long g_monitor_list_dirty = 0;
+ENGINE_API volatile LONG g_monitor_list_dirty = 0;
 
 void fill_vid_monitor_list()
 {

@@ -55,7 +55,7 @@ void dxRainRender::Copy(IRainRender& _in)
 	*this = *(dxRainRender*)&_in;
 }
 
-#include "../../xrEngine/iGame_persistent.h"
+#include "../../xrEngine/IGame_Persistent.h"
 
 void dxRainRender::Render(CEffect_Rain& owner)
 {

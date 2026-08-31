@@ -4,8 +4,8 @@
 #include	"../../xrEngine/Render.h"
 #include	"../xrRender/ResourceManager.h"
 #include	"../xrRender/tss.h"
-#include	"../xrRender/blenders/blender.h"
-#include	"../xrRender/blenders/blender_recorder.h"
+#include	"../xrRender/blenders/Blender.h"
+#include	"../xrRender/blenders/Blender_Recorder.h"
 //	adopt_compiler don't have = operator And it can't have = operator
 #pragma warning( push )
 #pragma warning( disable : 4512)
@@ -17,6 +17,7 @@
 #include	"../xrRender/dxRenderDeviceRender.h"
 
 using namespace luabind;
+using namespace luabind::policy;
 
 #ifdef	DEBUG
 #define MDB	Memory.dbg_check()
@@ -358,10 +359,10 @@ void CResourceManager::LS_Load()
 		::luabind::set_error_callback(LuaError);
 #endif
 
-	function(LSVM, "log", LuaLog3);
-
 	module(LSVM)
 	[
+		def("log", LuaLog3),
+
 		class_<adopt_dx10options>("_dx10options")
 		.def("dx10_msaa_alphatest_atoc", &adopt_dx10options::_dx10_msaa_alphatest_atoc)
 		.def("getLevel", &adopt_dx10options::_get_level)
@@ -626,7 +627,7 @@ ShaderElement* CBlender_Compile::_lua_Compile(LPCSTR namesp, LPCSTR name)
 	LPCSTR t_1 = (L_textures.size() > 1) ? *L_textures[1] : "null";
 	LPCSTR t_d = detail_texture ? detail_texture : "null";
 	lua_State* LSVM = dxRenderDeviceRender::Instance().Resources->LSVM;
-	object shader = get_globals(LSVM)[namesp];
+	object shader = globals(LSVM)[namesp];
 	functor<void> element = object_cast<functor<void>>(shader[name]);
 	bool bFirstPass = false;
 	adopt_compiler ac = adopt_compiler(this, bFirstPass);

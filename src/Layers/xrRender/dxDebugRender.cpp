@@ -194,7 +194,7 @@ public:
 
 	virtual void add_lines(Fvector const *vertices, u32 const &vertex_count, u16 const *pairs, u32 const &pair_count, u32 const &color, bool bHud = false)
 	{
-		__super::add_lines(vertices, vertex_count, pairs, pair_count, color, bHud);
+		dxDebugRender::add_lines(vertices, vertex_count, pairs, pair_count, color, bHud);
 	}
 } rdebug_render_impl;
 

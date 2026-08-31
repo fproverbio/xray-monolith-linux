@@ -4,10 +4,16 @@
 #include "../xrRender/ResourceManager.h"
 
 #ifndef _EDITOR
-#include "../../xrEngine/render.h"
+#include "../../xrEngine/Render.h"
 #endif
 
+// tntQAVI.h wraps the Windows Video-for-Windows API (vfw.h), which has no
+// Linux equivalent and is not available here; AVI texture playback is
+// deferred (see src/xrEngine/CMakeLists.txt's own tntQAVI.cpp comment,
+// which already excludes its implementation from the engine build).
+#ifdef _WIN32
 #include "../../xrEngine/tntQAVI.h"
+#endif
 #include "../../xrEngine/xrTheora_Surface.h"
 #include "../xrRender/gifPlayer.h"
 
@@ -313,6 +319,7 @@ void CTexture::apply_theora(u32 dwStage)
 
 void CTexture::apply_avi(u32 dwStage)
 {
+#ifdef _WIN32
 	if (pAVI->NeedUpdate())
 	{
 		D3D_RESOURCE_DIMENSION type;
@@ -339,6 +346,7 @@ void CTexture::apply_avi(u32 dwStage)
 		T2D->Unmap(0);
 #endif
 	}
+#endif // _WIN32
 	//CHK_DX(HW.pDevice->SetTexture(dwStage,pSurface));
 	Apply(dwStage);
 };
@@ -466,6 +474,7 @@ void CTexture::Load()
 			}
 		}
 	}
+#ifdef _WIN32
 	else if (FS.exist(fn, "$game_textures$", *cName, ".avi"))
 	{
 		// AVI
@@ -515,6 +524,7 @@ void CTexture::Load()
 			}
 		}
 	}
+#endif // _WIN32
 	else if (FS.exist(fn, "$game_textures$", *cName, ".seq"))
 	{
 		// Sequence
@@ -636,7 +646,9 @@ void CTexture::Unload()
 	_RELEASE(pSurface);
 	_RELEASE(m_pSRView);
 
+#ifdef _WIN32
 	xr_delete(pAVI);
+#endif
 	xr_delete(pTheora);
 
 	bind = fastdelegate::FastDelegate1<u32>(this, &CTexture::apply_load);
