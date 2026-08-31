@@ -53,8 +53,18 @@ endif()
 # unsigned long), which is false on Linux/LP64, and correctly fired its
 # own "this should not happen" sanity error once fooled into thinking it
 # was targeting real Windows.
+# DEBUG (bare, no underscore) is the upstream engine's own convention -
+# used pervasively across xrCore/xrEngine/xrGame/every render tier (685+
+# call sites), including behavior-affecting cases like stdafx.h toggling
+# LUABIND_NO_EXCEPTIONS off of it. This CMake port previously only ever
+# defined MSVC's _DEBUG/NDEBUG and never bare DEBUG, silently disabling
+# every one of those upstream #ifdef DEBUG blocks regardless of build
+# type. Defining it alongside _DEBUG restores upstream parity instead of
+# touching hundreds of call sites - keeping this fork's divergence from
+# upstream as small as possible.
 add_compile_definitions(
   $<$<CONFIG:Debug>:_DEBUG>
+  $<$<CONFIG:Debug>:DEBUG>
   $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
 )
 
