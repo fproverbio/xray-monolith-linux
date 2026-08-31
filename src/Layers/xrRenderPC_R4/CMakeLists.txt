@@ -37,57 +37,58 @@ add_library(xrRenderPC_R4 STATIC)
 target_include_directories(xrRenderPC_R4 PUBLIC .)
 target_include_directories(xrRenderPC_R4 PRIVATE ../xrRender ../xrRenderDX10)
 
-# linux-compat is listed first so its stand-in _mingw_unicode.h (dxvk-
-# native's own d3dcompiler.h unconditionally #includes it, since dxvk-
-# native is normally cross-compiled with MinGW, where this header comes
-# from the toolchain itself) is found ahead of anything else on the path.
+# This target's own directory (added PUBLIC above) is already ahead of
+# dxvk's include/native/directx on the path, so its _mingw_unicode.h
+# (dxvk's own d3dcompiler.h unconditionally #includes it, since dxvk is
+# normally cross-compiled with MinGW, where this header comes from the
+# toolchain itself) and d3d11shader_uuid_compat.h are found first.
 target_include_directories(
   xrRenderPC_R4 PRIVATE
-  "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk-native/linux-compat"
-  "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk-native/include/native"
-  "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk-native/include/native/windows"
-  "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk-native/include/native/directx"
+  "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk/include/native"
+  "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk/include/native/windows"
+  "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk/include/native/directx"
 )
 
 target_compile_definitions(xrRenderPC_R4 PRIVATE USE_DX11)
 
-# dxvk-native's own build system is Meson, not CMake. Its "native" build
-# mode (as opposed to cross-compiling for real Windows) fully supports a
-# SDL2-based WSI and a real D3D11/DXGI/D3D9 Vulkan backend; its D3D10
-# layer is unconditionally disabled for native builds regardless of the
-# enable_d3d10 option ("Not supported for DXVK native." - see
-# build/meson-logs/meson-log.txt), which is fine since this project has
-# no DX10-as-independent-tier target anyway.
+# dxvk's own build system is Meson, not CMake. Native-build support
+# (as opposed to cross-compiling for real Windows) used to live in a
+# separate, now-archived dxvk-native project; it has since been folded
+# into mainline dxvk itself, selected via the native_sdl2/native_glfw/
+# native_sdl3 meson options (each a 'feature', default 'auto') plus a
+# runtime DXVK_WSI_DRIVER=SDL2 environment variable the game process
+# itself must set before creating a device. This project doesn't use
+# D3D10 as an independent tier, so only d3d11/dxgi (and enable_dxgi's
+# prerequisite) need to be enabled at all.
 #
-# Rather than reimplement dxvk-native's Meson build graph in CMake, this
-# drives its already-configured build directory
-# (src/3rd party/dxvk-native/build/ - set up out-of-band with `meson
-# setup` against dxvk_native_wsi=sdl2, and whose D3D11/DXGI .so outputs
-# are already linked against this project's own vendored SDL2 .so rather
-# than any system SDL2 - see the SDL_SHARED rationale comment in the
-# top-level CMakeLists.txt) via a custom command that just runs `ninja`
-# in it, so `cmake --build` transparently keeps dxvk-native's outputs up
-# to date whenever its sources change (ninja no-ops otherwise). Only
-# d3d11 and dxgi are imported below - the two libraries this project's
-# DX11-only renderer tier actually needs (D3D11CreateDevice,
-# CreateDXGIFactory2, etc.); d3d9 also gets built as a side effect of
-# running plain `ninja` with no target args but nothing here links it.
-set(DXVK_NATIVE_BUILD_DIR "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk-native/build")
-set(DXVK_D3D11_LIB "${DXVK_NATIVE_BUILD_DIR}/src/d3d11/libdxvk_d3d11.so")
-set(DXVK_DXGI_LIB "${DXVK_NATIVE_BUILD_DIR}/src/dxgi/libdxvk_dxgi.so")
+# Rather than reimplement dxvk's Meson build graph in CMake, this
+# drives its already-configured build directory (src/3rd party/dxvk/
+# build/ - set up out-of-band with `meson setup` against
+# native_sdl2=enabled, and whose D3D11/DXGI .so outputs are already
+# linked against this project's own vendored SDL2 .so rather than any
+# system SDL2 - see the SDL_SHARED rationale comment in the top-level
+# CMakeLists.txt) via a custom command that just runs `ninja` in it, so
+# `cmake --build` transparently keeps dxvk's outputs up to date
+# whenever its sources change (ninja no-ops otherwise). Only d3d11 and
+# dxgi are imported below - the two libraries this project's DX11-only
+# renderer tier actually needs (D3D11CreateDevice, CreateDXGIFactory2,
+# etc.).
+set(DXVK_BUILD_DIR "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk/build")
+set(DXVK_D3D11_LIB "${DXVK_BUILD_DIR}/src/d3d11/libdxvk_d3d11.so")
+set(DXVK_DXGI_LIB "${DXVK_BUILD_DIR}/src/dxgi/libdxvk_dxgi.so")
 
 add_custom_command(
   OUTPUT "${DXVK_D3D11_LIB}" "${DXVK_DXGI_LIB}"
-  COMMAND ninja -C "${DXVK_NATIVE_BUILD_DIR}"
-  WORKING_DIRECTORY "${DXVK_NATIVE_BUILD_DIR}"
-  COMMENT "Building dxvk-native (Meson/Ninja)"
+  COMMAND ninja -C "${DXVK_BUILD_DIR}"
+  WORKING_DIRECTORY "${DXVK_BUILD_DIR}"
+  COMMENT "Building dxvk (Meson/Ninja)"
   VERBATIM
 )
 add_custom_target(dxvk_native_build DEPENDS "${DXVK_D3D11_LIB}" "${DXVK_DXGI_LIB}")
 
 # IMPORTED SHARED, not a system find_library() lookup - these .so's live
-# only in dxvk-native's own build tree, never get installed anywhere.
-# Both already carry their own RUNPATH (set by their Meson build) that
+# only in dxvk's own build tree, never get installed anywhere. Both
+# already carry their own RUNPATH (set by their Meson build) that
 # points at this project's SDL2 .so and, for d3d11, at its sibling dxgi
 # .so via $ORIGIN - so only the final executable's own RPATH (which
 # CMake computes automatically for build-tree targets, imported ones
