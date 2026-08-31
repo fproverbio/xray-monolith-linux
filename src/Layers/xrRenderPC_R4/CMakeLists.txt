@@ -37,15 +37,6 @@ add_library(xrRenderPC_R4 STATIC)
 target_include_directories(xrRenderPC_R4 PUBLIC .)
 target_include_directories(xrRenderPC_R4 PRIVATE ../xrRender ../xrRenderDX10)
 
-# dxvk-native's Meson build is not wired into this CMake tree yet (a
-# separate, larger integration task - see
-# playground/xray-monolith-vulkan-port-notes.md), so only its headers
-# are usable here for now, not the actual library. Pointing at them lets
-# the DX11 COM interfaces (ID3D11Device etc.) and the windows.h-lookalike
-# base types resolve; the compile/link surface this exposes (missing
-# symbols dxvk-native itself must supply) is expected and is exactly
-# what this checkpoint is meant to surface.
-#
 # linux-compat is listed first so its stand-in _mingw_unicode.h (dxvk-
 # native's own d3dcompiler.h unconditionally #includes it, since dxvk-
 # native is normally cross-compiled with MinGW, where this header comes
@@ -59,6 +50,55 @@ target_include_directories(
 )
 
 target_compile_definitions(xrRenderPC_R4 PRIVATE USE_DX11)
+
+# dxvk-native's own build system is Meson, not CMake. Its "native" build
+# mode (as opposed to cross-compiling for real Windows) fully supports a
+# SDL2-based WSI and a real D3D11/DXGI/D3D9 Vulkan backend; its D3D10
+# layer is unconditionally disabled for native builds regardless of the
+# enable_d3d10 option ("Not supported for DXVK native." - see
+# build/meson-logs/meson-log.txt), which is fine since this project has
+# no DX10-as-independent-tier target anyway.
+#
+# Rather than reimplement dxvk-native's Meson build graph in CMake, this
+# drives its already-configured build directory
+# (src/3rd party/dxvk-native/build/ - set up out-of-band with `meson
+# setup` against dxvk_native_wsi=sdl2, and whose D3D11/DXGI .so outputs
+# are already linked against this project's own vendored SDL2 .so rather
+# than any system SDL2 - see the SDL_SHARED rationale comment in the
+# top-level CMakeLists.txt) via a custom command that just runs `ninja`
+# in it, so `cmake --build` transparently keeps dxvk-native's outputs up
+# to date whenever its sources change (ninja no-ops otherwise). Only
+# d3d11 and dxgi are imported below - the two libraries this project's
+# DX11-only renderer tier actually needs (D3D11CreateDevice,
+# CreateDXGIFactory2, etc.); d3d9 also gets built as a side effect of
+# running plain `ninja` with no target args but nothing here links it.
+set(DXVK_NATIVE_BUILD_DIR "${CMAKE_SOURCE_DIR}/src/3rd party/dxvk-native/build")
+set(DXVK_D3D11_LIB "${DXVK_NATIVE_BUILD_DIR}/src/d3d11/libdxvk_d3d11.so")
+set(DXVK_DXGI_LIB "${DXVK_NATIVE_BUILD_DIR}/src/dxgi/libdxvk_dxgi.so")
+
+add_custom_command(
+  OUTPUT "${DXVK_D3D11_LIB}" "${DXVK_DXGI_LIB}"
+  COMMAND ninja -C "${DXVK_NATIVE_BUILD_DIR}"
+  WORKING_DIRECTORY "${DXVK_NATIVE_BUILD_DIR}"
+  COMMENT "Building dxvk-native (Meson/Ninja)"
+  VERBATIM
+)
+add_custom_target(dxvk_native_build DEPENDS "${DXVK_D3D11_LIB}" "${DXVK_DXGI_LIB}")
+
+# IMPORTED SHARED, not a system find_library() lookup - these .so's live
+# only in dxvk-native's own build tree, never get installed anywhere.
+# Both already carry their own RUNPATH (set by their Meson build) that
+# points at this project's SDL2 .so and, for d3d11, at its sibling dxgi
+# .so via $ORIGIN - so only the final executable's own RPATH (which
+# CMake computes automatically for build-tree targets, imported ones
+# included) needs to find these two files themselves.
+add_library(dxvk::d3d11 SHARED IMPORTED)
+set_target_properties(dxvk::d3d11 PROPERTIES IMPORTED_LOCATION "${DXVK_D3D11_LIB}")
+
+add_library(dxvk::dxgi SHARED IMPORTED)
+set_target_properties(dxvk::dxgi PROPERTIES IMPORTED_LOCATION "${DXVK_DXGI_LIB}")
+
+add_dependencies(xrRenderPC_R4 dxvk_native_build)
 
 target_sources_grouped(
   TARGET xrRenderPC_R4
@@ -314,4 +354,4 @@ target_sources_grouped(
 # Linked PUBLIC because its DirectXMath.h/DirectXTex.h public headers and
 # XR_DIRECTXTEX_DXVK_NATIVE compile definition need to reach every .cpp in
 # this target that will call DirectX::LoadFromDDSMemory/CreateTextureEx/etc.
-target_link_libraries(xrRenderPC_R4 PUBLIC xrCore xrEngine xrParticles DirectXTex)
+target_link_libraries(xrRenderPC_R4 PUBLIC xrCore xrEngine xrParticles DirectXTex dxvk::d3d11 dxvk::dxgi)
