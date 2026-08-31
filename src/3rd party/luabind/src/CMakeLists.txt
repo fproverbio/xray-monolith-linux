@@ -47,6 +47,26 @@ target_compile_definitions(xrLuabind
 	$<$<BOOL:${BUILD_SHARED_LIBS}>:LUABIND_DYNAMIC_LINK>
 )
 
+# xrEngine/stdafx.h defines LUABIND_NO_EXCEPTIONS/BOOST_NO_EXCEPTIONS itself
+# for `!defined(DEBUG) || defined(FORCE_NO_EXCEPTIONS)` (FORCE_NO_EXCEPTIONS
+# is never defined anywhere in this tree, so that reduces to "non-Debug
+# config"), and every engine TU picks that up by including stdafx.h. This
+# library's own sources (error.cpp in particular) never include stdafx.h,
+# so without this they silently compile the opposite (exceptions-based)
+# branch of luabind/error.hpp and never emit get_error_callback() /
+# set_error_callback() / set_error_callback_not_crash() /
+# get_error_callback_not_crash() / get_cast_failed_callback() /
+# set_cast_failed_callback() - which engine code expects and calls,
+# causing undefined references at final link. PRIVATE (not PUBLIC): engine
+# consumers already get the matching definition via stdafx.h, and
+# propagating this as a -D flag on top of that would just conflict with
+# stdafx.h's own #define of the same macros.
+target_compile_definitions(xrLuabind
+	PRIVATE
+	$<$<NOT:$<CONFIG:Debug>>:LUABIND_NO_EXCEPTIONS>
+	$<$<NOT:$<CONFIG:Debug>>:BOOST_NO_EXCEPTIONS>
+)
+
 set_target_properties(xrLuabind PROPERTIES
 	PREFIX ""
 )
