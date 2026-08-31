@@ -13,7 +13,6 @@
 #include "tss.h"
 #include "blenders/Blender.h"
 #include "blenders/Blender_Recorder.h"
-#include <tbb/parallel_for_each.h>
 
 //	Already defined in Texture.cpp
 void fix_texture_name(LPSTR fn);
@@ -385,7 +384,7 @@ void CResourceManager::DeferredUpload()
 	CTimer timer;
 	timer.Start();
 
-	tbb::parallel_for_each(m_textures, [&](auto m_tex) { m_tex.second->Load(); });
+	for (auto& m_tex : m_textures) m_tex.second->Load();
 
 	Msg("texture loading time: %d", timer.GetElapsed_ms());
 }
@@ -395,7 +394,7 @@ void CResourceManager::DeferredUnload()
 	if (!RDEVICE.b_is_Ready)
 		return;
 
-	tbb::parallel_for_each(m_textures, [&](auto m_tex) { m_tex.second->Unload(); });
+	for (auto& m_tex : m_textures) m_tex.second->Unload();
 }
 
 #ifdef _EDITOR
