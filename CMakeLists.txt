@@ -134,4 +134,12 @@ set(ENABLE_LIBJPEG_SUPPORT ON CACHE BOOL "" FORCE)
 set(ENABLE_LIBPNG_SUPPORT ON CACHE BOOL "" FORCE)
 add_subdirectory("src/3rd party/DirectXTex")
 
+# vkd3d-shader - vendored HLSL/D3DBC/DXBC-TPF compiler and reflection
+# support (see src/3rd party/vkd3d-shader/CMakeLists.txt for the full
+# provenance/rationale writeup), backing xrRenderPC_R4's own
+# D3DCompile/D3DDisassemble/D3DGetInputSignatureBlob/D3DReflect
+# compatibility shim - dxvk itself never vendors a shader compiler, it
+# only ever calls into the real Windows d3dcompiler_47.dll at runtime.
+add_subdirectory("src/3rd party/vkd3d-shader")
+
 add_subdirectory(src)

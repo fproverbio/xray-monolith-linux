@@ -8,6 +8,7 @@
 
 #include "pch_script.h"
 #include "ai_stalker.h"
+#include "ai_stalker_impl.h"
 #include "../../cover_point.h"
 #include "../../cover_evaluators.h"
 #include "../../ai_space.h"

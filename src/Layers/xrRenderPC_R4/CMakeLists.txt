@@ -134,6 +134,8 @@ target_sources_grouped(
   blender_smaa.cpp
   blender_ss_sunshafts.cpp
   blender_ssao.cpp
+  d3dcompiler_shim.cpp
+  d3dcompiler_vkd3d_bridge.c
   dx11HDAOCSBlender.cpp
   dx11MinMaxSMBlender.cpp
   light_GI.cpp
@@ -355,4 +357,4 @@ target_sources_grouped(
 # Linked PUBLIC because its DirectXMath.h/DirectXTex.h public headers and
 # XR_DIRECTXTEX_DXVK_NATIVE compile definition need to reach every .cpp in
 # this target that will call DirectX::LoadFromDDSMemory/CreateTextureEx/etc.
-target_link_libraries(xrRenderPC_R4 PUBLIC xrCore xrEngine xrParticles DirectXTex dxvk::d3d11 dxvk::dxgi)
+target_link_libraries(xrRenderPC_R4 PUBLIC xrCore xrEngine xrParticles DirectXTex dxvk::d3d11 dxvk::dxgi vkd3d_shader)

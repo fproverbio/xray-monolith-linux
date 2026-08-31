@@ -9,6 +9,7 @@
 #include "pch_script.h"
 #include "stalker_property_evaluators.h"
 #include "ai/stalker/ai_stalker.h"
+#include "ai/stalker/ai_stalker_impl.h"
 #include "stalker_decision_space.h"
 #include "script_game_object.h"
 #include "ai/ai_monsters_misc.h"

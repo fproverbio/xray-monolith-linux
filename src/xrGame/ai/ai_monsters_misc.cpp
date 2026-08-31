@@ -31,6 +31,7 @@ extern Flags32 psAI_Flags;
 #include "../agent_manager.h"
 #include "../agent_member_manager.h"
 #include "stalker/ai_stalker.h"
+#include "stalker/ai_stalker_impl.h"
 
 bool bfGetActionSuccessProbability(GroupHierarchyHolder::MEMBER_REGISTRY& Members,
                                    const xr_vector<const CEntityAlive *>& VisibleEnemies, float fMinProbability,

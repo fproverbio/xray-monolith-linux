@@ -9,6 +9,7 @@
 #include "pch_script.h"
 #include "stalker_danger_planner.h"
 #include "ai/stalker/ai_stalker.h"
+#include "ai/stalker/ai_stalker_impl.h"
 #include "ai/stalker/ai_stalker_space.h"
 #include "sound_player.h"
 #include "script_game_object.h"

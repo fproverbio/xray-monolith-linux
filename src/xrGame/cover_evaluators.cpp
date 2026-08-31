@@ -17,6 +17,7 @@
 #include "smart_cover_loophole.h"
 #include "ai_debug.h"
 #include "ai/stalker/ai_stalker.h"
+#include "ai/stalker/ai_stalker_impl.h"
 #include "agent_manager.h"
 #include "agent_member_manager.h"
 #include "member_order.h"
