@@ -936,7 +936,15 @@ inline void TerminateProcess(void* /*process*/, unsigned exitCode)
 // builtin has identical semantics (full memory barrier, atomic CAS,
 // returns the value that was at *dest before the exchange), just with
 // comparand/exchange swapped in argument order.
-inline long _InterlockedCompareExchange(volatile long* dest, long exchange, long comparand)
+//
+// Operates on LONG (int32_t), matching real MSVC's 32-bit LONG, not native
+// `long` (64-bit on Linux/LP64): xrCPU_Pipe/ttapi.cpp's callers pass
+// `volatile LONG*` directly, and xr_object.cpp's caller was previously
+// bridging the width gap with an explicit `(long*)` cast on a `u32` field -
+// which silenced the compiler but made every call an 8-byte atomic CAS
+// over a 4-byte object, a real memory-corruption bug once GCC's builtins
+// actually got wired in. 32-bit width throughout is correct on both counts.
+inline LONG _InterlockedCompareExchange(volatile LONG* dest, LONG exchange, LONG comparand)
 {
 	return __sync_val_compare_and_swap(dest, comparand, exchange);
 }
@@ -946,12 +954,13 @@ inline long _InterlockedCompareExchange(volatile long* dest, long exchange, long
 // thread-pool spinlock flags/queue-size counter) - GCC/Clang's
 // __sync_lock_test_and_set/__sync_sub_and_fetch builtins have identical
 // semantics (full memory barrier, atomic exchange/decrement, return the
-// new/previous value per each function's real MSVC contract).
-inline long _InterlockedExchange(volatile long* dest, long value)
+// new/previous value per each function's real MSVC contract). LONG width
+// for the same reason as _InterlockedCompareExchange above.
+inline LONG _InterlockedExchange(volatile LONG* dest, LONG value)
 {
 	return __sync_lock_test_and_set(dest, value);
 }
-inline long _InterlockedDecrement(volatile long* dest)
+inline LONG _InterlockedDecrement(volatile LONG* dest)
 {
 	return __sync_sub_and_fetch(dest, 1);
 }
