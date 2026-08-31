@@ -51,7 +51,11 @@ void CUIDebugFonts::FillUpList()
 		CUITextWnd* pItem = xr_new<CUITextWnd>();
 		pItem->SetWndPos(pos);
 		pItem->SetWndSize(sz);
+#ifdef DEBUG
 		xr_sprintf(str, "%s:%s", F->m_font_name.c_str(), CStringTable().translate("Test_Font_String").c_str());
+#else
+		xr_sprintf(str, "%s", CStringTable().translate("Test_Font_String").c_str());
+#endif
 		pItem->SetFont(F);
 		pItem->SetText(str);
 		pItem->SetTextComplexMode(false);
