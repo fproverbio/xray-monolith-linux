@@ -31,6 +31,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <utime.h>
+
+#include "posix_path_norm.h"
 #include <vector>
 
 // --- Basic integer typedefs -------------------------------------------
@@ -637,7 +639,7 @@ inline int MessageBox(void* /*hwnd*/, const char* text, const char* caption, uns
 	return IDOK;
 }
 
-inline int _utime(const char* path, const utimbuf* times) { return utime(path, times); }
+inline int _utime(const char* path, const utimbuf* times) { return utime(xr_posix_path(path).c_str(), times); }
 
 // --- System/user info (xrCore.cpp startup logging) ------------------------
 inline DWORD GetCurrentDirectory(DWORD bufLen, char* buf)

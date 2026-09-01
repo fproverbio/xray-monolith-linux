@@ -610,7 +610,7 @@ bool CLocatorAPI::Recurse(const char* path)
 	xr_strcpy(scanPath, sizeof(scanPath), path);
 	xr_strcat(scanPath, ".xrignore");
 	struct stat buffer;
-	if (!stat(scanPath, &buffer))
+	if (!stat(xr_posix_path(scanPath).c_str(), &buffer))
 		return true;
 	xr_strcpy(scanPath, sizeof(scanPath), path);
 	xr_strcat(scanPath, "*.*");

@@ -12,6 +12,8 @@
 #include <string>
 #include <sys/stat.h>
 
+#include "posix_path_norm.h"
+
 #define _A_SUBDIR 0x10
 #define _A_HIDDEN 0x02
 
@@ -54,6 +56,7 @@ inline intptr_t _findfirst(const char* pattern, _finddata_t* out)
 	std::string dir(pattern);
 	size_t slash = dir.find_last_of("/\\");
 	dir = (slash == std::string::npos) ? "." : dir.substr(0, slash);
+	dir = xr_posix_path(dir.c_str());
 
 	DIR* d = opendir(dir.c_str());
 	if (!d)

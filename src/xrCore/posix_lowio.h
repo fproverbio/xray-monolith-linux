@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "posix_path_norm.h"
+
 #ifndef O_BINARY
 #define O_BINARY 0 // no text/binary distinction on POSIX
 #endif
@@ -46,14 +48,17 @@
 #define SH_DENYWR 0x20
 #define _SH_DENYNO 0x40
 
-inline int _sopen(const char* path, int flags, int /*shflag*/, int mode = 0666) { return open(path, flags, mode); }
+inline int _sopen(const char* path, int flags, int /*shflag*/, int mode = 0666)
+{
+	return open(xr_posix_path(path).c_str(), flags, mode);
+}
 inline errno_t _sopen_s(int* handle, const char* path, int flags, int /*shflag*/, int mode)
 {
-	*handle = open(path, flags, mode);
+	*handle = open(xr_posix_path(path).c_str(), flags, mode);
 	return (*handle < 0) ? errno : 0;
 }
 inline FILE* _fdopen(int fd, const char* mode) { return fdopen(fd, mode); }
-inline int _mkdir(const char* path) { return mkdir(path, 0777); }
+inline int _mkdir(const char* path) { return mkdir(xr_posix_path(path).c_str(), 0777); }
 
 // _sys_errlist[errno] (MSVC CRT global array) used as a printf %s arg
 // throughout this codebase - strerror(errno) is the direct POSIX
@@ -68,7 +73,7 @@ inline _xr_sys_errlist_proxy _sys_errlist;
 inline unsigned long GetFileAttributes(const char* path)
 {
 	struct stat st{};
-	if (stat(path, &st) != 0)
+	if (stat(xr_posix_path(path).c_str(), &st) != 0)
 		return 0xFFFFFFFFul; // INVALID_FILE_ATTRIBUTES
 	unsigned long attrs = 0;
 	if (S_ISDIR(st.st_mode))
@@ -80,7 +85,7 @@ inline unsigned long GetFileAttributes(const char* path)
 
 inline void CopyMemory(void* dst, const void* src, size_t n) { memcpy(dst, src, n); }
 
-inline int _open(const char* path, int flags, int mode = 0666) { return open(path, flags, mode); }
+inline int _open(const char* path, int flags, int mode = 0666) { return open(xr_posix_path(path).c_str(), flags, mode); }
 inline int _read(int fd, void* buf, unsigned count) { return static_cast<int>(read(fd, buf, count)); }
 inline int _write(int fd, const void* buf, unsigned count) { return static_cast<int>(write(fd, buf, count)); }
 inline int _close(int fd) { return close(fd); }

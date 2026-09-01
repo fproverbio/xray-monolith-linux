@@ -23,6 +23,8 @@
 #include <unistd.h>
 #include <unordered_map>
 
+#include "posix_path_norm.h"
+
 using HANDLE = void*;
 #define INVALID_HANDLE_VALUE reinterpret_cast<HANDLE>(static_cast<intptr_t>(-1))
 #define INVALID_SET_FILE_POINTER 0xFFFFFFFFul
@@ -65,7 +67,7 @@ inline HANDLE CreateFile(const char* path, unsigned access, unsigned /*share*/, 
 	else
 		oflags = O_RDONLY;
 
-	int fd = open(path, oflags);
+	int fd = open(xr_posix_path(path).c_str(), oflags);
 	return (fd < 0) ? INVALID_HANDLE_VALUE : _xr_fd_to_handle(fd);
 }
 
@@ -148,16 +150,18 @@ inline unsigned long SetFilePointer(HANDLE h, long distance, long* distanceHigh,
 
 inline bool CopyFile(const char* src, const char* dst, bool failIfExists)
 {
+	std::string realSrc = xr_posix_path(src);
+	std::string realDst = xr_posix_path(dst);
 	if (failIfExists)
 	{
 		struct stat st{};
-		if (stat(dst, &st) == 0)
+		if (stat(realDst.c_str(), &st) == 0)
 			return false;
 	}
-	int in = open(src, O_RDONLY);
+	int in = open(realSrc.c_str(), O_RDONLY);
 	if (in < 0)
 		return false;
-	int out = open(dst, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	int out = open(realDst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (out < 0)
 	{
 		close(in);
@@ -183,13 +187,14 @@ inline bool CopyFile(const char* src, const char* dst, bool failIfExists)
 
 inline bool SetFileAttributes(const char* path, unsigned attrs)
 {
+	std::string realPath = xr_posix_path(path);
 	struct stat st{};
-	if (stat(path, &st) != 0)
+	if (stat(realPath.c_str(), &st) != 0)
 		return false;
 	mode_t mode = st.st_mode;
 	if (attrs & FILE_ATTRIBUTE_READONLY)
 		mode &= ~static_cast<mode_t>(S_IWUSR | S_IWGRP | S_IWOTH);
 	else
 		mode |= S_IWUSR;
-	return chmod(path, mode) == 0;
+	return chmod(realPath.c_str(), mode) == 0;
 }
