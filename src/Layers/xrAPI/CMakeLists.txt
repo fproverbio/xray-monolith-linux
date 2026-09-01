@@ -17,7 +17,13 @@
 # not ported from anything, supplying no-op bodies for dxRenderFactory's
 # ~17 Create*/Destroy* method pairs plus DllMainXrRenderR4/
 # SupportsDX11Rendering - the handful of symbols EngineAPI.cpp calls
-# directly under STATIC_RENDERER_R4.
+# directly under STATIC_RENDERER_R4. render_console_stub.cpp is likewise
+# new: storage for the renderer-tunable console vars xrEngine/xrGame read
+# directly (psDeviceFlags2 and friends), whose real definitions normally
+# live in Layers/xrRender/xrRender_console.cpp and a couple of
+# Layers/xrRender renderer-implementation files this port doesn't build -
+# see that file's own header comment for why it isn't just a straight port
+# of xrRender_console.cpp.
 add_library(xrRenderStub STATIC)
 
 target_include_directories(xrRenderStub PUBLIC .)
@@ -27,6 +33,7 @@ target_sources_grouped(
   NAME "RenderStub"
   FILES
   render_stub.cpp
+  render_console_stub.cpp
   stdafx.cpp
   xrAPI.cpp
 )
