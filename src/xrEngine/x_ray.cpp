@@ -1416,6 +1416,14 @@ int RunApplication(LPCSTR lpCmdLine)
 	}
 
 	FPU::m24r();
+
+	// WinMain_impl's splash dialog is the only place that ever sets this
+	// (see the CreateDialog block above), as the last step of showing the
+	// startup splash window. This Linux path has no splash window at all,
+	// so nothing else will ever set it - without this, InitEngine()'s
+	// `while (!g_bIntroFinished) Sleep(100);` spins forever and the
+	// process hangs before Device.Initialize() ever runs.
+	g_bIntroFinished = TRUE;
 	InitEngine();
 
 	InitInput();
