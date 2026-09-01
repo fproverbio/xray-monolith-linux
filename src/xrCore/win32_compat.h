@@ -44,6 +44,8 @@ using BYTE = unsigned char;
 using LPBYTE = unsigned char*;
 using WORD = unsigned short;
 using DWORD = unsigned int;
+using LPDWORD = unsigned int*;
+using LPWORD = unsigned short*;
 #define CALLBACK // __stdcall calling-convention marker, no-op on x86-64 (single calling convention)
 // `interface` - MSVC/COM's `#define interface struct` (from <unknwn.h>,
 // pulled in transitively by <windows.h>), used in this codebase as a
@@ -72,8 +74,13 @@ using DWORD = unsigned int;
 #define DLL_THREAD_ATTACH 2
 #define DLL_THREAD_DETACH 3
 #define DLL_PROCESS_DETACH 0
-using LONG = long;
-using ULONG = unsigned long;
+// LONG/ULONG are LLP64 types - always 32-bit on real Windows even on 64-bit
+// builds, same reasoning as DWORD above. Must be int32_t/uint32_t (not
+// `long`, which is 64-bit on Linux/LP64) for genuine Win32-ABI correctness -
+// completes the width fix started for the _Interlocked* family below (those
+// already took `LONG*`, but LONG itself was still 64-bit until now).
+using LONG = int32_t;
+using ULONG = uint32_t;
 using BOOL = int;
 #ifndef TRUE
 #define TRUE 1
@@ -107,8 +114,9 @@ using VOID = void;
 // HRESULT - the small subset actually used in this tree (xrNetServer's
 // message-handler-shaped return codes, never real COM error codes since
 // nothing here talks to real COM anymore). Standard values/macros, not a
-// behavior shim.
-using HRESULT = long;
+// behavior shim. int32_t (not `long`) for the same LLP64 reason as LONG
+// above.
+using HRESULT = int32_t;
 #define S_OK ((HRESULT)0L)
 #define S_FALSE ((HRESULT)1L)
 #define FAILED(hr) (((HRESULT)(hr)) < 0)
@@ -138,8 +146,10 @@ struct WAVEFORMATEX
 // D3DCOLOR_RGBA - real, well-documented d3d9types.h macro (ARGB byte
 // packing), not tied to any live D3D object - used here purely as a
 // color-packing helper (xr_ioc_cmd.h's console-variable-to-Fvector4
-// binding), safe to keep as-is once the renderer becomes Vulkan.
-using D3DCOLOR = unsigned long;
+// binding), safe to keep as-is once the renderer becomes Vulkan. Real
+// d3d9types.h defines D3DCOLOR as `typedef DWORD D3DCOLOR;` (DWORD is
+// always 32-bit) - uint32_t here (not `unsigned long`) matches that exactly.
+using D3DCOLOR = uint32_t;
 #define D3DCOLOR_RGBA(r, g, b, a) \
 	((D3DCOLOR)((((a)&0xff) << 24) | (((r)&0xff) << 16) | (((g)&0xff) << 8) | ((b)&0xff)))
 // D3DCOLOR_XRGB - same d3d9types.h family, alpha forced to opaque (0xff).
@@ -223,11 +233,16 @@ enum { RelationProcessorCore = 0 };
 
 inline void* GetCurrentProcess() { return nullptr; } // pseudo-handle, value unused by any of our shims
 
+// Win32 SwitchToThread() yields the rest of the calling thread's timeslice
+// to another ready thread, returning nonzero iff it actually switched -
+// sched_yield() is the direct POSIX equivalent.
+inline BOOL SwitchToThread() { return sched_yield() == 0 ? TRUE : FALSE; }
+
 // Atomic exchange, returns the previous value - GCC/Clang's
 // __sync_lock_test_and_set builtin has identical semantics for this
 // exact use (a spinlock test-and-set), so no need to migrate the call
 // site to std::atomic.
-inline long InterlockedExchange(volatile long* target, long value)
+inline LONG InterlockedExchange(volatile LONG* target, LONG value)
 {
 	return __sync_lock_test_and_set(target, value);
 }
@@ -464,6 +479,7 @@ inline int strcmpi(const char* a, const char* b) { return strcasecmp(a, b); }
 inline long long _atoi64(const char* s) { return std::atoll(s); }
 inline unsigned long long _strtoui64(const char* s, char** end, int base) { return std::strtoull(s, end, base); }
 inline int _vsnprintf(char* buf, size_t n, const char* fmt, va_list args) { return vsnprintf(buf, n, fmt, args); }
+#define _snprintf snprintf
 inline int vsnprintf_s(char* dest, size_t destsz, size_t count, const char* fmt, va_list args)
 {
 	size_t n = (count < destsz) ? count : destsz - 1;
@@ -517,6 +533,18 @@ inline void _tzset() { tzset(); }
 // file in this port to need it.
 inline std::time_t _time64(std::time_t* dest) { return std::time(dest); }
 inline std::tm* _localtime64(const std::time_t* t) { return std::localtime(t); }
+
+// _time32/__time32_t - the 32-bit-explicit counterpart of _time64 above,
+// same rationale: real Win32 __time32_t is always a 32-bit signed count of
+// seconds, so int32_t is a genuine semantic match, not a stub.
+using __time32_t = int32_t;
+inline __time32_t _time32(__time32_t* dest)
+{
+	std::time_t t = std::time(nullptr);
+	if (dest)
+		*dest = static_cast<__time32_t>(t);
+	return static_cast<__time32_t>(t);
+}
 
 // timeGetTime() - <mmsystem.h>'s millisecond tick counter (device.cpp's
 // CRenderDevice::Run()/mt_Thread timer-delta calibration wants "some
@@ -854,16 +882,16 @@ using LRESULT = LONG_PTR;
 
 struct RECT
 {
-	long left;
-	long top;
-	long right;
-	long bottom;
+	LONG left;
+	LONG top;
+	LONG right;
+	LONG bottom;
 };
 
 struct POINT
 {
-	long x;
-	long y;
+	LONG x;
+	LONG y;
 };
 
 // GDI object handles (Text_Console.h's CTextConsole - a GDI-rendered
@@ -946,7 +974,7 @@ inline HKL ActivateKeyboardLayout(HKL /*hkl*/, unsigned /*flags*/) { return null
 // already in the codebase, but nothing here is wired to real HID input.
 struct GUID
 {
-	unsigned long  Data1;
+	uint32_t       Data1;
 	unsigned short Data2;
 	unsigned short Data3;
 	unsigned char  Data4[8];

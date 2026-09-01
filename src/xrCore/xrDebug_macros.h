@@ -58,8 +58,10 @@
 # else // DEBUG
 # ifdef __BORLANDC__
 # define NODEFAULT
-# else
+# elif defined(_MSC_VER)
 # define NODEFAULT __assume(0)
+# else
+# define NODEFAULT __builtin_unreachable()
 # endif
 #ifdef USE_VERIFY_IN_RELEASE
 # define VERIFY(expr) do {if (!(expr)) ::Debug.soft_fail(#expr,DEBUG_INFO);} while(0)
