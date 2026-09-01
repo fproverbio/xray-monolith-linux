@@ -486,19 +486,41 @@ inline long long _atoi64(const char* s) { return std::atoll(s); }
 inline unsigned long long _strtoui64(const char* s, char** end, int base) { return std::strtoull(s, end, base); }
 inline int _vsnprintf(char* buf, size_t n, const char* fmt, va_list args) { return vsnprintf(buf, n, fmt, args); }
 #define _snprintf snprintf
+// Unlike glibc's vsnprintf (which returns the length the string *would*
+// have been had the buffer been big enough), MSVC's safe-CRT vsnprintf_s /
+// vsprintf_s / sprintf_s never report more than what actually fit. Callers
+// across this codebase (e.g. xrDebugNew.cpp's gather_info) rely on that:
+// they do `buffer += xr_sprintf(buffer, remaining, ...)` in a loop to build
+// a message incrementally, trusting the return value never overruns
+// `remaining`. Passing glibc's uncapped return through here let `buffer`
+// walk past the end of its backing array on the very first truncated write,
+// after which `remaining` (computed as `size - (buffer - base)`) underflows
+// to a huge value and the next write scribbles far past the buffer - the
+// cause of a real SIGSEGV inside the assertion-reporting path. Clamp to the
+// number of characters actually written (excluding the null terminator) so
+// truncation degrades to a shorter message instead of stack corruption.
 inline int vsnprintf_s(char* dest, size_t destsz, size_t count, const char* fmt, va_list args)
 {
 	size_t n = (count < destsz) ? count : destsz - 1;
-	return vsnprintf(dest, n + 1, fmt, args);
+	int ret = vsnprintf(dest, n + 1, fmt, args);
+	if (ret < 0)
+		return ret;
+	return (static_cast<size_t>(ret) > n) ? static_cast<int>(n) : ret;
 }
 template <size_t N>
 inline int vsprintf_s(char (&dest)[N], const char* fmt, va_list args)
 {
-	return vsnprintf(dest, N, fmt, args);
+	int ret = vsnprintf(dest, N, fmt, args);
+	if (ret < 0)
+		return ret;
+	return (static_cast<size_t>(ret) >= N) ? static_cast<int>(N - 1) : ret;
 }
 inline int vsprintf_s(char* dest, size_t destsz, const char* fmt, va_list args)
 {
-	return vsnprintf(dest, destsz, fmt, args);
+	int ret = vsnprintf(dest, destsz, fmt, args);
+	if (ret < 0)
+		return ret;
+	return (static_cast<size_t>(ret) >= destsz) ? static_cast<int>(destsz - 1) : ret;
 }
 template <size_t N>
 inline int sprintf_s(char (&dest)[N], const char* fmt, ...)
@@ -507,7 +529,9 @@ inline int sprintf_s(char (&dest)[N], const char* fmt, ...)
 	va_start(args, fmt);
 	int result = vsnprintf(dest, N, fmt, args);
 	va_end(args);
-	return result;
+	if (result < 0)
+		return result;
+	return (static_cast<size_t>(result) >= N) ? static_cast<int>(N - 1) : result;
 }
 
 // _strdate/_strtime: legacy MSVC "DD/MM/YY"/"HH:MM:SS" formatters, used
