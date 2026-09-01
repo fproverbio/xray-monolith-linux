@@ -94,20 +94,21 @@ inline std::unordered_map<void*, size_t>& _xr_mapping_lengths()
 	return lengths;
 }
 
-inline void* MapViewOfFile(HANDLE hMapping, unsigned access, unsigned /*offsetHigh*/, unsigned /*offsetLow*/,
+inline void* MapViewOfFile(HANDLE hMapping, unsigned access, unsigned offsetHigh, unsigned offsetLow,
                             size_t bytesToMap)
 {
 	int fd = _xr_handle_to_fd(hMapping);
+	off_t offset = (static_cast<off_t>(offsetHigh) << 32) | static_cast<off_t>(offsetLow);
 	size_t len = bytesToMap;
 	if (len == 0)
 	{
 		struct stat st{};
 		if (fstat(fd, &st) != 0)
 			return nullptr;
-		len = static_cast<size_t>(st.st_size);
+		len = static_cast<size_t>(st.st_size) - static_cast<size_t>(offset);
 	}
 	int prot = (access & FILE_MAP_WRITE) ? (PROT_READ | PROT_WRITE) : PROT_READ;
-	void* p = mmap(nullptr, len, prot, MAP_SHARED, fd, 0);
+	void* p = mmap(nullptr, len, prot, MAP_SHARED, fd, offset);
 	if (p == MAP_FAILED)
 		return nullptr;
 	_xr_mapping_lengths()[p] = len;

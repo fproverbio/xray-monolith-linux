@@ -79,6 +79,46 @@ add_compile_definitions(
 # latent bugs from genuinely-dead template code.
 add_compile_options(-fpermissive)
 
+# The LZO decompressor (src/xrCore/rt_lzo1x_d.ch, upstream miniLZO source,
+# unmodified) type-puns through mismatched pointer types in its fast-path
+# byte-copy macros (e.g. COPY4: `*(lzo_uint32p)(dst) = *(const
+# lzo_uint32p)(src)` on buffers actually typed lzo_bytep). That's UB under
+# strict aliasing, so -fno-strict-aliasing is kept as defensive hardening -
+# but it turned out NOT to be the cause of the real corruption bug below
+# (confirmed by bisection: identical corruption with and without this flag).
+# Given how much of this 2010s Windows-era codebase leans on similar
+# type-punning, keep it global rather than scoped to LZO.
+add_compile_options(-fno-strict-aliasing)
+
+# Real root cause of that corruption, found by bisecting GCC optimizer
+# flags against an isolated repro (decompress the same compressed bytes
+# with the engine's own lzo1x_decompress vs. the system's independent
+# liblzo2, byte-diff the output): GCC's tree loop-vectorizer (part of
+# -O3) auto-vectorizes rt_lzo1x_d.ch's fast-path match-copy loop
+#   do { COPY4(op, m_pos); op += 4; m_pos += 4; t -= 4; } while (t >= 4);
+# LZ77 back-reference copies are allowed to have op/m_pos overlap when the
+# match distance is shorter than the match length (e.g. "abcabcabc" is
+# encoded as literal "abc" + a length-6 copy from distance 3) - the
+# overlap is exactly what lets a short repeated pattern expand, and the
+# scalar loop above works because each 4-byte COPY4 sees the bytes the
+# *previous* iteration just wrote. GCC's vectorizer doesn't prove
+# op/m_pos are non-overlapping (they aren't, by design) but versions the
+# loop as if a vector-width chunk copy were equivalent to sequential
+# 4-byte steps; for overlapping source/dest that's wrong, silently
+# replacing some of the copied bytes with zero. Reproduced deterministically
+# with db/configs/configs.db0's squad_descr_agroprom.ltx: the repeated
+# substring "ork" (from "snork_weak2", back-referenced via a short-distance
+# LZ77 match) decompressed to "\0\0\0" on its 2nd/3rd occurrences, while
+# the first (literal, non-back-referenced) occurrence was fine - "cave_sn"
+# got truncated to "cave_sn\0\0\0_agr..." and tripped the ini parser's
+# "Bad ini section found" assert. -fno-tree-loop-vectorize disables just
+# the offending loop vectorizer (confirmed via bisection against
+# -fno-tree-slp-vectorize, which does NOT fix it); scoped globally since
+# the LZO source here is unmodified upstream miniLZO and other manual
+# byte-copy loops in this codebase could hit the same overlap-unsafe
+# vectorization.
+add_compile_options(-fno-tree-loop-vectorize)
+
 set(XRAY_ENABLE_WARNINGS
   -Wall
   -Wextra
