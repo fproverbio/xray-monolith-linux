@@ -14,6 +14,7 @@
 #include "agent_member_manager.h"
 #include "agent_memory_manager.h"
 #include "ai/stalker/ai_stalker.h"
+#include "ai/stalker/ai_stalker_impl.h"
 #include "memory_manager.h"
 #include "visual_memory_manager.h"
 #include "sound_memory_manager.h"

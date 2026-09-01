@@ -9,6 +9,7 @@
 #include "StdAfx.h"
 #include "stalker_danger_grenade_actions.h"
 #include "ai/stalker/ai_stalker.h"
+#include "ai/stalker/ai_stalker_impl.h"
 #include "script_game_object.h"
 #include "stalker_movement_manager_smart_cover.h"
 #include "sight_manager.h"

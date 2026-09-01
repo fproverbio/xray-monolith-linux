@@ -9,6 +9,7 @@
 #include "pch_script.h"
 #include "stalker_combat_actions.h"
 #include "ai/stalker/ai_stalker.h"
+#include "ai/stalker/ai_stalker_impl.h"
 #include "script_game_object.h"
 
 extern BOOL g_ai_move_to_cover_run;

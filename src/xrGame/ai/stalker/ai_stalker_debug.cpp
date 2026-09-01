@@ -12,6 +12,7 @@
 // psAI_Flags - see ai_monsters_misc.cpp's comment; same established fix.
 extern Flags32 psAI_Flags;
 #include "ai_stalker.h"
+#include "ai_stalker_impl.h"
 #include "../../memory_manager.h"
 #include "../../visual_memory_manager.h"
 #include "../../sound_memory_manager.h"
