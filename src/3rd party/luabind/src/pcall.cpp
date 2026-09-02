@@ -36,7 +36,7 @@ namespace luabind {
 			if(e)
 			{
 				int base = lua_gettop(L) - nargs;
-				e(L);
+				lua_pushcfunction(L, e);
 				lua_insert(L, base);  // push pcall_callback under chunk and args
 				en = base;
 			}
