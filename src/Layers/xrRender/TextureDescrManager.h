@@ -2,6 +2,8 @@
 #define _TextureDescrManager_included_
 
 #pragma once
+#include <mutex>
+
 #include "ETextureParams.h"
 
 class cl_dt_scaler;
@@ -50,7 +52,7 @@ private:
 	map_TD m_texture_details;
 	map_CS m_detail_scalers;
 
-	static void LoadTHM(LPCSTR initial, map_TD& s_texture_details, map_CS& s_detail_scalers);
+	static void LoadTHM(LPCSTR initial, map_TD& s_texture_details, map_CS& s_detail_scalers, std::mutex& maps_mutex);
 	static void LoadTHMThread(void* args);
 
 public:

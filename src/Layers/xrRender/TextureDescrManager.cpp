@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #pragma hdrstop
+#include <atomic>
+
 #include "TextureDescrManager.h"
 #include "ETextureParams.h"
 #include "profiler.h"
@@ -43,6 +45,8 @@ struct TH_LoadTHM
 	LPCSTR initial;
 	map_TD& s_texture_details;
 	map_CS& s_detail_scalers;
+	std::mutex& maps_mutex;
+	std::atomic<int>& pending;
 };
 
 void CTextureDescrMngr::LoadTHMThread(void* args)
@@ -50,10 +54,18 @@ void CTextureDescrMngr::LoadTHMThread(void* args)
 	PROF_EVENT();
 
 	TH_LoadTHM* p = (TH_LoadTHM*)args;
-	LoadTHM(p->initial, p->s_texture_details, p->s_detail_scalers);
+	LoadTHM(p->initial, p->s_texture_details, p->s_detail_scalers, p->maps_mutex);
+	p->pending.fetch_sub(1, std::memory_order_acq_rel);
 }
 
-void CTextureDescrMngr::LoadTHM(LPCSTR initial, map_TD& s_texture_details, map_CS& s_detail_scalers)
+// $game_textures$ and $level$ are loaded by two concurrent threads (see
+// Load() below) that both insert into the same s_texture_details/
+// s_detail_scalers maps - concurrent std::map insertion (even of distinct
+// keys) races on internal tree-rebalancing pointers and corrupts the heap,
+// which is what was actually behind the SIGSEGV previously observed inside
+// an unrelated hashtable erase() elsewhere in the process. Every touch of
+// the shared maps must be serialized.
+void CTextureDescrMngr::LoadTHM(LPCSTR initial, map_TD& s_texture_details, map_CS& s_detail_scalers, std::mutex& maps_mutex)
 {
 	PROF_EVENT();
 
@@ -78,6 +90,8 @@ void CTextureDescrMngr::LoadTHM(LPCSTR initial, map_TD& s_texture_details, map_C
 		if (STextureParams::ttImage == tp.type || STextureParams::ttTerrain == tp.type || STextureParams::ttNormalMap ==
 			tp.type)
 		{
+			std::lock_guard<std::mutex> lock(maps_mutex);
+
 			texture_desc& desc = s_texture_details[fn];
 			cl_dt_scaler*& dts = s_detail_scalers[fn];
 
@@ -124,11 +138,20 @@ void CTextureDescrMngr::LoadTHM(LPCSTR initial, map_TD& s_texture_details, map_C
 
 void CTextureDescrMngr::Load()
 {
-	TH_LoadTHM* gtex = new TH_LoadTHM({"$game_textures$", m_texture_details, m_detail_scalers});
-	TH_LoadTHM* lvl = new TH_LoadTHM({"$level$", m_texture_details, m_detail_scalers});
+	static std::mutex maps_mutex;
+	std::atomic<int> pending{2};
+
+	TH_LoadTHM* gtex = new TH_LoadTHM({"$game_textures$", m_texture_details, m_detail_scalers, maps_mutex, pending});
+	TH_LoadTHM* lvl = new TH_LoadTHM({"$level$", m_texture_details, m_detail_scalers, maps_mutex, pending});
 	thread_spawn(LoadTHMThread, "X-Ray THM Loader 1", 0, gtex);
 	thread_spawn(LoadTHMThread, "X-Ray THM Loader 2", 0, lvl);
-	Sleep(5);
+
+	// thread_spawn() detaches the threads (no join handle), so this is the
+	// only thing stopping Load() from returning - and m_texture_details/
+	// m_detail_scalers from being read - while the loader threads are still
+	// writing to them.
+	while (pending.load(std::memory_order_acquire) != 0)
+		Sleep(1);
 }
 
 void CTextureDescrMngr::UnLoad()

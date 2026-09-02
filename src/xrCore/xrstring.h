@@ -2,6 +2,8 @@
 #define xrstringH
 #pragma once
 
+#include "_thread_types.h"
+
 #pragma pack(push,4)
 //////////////////////////////////////////////////////////////////////////
 typedef const char* str_c;
@@ -11,7 +13,13 @@ typedef const char* str_c;
 #pragma warning(disable : 4200)
 struct XRCORE_API str_value
 {
-	u32 dwReference;
+	// Interned via str_container::dock(), which two threads can race to look
+	// up the same entry from (e.g. CTextureDescrMngr::Load()'s two concurrent
+	// THM-loader threads both creating shared_str values that alias the same
+	// interned string) - dock() itself is locked, but every shared_str copy/
+	// destroy touches dwReference outside that lock, so it must be atomic
+	// (matches xr_resource::dwReference and smem_value::dwReference).
+	xr_atomic_u32 dwReference;
 	u32 dwLength;
 	u32 dwCRC;
 	str_value* next;
@@ -67,15 +75,14 @@ protected:
 	void _dec()
 	{
 		if (0 == p_) return;
-		p_->dwReference--;
-		if (0 == p_->dwReference) p_ = 0;
+		if (p_->dwReference.fetch_sub(1, std::memory_order_acq_rel) == 1) p_ = 0;
 	}
 
 public:
 	void _set(str_c rhs)
 	{
 		str_value* v = g_pStringContainer->dock(rhs);
-		if (0 != v) v->dwReference++;
+		if (0 != v) v->dwReference.fetch_add(1, std::memory_order_relaxed);
 		_dec();
 		p_ = v;
 	}
@@ -83,7 +90,7 @@ public:
 	void _set(shared_str const& rhs)
 	{
 		str_value* v = rhs.p_;
-		if (0 != v) v->dwReference++;
+		if (0 != v) v->dwReference.fetch_add(1, std::memory_order_relaxed);
 		_dec();
 		p_ = v;
 	}
