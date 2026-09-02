@@ -110,9 +110,11 @@ namespace luabind {
 
         class_registry* class_registry::get_registry(lua_State* L)
 		{
-			if (class_registry* registry = class_registry_cache[L])
 			{
-				return registry;
+				std::lock_guard lock{ class_registry_cache_mutex };
+				const auto it = class_registry_cache.find(L);
+				if (it != class_registry_cache.end())
+					return it->second;
 			}
 
 			lua_pushstring(L, "__luabind_classes");
