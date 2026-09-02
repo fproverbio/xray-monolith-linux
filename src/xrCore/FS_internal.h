@@ -35,7 +35,7 @@ public:
 		}
 		else
 		{
-			hf = fopen(fName.c_str(), "wb");
+			hf = fopen(xr_posix_path(fName.c_str()).c_str(), "wb");
 			if (hf == 0)
 				Msg("!Can't write file: '%s'. Error: '%s'.", fName.c_str(), _sys_errlist[errno]);
 		}
