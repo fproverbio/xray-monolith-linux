@@ -103,7 +103,7 @@ int xr_vkd3d_bridge_compile_hlsl(
 	const struct xr_vkd3d_bridge_macro *macros, unsigned int macro_count,
 	xr_vkd3d_bridge_open_include_fn open_include,
 	xr_vkd3d_bridge_close_include_fn close_include, void *include_context,
-	const char *entry_point, const char *profile,
+	const char *entry_point, const char *profile, unsigned int flags,
 	void **out_code, size_t *out_size, char **out_messages)
 {
 	struct vkd3d_shader_hlsl_source_info hlsl_info;
@@ -111,6 +111,8 @@ int xr_vkd3d_bridge_compile_hlsl(
 	struct vkd3d_shader_compile_info compile_info;
 	struct include_trampoline_ctx include_ctx;
 	struct vkd3d_shader_macro *vkd3d_macros = NULL;
+	struct vkd3d_shader_compile_option options[1];
+	unsigned int option_count = 0;
 	struct vkd3d_shader_code out_dxbc = {0};
 	char *messages = NULL;
 	unsigned int i;
@@ -166,8 +168,17 @@ int xr_vkd3d_bridge_compile_hlsl(
 	compile_info.source.size = source_len;
 	compile_info.source_type = VKD3D_SHADER_SOURCE_HLSL;
 	compile_info.target_type = VKD3D_SHADER_TARGET_DXBC_TPF;
-	compile_info.options = NULL;
-	compile_info.option_count = 0;
+
+	if (flags & (XR_VKD3D_BRIDGE_PACK_MATRIX_ROW_MAJOR | XR_VKD3D_BRIDGE_PACK_MATRIX_COLUMN_MAJOR))
+	{
+		options[option_count].name = VKD3D_SHADER_COMPILE_OPTION_PACK_MATRIX_ORDER;
+		options[option_count].value = (flags & XR_VKD3D_BRIDGE_PACK_MATRIX_ROW_MAJOR)
+			? VKD3D_SHADER_COMPILE_OPTION_PACK_MATRIX_ROW_MAJOR
+			: VKD3D_SHADER_COMPILE_OPTION_PACK_MATRIX_COLUMN_MAJOR;
+		++option_count;
+	}
+	compile_info.options = option_count ? options : NULL;
+	compile_info.option_count = option_count;
 	compile_info.log_level = VKD3D_SHADER_LOG_INFO;
 	compile_info.source_name = source_name;
 

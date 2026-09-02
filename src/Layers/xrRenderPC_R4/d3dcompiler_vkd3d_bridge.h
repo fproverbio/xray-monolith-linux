@@ -31,6 +31,15 @@ extern "C" {
 #define XR_VKD3D_BRIDGE_TAG_ISGN 0x4e475349u /* "ISGN" */
 #define XR_VKD3D_BRIDGE_TAG_RDEF 0x46454452u /* "RDEF" */
 
+// Matrix-packing compile flags for xr_vkd3d_bridge_compile_hlsl's `flags`
+// parameter, expressed as bridge-local bits (deliberately not reusing
+// D3DCOMPILE_PACK_MATRIX_*'s own numeric values, even though they happen
+// to already match, to keep this header independent of dxvk's
+// d3dcompiler.h). At most one of these should be set; if neither is set,
+// vkd3d-shader's own HLSL-frontend default (column-major) applies.
+#define XR_VKD3D_BRIDGE_PACK_MATRIX_ROW_MAJOR    0x1u
+#define XR_VKD3D_BRIDGE_PACK_MATRIX_COLUMN_MAJOR 0x2u
+
 // A single HLSL preprocessor macro (name/definition pair), mirroring
 // D3D_SHADER_MACRO's layout without depending on dxvk's header for it.
 struct xr_vkd3d_bridge_macro
@@ -55,12 +64,13 @@ typedef void (*xr_vkd3d_bridge_close_include_fn)(
 // xr_vkd3d_bridge_free); on failure returns nonzero and, if messages
 // were produced, sets *out_messages to a malloc'd NUL-terminated string
 // (free with xr_vkd3d_bridge_free_messages).
+// `flags` is a bitmask of XR_VKD3D_BRIDGE_PACK_MATRIX_* above.
 int xr_vkd3d_bridge_compile_hlsl(
 	const char *source, size_t source_len, const char *source_name,
 	const struct xr_vkd3d_bridge_macro *macros, unsigned int macro_count,
 	xr_vkd3d_bridge_open_include_fn open_include,
 	xr_vkd3d_bridge_close_include_fn close_include, void *include_context,
-	const char *entry_point, const char *profile,
+	const char *entry_point, const char *profile, unsigned int flags,
 	void **out_code, size_t *out_size, char **out_messages);
 
 // Disassembles a DXBC-TPF container into D3D assembly text (matching

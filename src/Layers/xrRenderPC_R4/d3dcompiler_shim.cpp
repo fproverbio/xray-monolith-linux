@@ -462,7 +462,6 @@ extern "C" HRESULT WINAPI D3DCompile(
     const D3D_SHADER_MACRO* defines, ID3DInclude* include, const char* entrypoint,
     const char* target, UINT sflags, UINT eflags, ID3DBlob** shader, ID3DBlob** error_messages)
 {
-    (void)sflags;
     (void)eflags;
 
     if (shader)
@@ -477,6 +476,12 @@ extern "C" HRESULT WINAPI D3DCompile(
 
     IncludeTrampolineContext include_ctx{include};
 
+    unsigned int bridge_flags = 0;
+    if (sflags & D3DCOMPILE_PACK_MATRIX_ROW_MAJOR)
+        bridge_flags |= XR_VKD3D_BRIDGE_PACK_MATRIX_ROW_MAJOR;
+    else if (sflags & D3DCOMPILE_PACK_MATRIX_COLUMN_MAJOR)
+        bridge_flags |= XR_VKD3D_BRIDGE_PACK_MATRIX_COLUMN_MAJOR;
+
     void* out_code = nullptr;
     size_t out_size = 0;
     char* messages = nullptr;
@@ -487,7 +492,7 @@ extern "C" HRESULT WINAPI D3DCompile(
         include ? shim_open_include : nullptr,
         include ? shim_close_include : nullptr,
         &include_ctx,
-        entrypoint, target,
+        entrypoint, target, bridge_flags,
         &out_code, &out_size, &messages);
 
     if (error_messages)
