@@ -8064,7 +8064,10 @@ register_reservation:
             memset(&$$, 0, sizeof($$));
             if (parse_reservation_index(ctx, $6, 0, &$$))
             {
-                hlsl_fixme(ctx, &@4, "Reservation shader target %s.", $4);
+                /* Legacy SM1-3 syntax: register(<shader target>, <register>),
+                 * e.g. register(ps, s0). Registers are already per-stage
+                 * under SM4+, so the shader-target token is redundant; the
+                 * reservation parsed from $6 above is all that's needed. */
             }
             else if (parse_reservation_space($6, &$$.reg_space))
             {

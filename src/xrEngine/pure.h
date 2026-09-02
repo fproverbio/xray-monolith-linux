@@ -6,7 +6,15 @@
 #define REG_PRIORITY_NORMAL 0x22222222ul
 #define REG_PRIORITY_HIGH 0x33333333ul
 #define REG_PRIORITY_CAPTURE 0x7ffffffful
-#define REG_PRIORITY_INVALID 0xfffffffful
+// Must match the bit width of _REG_INFO::Prio (a 32-bit int) exactly: Remove()
+// truncates this into Prio, and Process()/Resort() later compare Prio against
+// this same macro. On LP64 Linux, `unsigned long` is 64-bit, so a `...ul`
+// suffix here would promote the comparison to 64 bits while the truncated
+// int is only ever sign-extended to -1 (0xFFFFFFFF'FFFFFFFF), never matching
+// this literal's 64-bit zero-extended value - silently disabling Remove()
+// for every CRegistrator in the engine. `u` keeps this a 32-bit value so the
+// int-vs-unsigned comparison happens at 32 bits on every platform.
+#define REG_PRIORITY_INVALID 0xffffffffu
 
 typedef void __fastcall RP_FUNC(void* obj);
 #define DECLARE_MESSAGE_CL(name,calling) extern ENGINE_API RP_FUNC rp_##name; class ENGINE_API pure##name { public: virtual void calling On##name(void)=0; }

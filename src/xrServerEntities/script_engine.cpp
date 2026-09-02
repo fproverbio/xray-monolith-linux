@@ -395,6 +395,11 @@ void CScriptEngine::init()
 #endif // #ifdef USE_LUA_STUDIO
 
 	::luabind::open(lua());
+	// Anomaly's gamedata scripts universally use the legacy
+	// super(BaseClass, self):method(...) idiom for OOP inheritance; luabind
+	// treats it as deprecated and hard-errors on first use unless this is
+	// called once after open() (see luabind/src/open.cpp's deprecated_super).
+	::luabind::disable_super_deprecation();
 	setup_callbacks();
 	export_classes(lua());
 	setup_auto_load();

@@ -11043,7 +11043,10 @@ yyreduce:
             memset(&(yyval.reg_reservation), 0, sizeof((yyval.reg_reservation)));
             if (parse_reservation_index(ctx, (yyvsp[-1].name), 0, &(yyval.reg_reservation)))
             {
-                hlsl_fixme(ctx, &(yylsp[-3]), "Reservation shader target %s.", (yyvsp[-3].name));
+                /* Legacy SM1-3 syntax: register(<shader target>, <register>),
+                 * e.g. register(ps, s0). Registers are already per-stage
+                 * under SM4+, so the shader-target token is redundant; the
+                 * reservation parsed above is all that's needed. */
             }
             else if (parse_reservation_space((yyvsp[-1].name), &(yyval.reg_reservation).reg_space))
             {

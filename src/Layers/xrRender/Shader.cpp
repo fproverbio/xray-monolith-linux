@@ -153,12 +153,19 @@ BOOL ShaderElement::equal(ShaderElement* S)
 //
 BOOL Shader::equal(Shader& S)
 {
-	return
-		E[0]->equal(&*S.E[0]) &&
-		E[1]->equal(&*S.E[1]) &&
-		E[2]->equal(&*S.E[2]) &&
-		E[3]->equal(&*S.E[3]) &&
-		E[4]->equal(&*S.E[4]);
+	// E[i] slots may legitimately be null (unset shader stage, or a compiled
+	// element with no passes) - compare raw pointers first so we never call
+	// through, or dereference, a null resptr_core (operator*/-> do not
+	// null-check).
+	for (u32 i = 0; i < 5; i++)
+	{
+		ShaderElement* a = E[i]._get();
+		ShaderElement* b = S.E[i]._get();
+		if (a == b) continue;
+		if (!a || !b) return FALSE;
+		if (!a->equal(*b)) return FALSE;
+	}
+	return TRUE;
 }
 
 BOOL Shader::equal(Shader* S)
