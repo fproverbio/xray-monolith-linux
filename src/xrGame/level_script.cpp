@@ -1580,7 +1580,8 @@ void hud_adj_state(bool state)
 
 LPCSTR vid_modes_string()
 {
-	xr_string resolutions = "";
+	static xr_string resolutions;
+	resolutions = "";
 
 	xr_token* tok = vid_mode_token;
 	while (tok->name)
