@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <fcntl.h>
+#include <mutex>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -94,6 +95,17 @@ inline std::unordered_map<void*, size_t>& _xr_mapping_lengths()
 	return lengths;
 }
 
+// CTextureDescrMngr::Load() spawns concurrent THM-loader threads that both
+// funnel through CLocatorAPI::file_from_archive -> MapViewOfFile/
+// UnmapViewOfFile, so this map (unlike the rest of this Win32-on-POSIX
+// shim, which is only ever touched from a single thread at a time in
+// practice) needs real locking rather than relying on caller discipline.
+inline std::mutex& _xr_mapping_lengths_mutex()
+{
+	static std::mutex m;
+	return m;
+}
+
 inline void* MapViewOfFile(HANDLE hMapping, unsigned access, unsigned offsetHigh, unsigned offsetLow,
                             size_t bytesToMap)
 {
@@ -111,17 +123,26 @@ inline void* MapViewOfFile(HANDLE hMapping, unsigned access, unsigned offsetHigh
 	void* p = mmap(nullptr, len, prot, MAP_SHARED, fd, offset);
 	if (p == MAP_FAILED)
 		return nullptr;
-	_xr_mapping_lengths()[p] = len;
+	{
+		std::lock_guard<std::mutex> lock(_xr_mapping_lengths_mutex());
+		_xr_mapping_lengths()[p] = len;
+	}
 	return p;
 }
 
 inline bool UnmapViewOfFile(void* addr)
 {
-	auto& lengths = _xr_mapping_lengths();
-	auto it = lengths.find(addr);
-	size_t len = (it != lengths.end()) ? it->second : 0;
-	if (it != lengths.end())
-		lengths.erase(it);
+	size_t len = 0;
+	{
+		std::lock_guard<std::mutex> lock(_xr_mapping_lengths_mutex());
+		auto& lengths = _xr_mapping_lengths();
+		auto it = lengths.find(addr);
+		if (it != lengths.end())
+		{
+			len = it->second;
+			lengths.erase(it);
+		}
+	}
 	return len ? (munmap(addr, len) == 0) : false;
 }
 
