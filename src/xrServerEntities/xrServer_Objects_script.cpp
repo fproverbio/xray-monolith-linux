@@ -106,8 +106,14 @@ void CSE_Abstract::script_register(lua_State* L)
 {
 	typedef CWrapperBase<CSE_Abstract> WrapType;
 	typedef CSE_Abstract BaseType;
+	// The 2nd class_<> template argument is BaseOrBases and the 3rd is
+	// HolderType (defaults to null_type) - the Lua-override WrapperType is
+	// the 4th argument (see uiscriptwnd_script.h's identical fix for the
+	// full explanation). WrapType (a wrap_base wrapper, never registered
+	// on its own) was landing in BaseOrBases, and CPureServerObject (the
+	// real base) was landing in HolderType.
 	module(L)[
-		class_<CSE_Abstract, WrapType, CPureServerObject>("cse_abstract")
+		class_<CSE_Abstract, bases<CPureServerObject>, null_type, WrapType>("cse_abstract")
 		.def_readonly("id", &BaseType::ID)
 		.def_readonly("parent_id", &BaseType::ID_Parent)
 		.def_readonly("script_version", &BaseType::m_script_version)

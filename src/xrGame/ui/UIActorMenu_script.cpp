@@ -317,19 +317,18 @@ void CUIActorMenu::script_register(lua_State* L)
 			value("iTrashSlot", int(EDDListType::iTrashSlot))
 		],
 
-		// CUIActorMenu genuinely derives from both CUIDialogWnd and
-		// CUIWndCallback (multiple inheritance) - both need wrapping in
-		// bases<> for this fork's class_<T, BaseOrBases, HolderType,
-		// WrapperType> signature, matching the convention already used
-		// successfully elsewhere in this codebase (e.g. CarScript.cpp's
-		// class_<CCar, bases<CGameObject, CHolderCustom, CExplosive>>).
-		// Passed positionally instead, CUIWndCallback was landing in the
-		// HolderType slot, where the fork's constructor-registration
-		// machinery tried (and failed) to construct it from a raw
-		// CUIActorMenu* - a real, narrow bug in this file, not the same
-		// wrap_base/constructor<> incompatibility as UIListBox_script.cpp/
-		// UIScriptWnd_script.cpp (see their own comments).
-		class_<CUIActorMenu, bases<CUIDialogWnd, CUIWndCallback>>("CUIActorMenu")
+		// CUIActorMenu derives from both CUIDialogWnd and CUIWndCallback in
+		// C++, but CUIWndCallback is a pure C++ helper mixin that is never
+		// registered as its own luabind class anywhere in the codebase
+		// (confirmed against upstream openxray, which registers this class
+		// as class_<CUIActorMenu, CUIDialogWnd> - CUIWndCallback only).
+		// Listing an unregistered type in bases<> makes
+		// class_registry::find_class() legitimately return null for it at
+		// registration time, and since this is a release/NDEBUG build the
+		// assert() guarding that null in class_rep::add_base_class is
+		// compiled out, so the null pointer gets dereferenced -> SIGSEGV.
+		// Only actually Lua-registered base classes belong in bases<>.
+		class_<CUIActorMenu, bases<CUIDialogWnd>>("CUIActorMenu")
 		.def(constructor<>())
 		.def("get_drag_item", &CUIActorMenu::GetCurrentItemAsGameObject)
 		.def("highlight_section_in_slot", &CUIActorMenu::HighlightSectionInSlot)

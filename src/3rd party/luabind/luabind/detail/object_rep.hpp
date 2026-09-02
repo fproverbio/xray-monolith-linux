@@ -96,7 +96,21 @@ namespace luabind {
 			void operator=(object_rep const&) = delete;
 
 			instance_holder* m_instance;
-			std::aligned_storage<32>::type m_instance_buffer;
+			// Explicit pointer alignment (not the default, which is
+			// alignof(std::max_align_t) == 16 on x86-64): object_rep is
+			// placement-constructed directly into memory returned by
+			// lua_newuserdata(), which LuaJIT only guarantees to
+			// pointer-alignment (8 bytes), not 16. With the default
+			// (16-byte) alignment, GCC is entitled to assume the whole
+			// object_rep - and therefore lua_newuserdata()'s return
+			// value - is 16-byte aligned, and at -O3 it exploits that to
+			// merge adjacent scalar member stores in push_new_instance()
+			// into a single aligned `movaps`, which SIGSEGVs (misaligned
+			// SSE access) the moment the allocator actually hands back an
+			// 8-mod-16 address. Declaring the true (lesser) alignment
+			// requirement here removes the false premise instead of
+			// papering over the symptom with a compiler flag.
+			std::aligned_storage<32, alignof(void*)>::type m_instance_buffer;
 			class_rep* m_classrep; // the class information about this object's type
 			detail::lua_reference m_dependency_ref; // reference to lua table holding dependency references
 		};
