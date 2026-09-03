@@ -550,7 +550,30 @@ void xrDebug::backend(const char* expression, const char* description, const cha
 	if (grabbed_window)
 		SDL_SetWindowGrab(grabbed_window, SDL_FALSE);
 
+	// Real exclusive fullscreen (SDL_WINDOW_FULLSCREEN, as set by DXVK's
+	// SDL2 WSI - see wsi_window_sdl2.cpp's enterFullscreenMode) holds a
+	// video mode switch that SDL_ShowMessageBox has no way to yield to on
+	// Linux: unlike Windows, where a system MessageBox always steals the
+	// display back, SDL_ShowMessageBox can simply fail (return non-zero)
+	// while a mode switch is active. show_assertion_dialog() treats that
+	// failure as "headless" and fails safe into abort_execution, which
+	// re-raises SIGABRT through abort_handler/handler_base (line ~1247)
+	// and aborts the process for real with no dialog ever shown - the
+	// exact "game just crashes, no dialog" symptom this call path exists
+	// to prevent. SDL_GetGrabbedWindow() can't be reused for this check
+	// (it goes NULL on focus loss, independent of fullscreen state), so
+	// this needs xrEngine's own window handle - wired the same way
+	// on_dialog already crosses this same xrCore/xrEngine boundary.
+	SDL_Window* const game_window = get_window_getter() ? get_window_getter()() : nullptr;
+	const bool was_exclusive_fullscreen = game_window &&
+		(SDL_GetWindowFlags(game_window) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN;
+	if (was_exclusive_fullscreen)
+		SDL_SetWindowFullscreen(game_window, 0);
+
 	const dialog_result result = show_assertion_dialog(assertion_info);
+
+	if (was_exclusive_fullscreen)
+		SDL_SetWindowFullscreen(game_window, SDL_WINDOW_FULLSCREEN);
 
 	if (grabbed_window)
 		SDL_SetWindowGrab(grabbed_window, SDL_TRUE);
@@ -1188,6 +1211,7 @@ void xrDebug::_initialize (const bool& dedicated)
 {
     handler = 0;
     m_on_dialog = 0;
+    m_window_getter = 0;
     std::set_new_handler (def_new_handler); // exception-handler for 'out of memory' condition
     // ::SetUnhandledExceptionFilter (UnhandledFilter); // exception handler to all "unhandled" exceptions
 }

@@ -27,6 +27,11 @@ int KEYBOARDBUFFERSIZE = 128;
 static bool g_exclusive = false;
 extern u32 g_screenmode;
 
+static SDL_Window* get_game_window()
+{
+	return Device.m_sdlWnd;
+}
+
 static void on_error_dialog(bool before)
 {
 #ifdef INGAME_EDITOR
@@ -214,6 +219,7 @@ CInput::CInput(BOOL bExclusive, int deviceForInit)
 	(void)deviceForInit;
 
 	Debug.set_on_dialog(&on_error_dialog);
+	Debug.set_window_getter(&get_game_window);
 
 #ifdef ENGINE_BUILD
 	Device.seqAppActivate.Add(this);
