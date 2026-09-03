@@ -9,12 +9,14 @@
 
 typedef void crashhandler(void);
 typedef void on_dialog(bool before);
+typedef struct SDL_Window* window_getter(void);
 
 class XRCORE_API xrDebug
 {
 private:
 	crashhandler* handler;
 	on_dialog* m_on_dialog;
+	window_getter* m_window_getter;
 
 public:
 	void _initialize(const bool& dedicated);
@@ -39,6 +41,16 @@ public:
 	void set_on_dialog(on_dialog* on_dialog)
 	{
 		m_on_dialog = on_dialog;
+	}
+
+	window_getter* get_window_getter()
+	{
+		return m_window_getter;
+	}
+
+	void set_window_getter(window_getter* getter)
+	{
+		m_window_getter = getter;
 	}
 
 	LPCSTR error2string(long code);
