@@ -584,12 +584,25 @@ int CScriptStorage::vscript_log(ScriptStorage::ELuaMessageType tLuaMessageType, 
 
 	xr_strcpy(S2, S);
 	S1 = S2 + xr_strlen(S);
-	int l_iResult = vsprintf(S1, caFormat, marker);
+	// vsprintf() here previously wrote unbounded into the fixed-size S2
+	// stack buffer, and reused the same va_list for a second vsprintf()
+	// call - both undefined behavior (stack overflow on a long Lua error/
+	// traceback string, and reading an already-consumed va_list on the
+	// second call, which on x86-64 SysV means garbage register-save-area
+	// contents get read as the %s argument). Both were observed to
+	// segfault inside vsprintf() when logging a long lua_pcall error.
+	// va_copy() so the first vsnprintf() doesn't consume the va_list the
+	// second one still needs, and vsnprintf() to cap the write at the
+	// buffer's actual remaining size.
+	va_list marker_copy;
+	va_copy(marker_copy, marker);
+	int l_iResult = vsnprintf(S1, sizeof(S2) - xr_strlen(S), caFormat, marker_copy);
+	va_end(marker_copy);
 	Msg("%s", S2);
 
 	xr_strcpy(S2, SS);
 	S1 = S2 + xr_strlen(SS);
-	vsprintf(S1, caFormat, marker);
+	vsnprintf(S1, sizeof(S2) - xr_strlen(SS), caFormat, marker);
 	xr_strcat(S2, "\r\n");
 
 #ifdef LUA_DEBUG_PRINT //DEBUG
