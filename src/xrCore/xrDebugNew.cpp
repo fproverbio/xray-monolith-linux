@@ -452,6 +452,47 @@ void xrDebug::backend(const char* expression, const char* description, const cha
 }
 #endif // NO_BUG_TRAP
 #else // !_WIN32
+// SDL2 is a Linux-only dependency of xrCore (see xrCore/CMakeLists.txt -
+// target_link_libraries is itself gated `if (NOT WIN32)`), specifically so
+// this stays out of any Windows build's dependency graph and doesn't block
+// upstreaming: a Windows compile never parses this branch at all, matching
+// the same _WIN32/#else split every other platform fork in this file uses
+// (no invented macro - see CMake/XRay.Compiler.cmake's "honest macro" note).
+#include <SDL.h>
+
+namespace
+{
+    enum class dialog_result
+    {
+        abort_execution,
+        try_again,
+        ignore_always,
+    };
+
+    dialog_result show_assertion_dialog(const char* message)
+    {
+        const SDL_MessageBoxButtonData buttons[] =
+        {
+            { SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT,
+              (int)dialog_result::abort_execution, "Cancel" },
+            { 0, (int)dialog_result::try_again, "Try Again" },
+            { 0, (int)dialog_result::ignore_always, "Continue" },
+        };
+
+        const SDL_MessageBoxData data =
+        {
+            SDL_MESSAGEBOX_ERROR, nullptr, "Fatal Error", message,
+            SDL_arraysize(buttons), buttons, nullptr
+        };
+
+        int button_id = -1;
+        if (SDL_ShowMessageBox(&data, &button_id) != 0 || button_id < 0)
+            return dialog_result::abort_execution; // SDL couldn't show a dialog (e.g. headless) - fail safe, same as today's abort()
+
+        return (dialog_result)button_id;
+    }
+}
+
 void xrDebug::backend(const char* expression, const char* description, const char* argument0, const char* argument1,
                       const char* file, int line, const char* function, bool& ignore_always)
 {
@@ -462,17 +503,78 @@ void xrDebug::backend(const char* expression, const char* description, const cha
 	gather_info(expression, description, argument0, argument1, file, line, function, assertion_info,
 	            sizeof(assertion_info));
 
+	LPCSTR endline = "\r\n";
+	LPSTR buffer = assertion_info + xr_strlen(assertion_info);
+	buffer += xr_sprintf(buffer, sizeof(assertion_info) - u32(buffer - &assertion_info[0]), "%sPress CANCEL to abort execution%s", endline, endline);
+	buffer += xr_sprintf(buffer, sizeof(assertion_info) - u32(buffer - &assertion_info[0]), "Press TRY AGAIN to continue execution%s", endline);
+	buffer += xr_sprintf(buffer, sizeof(assertion_info) - u32(buffer - &assertion_info[0]), "Press CONTINUE to continue execution and ignore all the errors of this type%s%s", endline, endline);
+
 	if (handler)
 		handler();
+
+	if (get_on_dialog())
+		get_on_dialog()(true);
 
 	FlushLog();
 
 	if (IsDebuggerPresent())
 		DebugBreak();
 
-	(void)ignore_always;
+	// Locked for the same reason OpenXRay's equivalent xrDebug::Fail() locks
+	// around its ShowMessage() call: R_ASSERT/VERIFY can fire from any
+	// thread (no XInitThreads() anywhere in this codebase), so serialize
+	// every caller on this critical section before ever showing a dialog,
+	// rather than marshaling the call to the main thread.
+	//
+	// A fatal error firing mid-gameplay almost always means the window
+	// still holds SDL's relative-mouse-mode pointer grab (set in
+	// Xr_input.cpp for mouselook). On Windows a system MessageBox always
+	// steals input away from DirectInput's exclusive acquire, but SDL's
+	// grab does not yield to another SDL window on its own: the dialog's
+	// buttons would be unclickable (the game window keeps eating every
+	// button event) even though the cursor visibly moves over them.
+	// Release the grab before showing the dialog and restore whatever
+	// state it had afterward, so the dialog is actually usable.
+	//
+	// SDL_SetWindowGrab (set independently in Device_create.cpp for the
+	// life of the window, to confine input to it) is a *second*, separate
+	// X11 pointer grab on top of relative-mouse-mode - releasing only the
+	// latter still leaves XGrabPointer held, so the dialog stays just as
+	// unclickable. SDL_GetGrabbedWindow() finds whichever window holds it
+	// without xrCore needing to reach into xrEngine's Device global.
+	const bool had_relative_mouse = SDL_GetRelativeMouseMode() == SDL_TRUE;
+	if (had_relative_mouse)
+		SDL_SetRelativeMouseMode(SDL_FALSE);
+
+	SDL_Window* const grabbed_window = SDL_GetGrabbedWindow();
+	if (grabbed_window)
+		SDL_SetWindowGrab(grabbed_window, SDL_FALSE);
+
+	const dialog_result result = show_assertion_dialog(assertion_info);
+
+	if (grabbed_window)
+		SDL_SetWindowGrab(grabbed_window, SDL_TRUE);
+
+	if (had_relative_mouse)
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+
+	if (get_on_dialog())
+		get_on_dialog()(false);
+
+	switch (result)
+	{
+	case dialog_result::try_again:
+		break;
+	case dialog_result::ignore_always:
+		ignore_always = true;
+		break;
+	case dialog_result::abort_execution:
+	default:
+		CS.Leave();
+		std::abort();
+	}
+
 	CS.Leave();
-	std::abort();
 }
 #endif // _WIN32
 

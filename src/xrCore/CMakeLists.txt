@@ -97,3 +97,13 @@ target_compile_definitions(xrCore PRIVATE
   XRCORE_EXPORTS
   XRCORE_STATIC
 )
+
+# SDL_ShowMessageBox()-backed non-Windows assert/fatal-error dialog
+# (xrDebugNew.cpp's #else // !_WIN32 xrDebug::backend()) - gated so a
+# Windows build's dependency graph is untouched, keeping this upstreamable:
+# xrDebug.h exposes no SDL type (the #include <SDL.h> lives only inside
+# that _WIN32-excluded branch), and PRIVATE keeps the dependency from
+# leaking to xrCore's consumers even on Linux.
+if (NOT WIN32)
+  target_link_libraries(xrCore PRIVATE SDL2::SDL2)
+endif()
