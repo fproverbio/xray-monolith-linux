@@ -1250,10 +1250,10 @@ static void illegal_instruction_handler(int signal)
 	handler_base("illegal instruction");
 }
 
-// static void storage_access_handler (int signal)
-// {
-// handler_base ("illegal storage access");
-// }
+static void storage_access_handler(int signal)
+{
+	handler_base("illegal storage access");
+}
 
 static void termination_handler(int signal)
 {
@@ -1278,7 +1278,7 @@ void debug_on_thread_spawn()
 	signal(SIGFPE, floating_point_handler);
 	signal(SIGILL, illegal_instruction_handler);
 	signal(SIGINT, 0);
-	// signal (SIGSEGV, storage_access_handler);
+	signal(SIGSEGV, storage_access_handler);
 	signal(SIGTERM, termination_handler);
 
 #ifdef _WIN32
