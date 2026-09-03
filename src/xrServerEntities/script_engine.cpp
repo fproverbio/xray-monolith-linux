@@ -285,9 +285,14 @@ int CScriptEngine::lua_pcall_failed(lua_State* L)
 #if !XRAY_EXCEPTIONS
 	Debug.fatal(DEBUG_INFO, error_msg);
 #endif
-	if (lua_isstring(L, -1))
-		lua_pop(L, 1);
-	return (LUA_ERRRUN);
+	// This is installed as LuaJIT's pcall message handler (msgh), so it is
+	// invoked like any other lua_CFunction: the return value must be the
+	// number of results left on the stack (lj_err_run's contract is
+	// |errfunc|msg| -> |msg|), not a Lua status code. Returning LUA_ERRRUN
+	// here desynced LuaJIT's expected result count from the actual stack
+	// contents and crashed lj_vm_return's copy loop once script execution
+	// resumed after "Try Again".
+	return 1;
 }
 
 void lua_cast_failed(lua_State* L, luabind::type_id const& info)
