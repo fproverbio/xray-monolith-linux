@@ -142,13 +142,6 @@ inline HRESULT D3DX11CreateTextureFromMemory(ID3D11Device* pDevice, LPCVOID pSrc
 	DirectX::ScratchImage image;
 	HRESULT hr = DirectX::LoadFromDDSMemory(reinterpret_cast<const uint8_t*>(pSrcData), SrcDataSize,
 	                                         DirectX::DDS_FLAGS_NONE, &meta, image);
-	if (SUCCEEDED(hr) && meta.depth > 1)
-	{
-		// Volume (3D) textures aren't loaded through this path anywhere in
-		// this codebase - only 2D and cubemap DDS textures are.
-		Msg("! D3DX11CreateTextureFromMemory: volume textures are not supported");
-		hr = E_NOTIMPL;
-	}
 	if (pHResult)
 		*pHResult = hr;
 	if (FAILED(hr))
@@ -165,20 +158,51 @@ inline HRESULT D3DX11CreateTextureFromMemory(ID3D11Device* pDevice, LPCVOID pSrc
 		mipCount = 1;
 
 	std::vector<DirectX::Image> selected;
-	selected.reserve(meta.arraySize * mipCount);
-	for (size_t item = 0; item < meta.arraySize; ++item)
+	if (meta.IsVolumemap())
+	{
+		// Volume (3D) textures pack every depth-slice of every mip level into
+		// a single flat array (see DirectXTexD3D11.cpp's CreateTextureEx
+		// volume-map path and TexMetadata::ComputeIndex): mip levels are not
+		// independent 2D images/array-items, so - unlike the 1D/2D/cubemap
+		// case below - selecting a mip range means including every slice at
+		// each selected level, not one image per (item, mip) pair.
+		selected.reserve(meta.depth);
 		for (UINT mip = 0; mip < mipCount; ++mip)
 		{
-			const DirectX::Image* src = image.GetImage(firstMip + mip, item, 0);
-			if (!src)
-				return E_FAIL;
-			selected.push_back(*src);
+			UINT depthAtLevel = static_cast<UINT>(meta.depth) >> (firstMip + mip);
+			if (depthAtLevel < 1)
+				depthAtLevel = 1;
+			for (UINT slice = 0; slice < depthAtLevel; ++slice)
+			{
+				const DirectX::Image* src = image.GetImage(firstMip + mip, 0, slice);
+				if (!src)
+					return E_FAIL;
+				selected.push_back(*src);
+			}
 		}
+	}
+	else
+	{
+		selected.reserve(meta.arraySize * mipCount);
+		for (size_t item = 0; item < meta.arraySize; ++item)
+			for (UINT mip = 0; mip < mipCount; ++mip)
+			{
+				const DirectX::Image* src = image.GetImage(firstMip + mip, item, 0);
+				if (!src)
+					return E_FAIL;
+				selected.push_back(*src);
+			}
+	}
 
 	DirectX::TexMetadata subMeta = meta;
 	subMeta.mipLevels = mipCount;
 	subMeta.width = selected[0].width;
 	subMeta.height = selected[0].height;
+	if (meta.IsVolumemap())
+	{
+		UINT depthAtFirstMip = static_cast<UINT>(meta.depth) >> firstMip;
+		subMeta.depth = depthAtFirstMip < 1 ? 1 : depthAtFirstMip;
+	}
 
 	D3D_USAGE usage = pLoadInfo && pLoadInfo->Usage != static_cast<D3D_USAGE>(D3DX_DEFAULT) ? pLoadInfo->Usage
 	                                                                                         : D3D_USAGE_DEFAULT;
