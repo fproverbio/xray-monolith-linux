@@ -330,7 +330,7 @@ void game_sv_Single::sls_default()
 
 shared_str game_sv_Single::level_name(const shared_str& server_options) const
 {
-	if (!ai().get_alife())
+	if (!m_alife_simulator)
 		return (inherited::level_name(server_options));
 	return (alife().level_name());
 }
