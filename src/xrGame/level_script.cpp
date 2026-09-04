@@ -12,6 +12,8 @@
 #include "script_game_object.h"
 #include "patrol_path_storage.h"
 #include "xrServer.h"
+#include "xrMessages.h"
+#include "game_graph_space.h"
 #include "client_spawn_manager.h"
 #include "../xrEngine/IGame_Persistent.h"
 #include "game_cl_base.h"
@@ -1903,6 +1905,19 @@ void g_send(NET_Packet& P, bool bReliable = 0, bool bSequential = 1, bool bHighP
 	Level().Send(P, net_flags(bReliable, bSequential, bHighPriority, bSendImmediately));
 }
 
+// Anomaly's _g.script calls this as a bare global to teleport the actor and switch levels
+// immediately, mirroring the M_CHANGE_LEVEL packet CLevelChanger::feel_touch_new sends in silent mode.
+void change_level_now(Fvector pos, u32 level_vertex_id, GameGraph::_GRAPH_ID game_vertex_id, Fvector angle)
+{
+	NET_Packet P;
+	P.w_begin(M_CHANGE_LEVEL);
+	P.w(&game_vertex_id, sizeof(game_vertex_id));
+	P.w(&level_vertex_id, sizeof(level_vertex_id));
+	P.w_vec3(pos);
+	P.w_vec3(angle);
+	Level().Send(P, net_flags(TRUE));
+}
+
 //can spawn entities like bolts, phantoms, ammo, etc. which normally crash when using alife():create()
 void spawn_section(LPCSTR sSection, Fvector3 vPosition, u32 LevelVertexID, u16 ParentID, bool bReturnItem = false)
 {
@@ -2817,5 +2832,9 @@ void CLevel::script_register(lua_State* L)
 		def("update_pda_news_from_uiwindow", &update_pda_news_from_uiwindow),
 
         def("get_actor_alcohol", &GetActorAlcohol)
+	];
+
+	module(L) [
+		def("change_level_now", &change_level_now)
 	];
 }
