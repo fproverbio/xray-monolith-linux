@@ -6,8 +6,20 @@
 #pragma warning(pop)
 
 // can you say "barebone"?
+// Was __declspec(align(16)) - on this port xrCore.h's blanket
+// "#define __declspec(x)" (see its comment - it treats every __declspec
+// use as a harmless-to-discard MSVC annotation like novtable/dllimport)
+// silently swallowed the alignment too, leaving vec_t/aabb_t/ray_t
+// actually unaligned. The SSE path below loads them with _mm_load_ps
+// (aligned movaps), which faults ("illegal storage access") whenever the
+// address isn't 16-byte aligned. alignas(16) fixes the struct/class uses
+// below but GCC silently *ignores* it (with -Wattributes) when it lands
+// between a type-specifier and a declarator, which is exactly how this
+// macro is also used further down for "static const float _MM_ALIGN16
+// arr[4]" - so use the GNU attribute form instead, which applies
+// correctly in both positions.
 #ifndef _MM_ALIGN16
-#	define _MM_ALIGN16		__declspec(align(16))
+#	define _MM_ALIGN16		__attribute__((aligned(16)))
 #endif // _MM_ALIGN16
 
 struct _MM_ALIGN16 vec_t : public Fvector3
