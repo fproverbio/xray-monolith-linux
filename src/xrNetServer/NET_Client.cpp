@@ -104,7 +104,16 @@ HRESULT IPureClient::net_Handler(u32 dwMessageType, PVOID pMessage)
 BOOL IPureClient::Connect(LPCSTR server_name)
 {
 	// Real DirectPlay8 session enumeration/connect dropped - see file
-	// header. No transport exists to connect through.
+	// header. Singleplayer's client-server loopback needs no real
+	// transport and must still succeed here, mirroring
+	// IPureServer::Connect's psNET_direct_connect check in
+	// NET_Server.cpp - only a genuine multiplayer connect attempt fails.
+	if (psNET_direct_connect)
+	{
+		net_Connected = EnmConnectionCompleted;
+		return TRUE;
+	}
+
 	Msg("! IPureClient::Connect: multiplayer networking is not built in "
 		"this port (options '%s' ignored)", server_name ? server_name : "");
 	net_Connected = EnmConnectionFails;
