@@ -238,14 +238,13 @@ sndShot is played, it will play all the sound items with the same alias.
 //----------------------------------------------------------
 HUD_SOUND_COLLECTION_LAYERED::~HUD_SOUND_COLLECTION_LAYERED()
 {
-	xr_vector<HUD_SOUND_COLLECTION>::iterator it = m_sound_items.begin();
-	xr_vector<HUD_SOUND_COLLECTION>::iterator it_e = m_sound_items.end();
-
-	for (; it != it_e; ++it)
-	{
-		it->~HUD_SOUND_COLLECTION();
-	}
-
+	// Was: an explicit "it->~HUD_SOUND_COLLECTION();" loop over every
+	// element, immediately followed by m_sound_items.clear(). xr_vector
+	// is a plain std::vector subclass (_stl_extensions.h), so clear()
+	// already destroys each element exactly once - the manual loop made
+	// every HUD_SOUND_COLLECTION (and its shared_str m_alias) get
+	// destroyed twice, which glibc's allocator reliably catches as a
+	// double free ("double free detected in tcache 2") and aborts on.
 	m_sound_items.clear();
 }
 
