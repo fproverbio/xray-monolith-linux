@@ -262,8 +262,15 @@ void CUIMainIngameWnd::Init()
 		string32 path;
 		xr_sprintf(path, "quick_slot%d", i);
 		CUIXmlInit::InitStatic(uiXml, path, 0, m_quick_slots_icons.back());
-		xr_sprintf(path, "%s:counter", path);
-		UIHelper::CreateStatic(uiXml, path, m_quick_slots_icons.back());
+		// Was xr_sprintf(path, "%s:counter", path) - self-aliased src/dst.
+		// MSVC's secure-CRT vsprintf_s tolerates that UB idiom, but glibc's
+		// vsnprintf (which backs xr_sprintf on Linux, see win32_compat.h)
+		// does not: it expands the overlapping %s to nothing, leaving path
+		// as the bare literal ":counter" - which then fails XML node
+		// lookup. Use a separate buffer instead of reusing path in place.
+		string32 counter_path;
+		xr_sprintf(counter_path, "%s:counter", path);
+		UIHelper::CreateStatic(uiXml, counter_path, m_quick_slots_icons.back());
 	}
 	m_QuickSlotText1 = UIHelper::CreateTextWnd(uiXml, "quick_slot0_text", this);
 	m_QuickSlotText2 = UIHelper::CreateTextWnd(uiXml, "quick_slot1_text", this);
