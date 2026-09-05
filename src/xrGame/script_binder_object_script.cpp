@@ -20,7 +20,16 @@ void CScriptBinderObject::script_register(lua_State* L)
 	module(L)
 	[
 		class_<CScriptBinderObject, bases<>, null_type, CScriptBinderObjectWrapper>("object_binder")
-		.def_readonly("object", &CScriptBinderObject::m_object)
+		// Was def_readonly - Lua-side "class X (object_binder) ... super(object)"
+		// base-init idioms (see e.g. xr_motivator.script) assign straight to
+		// self.object, which luabind's __newindex dispatch rejects on a
+		// readonly property ("property 'object' is read only"), aborting via
+		// xrDebug::fatal during CScriptBinder::reload/net_Spawn. m_object is a
+		// plain public member set once in the constructor and only ever read
+		// elsewhere in C++, so allowing the write is safe. openxray (a working
+		// X-Ray Engine reimplementation, same object_binder/m_object shape)
+		// registers this identical binding as def_readwrite - match it.
+		.def_readwrite("object", &CScriptBinderObject::m_object)
 		.def(constructor<CScriptGameObject*>())
 		.def("reinit", &CScriptBinderObject::reinit, &CScriptBinderObjectWrapper::reinit_static)
 		.def("reload", &CScriptBinderObject::reload, &CScriptBinderObjectWrapper::reload_static)
