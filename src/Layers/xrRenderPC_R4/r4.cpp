@@ -87,8 +87,10 @@ ShaderElement* CRender::rimp_select_sh_static(dxRender_Visual* pVisual, float cd
 			float sec_dist = _sqrt(cdist_sq) - pVisual->vis.sphere.R;
 			id = (sec_dist < ps_ssfx_terrain_quality.x * 10) ? SE_R2_NORMAL_HQ : SE_R2_NORMAL_LQ;
 			
-			// Very low shader variation
-			if (sec_dist > 240)
+			// Very low shader variation (requires the optional SSFX terrain
+			// shader set; without it element 3 has no compiled shader and
+			// silently falls back to stub_default, breaking distant terrain)
+			if (sec_dist > 240 && RImplementation.o.ssfx_terrain)
 				id = 3;
 		}
 		else
