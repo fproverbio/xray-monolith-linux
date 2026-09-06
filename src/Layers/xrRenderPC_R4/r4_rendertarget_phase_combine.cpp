@@ -393,6 +393,24 @@ void CRenderTarget::phase_combine()
 		}
 	}
 
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		// Is the very first combine_1 draw (deferred G-buffer recombination
+		// into rt_Generic_0/1, sampling s_position/s_diffuse/s_material/
+		// s_depth/sky-env/ssao) actually producing real output, or is it
+		// already zero right here (before water/rain/forward even run)?
+		if (RImplementation.o.dx10_msaa)
+		{
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(post-combine_1)");
+			DumpRTPixelStats(rt_Generic_1_r->pSurface, "rt_Generic_1_r(post-combine_1)");
+		}
+		else
+		{
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(post-combine_1)");
+			DumpRTPixelStats(rt_Generic_1->pSurface, "rt_Generic_1(post-combine_1)");
+		}
+	}
+
 	//Copy previous rt
 	if (!RImplementation.o.dx10_msaa)
 		HW.pContext->CopyResource(rt_Generic_temp->pTexture->surface_get(), rt_Generic_0->pTexture->surface_get());
@@ -473,6 +491,15 @@ void CRenderTarget::phase_combine()
 			HW.pContext->CopyResource(rt_Generic_temp->pTexture->surface_get(), rt_Generic_0->pTexture->surface_get());
 		else
 			HW.pContext->CopyResource(rt_Generic_temp->pTexture->surface_get(), rt_Generic_0_r->pTexture->surface_get());
+	}
+
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		// After water/rain, before forward rendering rebinds rt_Generic_0.
+		if (RImplementation.o.dx10_msaa)
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(post-water)");
+		else
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(post-water)");
 	}
 
 	// Forward rendering
