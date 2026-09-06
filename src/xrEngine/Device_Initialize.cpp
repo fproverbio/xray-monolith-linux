@@ -189,6 +189,7 @@ PROTECT_API void CRenderDevice::Initialize()
 
 		m_sdlWnd = SDL_CreateWindow(title, 0, 0, 640, 480, flags);
 		R_ASSERT3(m_sdlWnd, "Unable to create SDL window", SDL_GetError());
+		Msg("! SDL video driver in use: %s", SDL_GetCurrentVideoDriver());
 
 		// Real Vulkan instance + window surface - see
 		// CreateVulkanInstanceAndSurface() above. Deliberately not fatal
