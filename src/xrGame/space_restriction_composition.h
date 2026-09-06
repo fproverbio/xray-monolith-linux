@@ -40,6 +40,7 @@ protected:
 public:
 	IC CSpaceRestrictionComposition(CSpaceRestrictionHolder* space_restriction_holder, shared_str space_restrictors);
 	virtual ~CSpaceRestrictionComposition();
+	virtual void release_dependencies() { m_restrictions.clear(); }
 	virtual void initialize();
 	virtual bool inside(const Fsphere& sphere);
 	IC virtual shared_str name() const;

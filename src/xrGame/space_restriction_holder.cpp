@@ -29,6 +29,18 @@ CSpaceRestrictionHolder::~CSpaceRestrictionHolder()
 
 void CSpaceRestrictionHolder::clear()
 {
+	// First pass: release every composition's intrusive_ptr references to
+	// sibling bridges in this same map (see CSpaceRestrictionBase::release_dependencies()
+	// for why - bridges use a Deferred intrusive_ptr policy, and delete_data()
+	// below deletes every bridge unconditionally in map key order, which is
+	// only safe once no live cross-references into this map remain).
+	{
+		RESTRICTIONS::iterator I = m_restrictions.begin();
+		RESTRICTIONS::iterator E = m_restrictions.end();
+		for (; I != E; ++I)
+			(*I).second->object().release_dependencies();
+	}
+
 	delete_data(m_restrictions);
 	m_default_out_restrictions = "";
 	m_default_in_restrictions = "";
