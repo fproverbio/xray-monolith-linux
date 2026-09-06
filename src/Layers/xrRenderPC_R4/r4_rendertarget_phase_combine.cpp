@@ -77,6 +77,91 @@ void DumpRTPixelStats(ID3DTexture2D* pSrc, LPCSTR label)
 		total_bytes ? (double)sum / total_bytes : 0.0);
 }
 
+// combine_1 gates its output with a stencil test (LESSEQUAL, ref=0x01) that
+// only passes where the scene pass earlier wrote stencil>=1 via a REPLACE op.
+// If that stencil data never actually lands in the depth-stencil buffer on
+// this backend, every pixel fails the test and rt_Generic_0/1 stay all-zero
+// even though the draw itself runs fine. This reads back just the stencil
+// byte (D24_UNORM_S8_UINT: high byte of each 32-bit texel) to check directly.
+void DumpStencilStats(ID3DDepthStencilView* pView, LPCSTR label)
+{
+	if (!pView)
+	{
+		Msg("! RT_DEBUG: %s - NULL view", label);
+		return;
+	}
+
+	ID3D11Resource* pRes = NULL;
+	pView->GetResource(&pRes);
+	if (!pRes)
+	{
+		Msg("! RT_DEBUG: %s - GetResource failed", label);
+		return;
+	}
+	ID3DTexture2D* pSrc = (ID3DTexture2D*)pRes;
+
+	D3D_TEXTURE2D_DESC desc;
+	pSrc->GetDesc(&desc);
+
+	D3D_TEXTURE2D_DESC stagingDesc = desc;
+	stagingDesc.Usage = D3D_USAGE_STAGING;
+	stagingDesc.BindFlags = 0;
+	stagingDesc.CPUAccessFlags = D3D_CPU_ACCESS_READ;
+	stagingDesc.MiscFlags = 0;
+
+	ID3DTexture2D* pStaging = NULL;
+	HRESULT hr = HW.pDevice->CreateTexture2D(&stagingDesc, NULL, &pStaging);
+	if (FAILED(hr) || !pStaging)
+	{
+		Msg("! RT_DEBUG: %s - staging texture creation failed (0x%08x)", label, hr);
+		pRes->Release();
+		return;
+	}
+
+	HW.pContext->CopyResource(pStaging, pSrc);
+
+	D3D_MAPPED_TEXTURE2D mapped;
+	hr = HW.pContext->Map(pStaging, 0, D3D_MAP_READ, 0, &mapped);
+	if (FAILED(hr))
+	{
+		Msg("! RT_DEBUG: %s - Map failed (0x%08x)", label, hr);
+		pStaging->Release();
+		pRes->Release();
+		return;
+	}
+
+	u32 nonzero_stencil = 0;
+	u32 total_pixels = 0;
+	u8 smin = 255, smax = 0;
+	u64 sum = 0;
+
+	u8* pRow = (u8*)mapped.pData;
+	for (u32 y = 0; y < desc.Height; ++y)
+	{
+		u8* px = pRow;
+		for (u32 x = 0; x < desc.Width; ++x)
+		{
+			u8 stencil = px[3]; // D24_UNORM_S8_UINT: byte3 = stencil
+			if (stencil != 0) nonzero_stencil++;
+			sum += stencil;
+			if (stencil < smin) smin = stencil;
+			if (stencil > smax) smax = stencil;
+			total_pixels++;
+			px += 4;
+		}
+		pRow += mapped.RowPitch;
+	}
+
+	HW.pContext->Unmap(pStaging, 0);
+	pStaging->Release();
+	pRes->Release();
+
+	Msg("! RT_DEBUG: %s [%ux%u fmt=%d] nonzero_stencil=%u/%u min=%u max=%u avg=%.4f",
+		label, desc.Width, desc.Height, (int)desc.Format,
+		nonzero_stencil, total_pixels, smin, smax,
+		total_pixels ? (double)sum / total_pixels : 0.0);
+}
+
 void CRenderTarget::DoAsyncScreenshot()
 {
 	//	Igor: screenshot will not have postprocess applied.
@@ -116,6 +201,20 @@ void CRenderTarget::phase_combine()
 
 	//	TODO: DX10: Remove half poxel offset
 	bool _menu_pp = g_pGamePersistent ? g_pGamePersistent->OnRenderPPUI_query() : false;
+
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		// _menu_pp=0 confirmed (combine_1 gate is open). Now check whether the
+		// combine_1 stencil test (LESSEQUAL, ref=0x01 - "stencil should be >=1")
+		// actually has real data to read: the scene pass writes stencil=1
+		// wherever real geometry was drawn. If this reads all-zero, that test
+		// rejects every pixel, exactly explaining rt_Generic_0/1 being 100%
+		// zero after combine_1 even though the draw call runs normally.
+		if (!RImplementation.o.dx10_msaa)
+			DumpStencilStats(HW.pBaseZB, "stencil(pre-combine_1)");
+		else
+			DumpStencilStats(rt_MSAADepth->pZRT, "stencil(pre-combine_1)");
+	}
 
 	u32 Offset = 0;
 	Fvector2 p0, p1;
