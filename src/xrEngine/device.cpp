@@ -728,6 +728,14 @@ void CRenderDevice::Run()
 	// it now (replaces SetForegroundWindow(m_hWnd)).
 	SDL_ShowWindow(m_sdlWnd);
 	SDL_RaiseWindow(m_sdlWnd);
+	// Some Wayland compositors (e.g. niri) never deliver an initial
+	// FOCUS_GAINED SDL_WINDOWEVENT to a freshly-mapped window, so
+	// b_is_Active would otherwise never become true and the render/
+	// present call inside message_loop() would never run - seed
+	// activation directly instead of waiting on an event that may never
+	// arrive. A genuine later FOCUS_LOST/FOCUS_GAINED from
+	// Device_wndproc.cpp still works normally on top of this.
+	OnWindowActivate(true, false);
 	message_loop();
 	seqAppEnd.Process(rp_AppEnd);
 	// Stop Balance-Thread
