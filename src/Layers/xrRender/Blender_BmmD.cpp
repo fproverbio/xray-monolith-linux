@@ -362,7 +362,21 @@ void CBlender_BmmD::Compile(CBlender_Compile& C)
 
 		C.SH->flags.isLandscape = TRUE;
 
-		uber_deffer(C, false, "base", "terrain_low", false, oT2_Name[0] ? oT2_Name : 0, true, z_prepass);
+#if RENDER == R_R4
+		if (RImplementation.o.ssfx_terrain)
+		{
+			uber_deffer(C, false, "base", "terrain_low", false, oT2_Name[0] ? oT2_Name : 0, true, z_prepass);
+		}
+		else
+#endif
+		{
+			// Vanilla: without the optional SSFX terrain shader set,
+			// rimp_select_sh_static() never selects this element (id stays
+			// SE_R2_NORMAL_LQ), but Compile() still builds all 4 elements
+			// unconditionally at load time — fall back to the same shader
+			// as SE_R2_NORMAL_LQ instead of requesting the missing SSFX one.
+			uber_deffer(C, false, "base", "impl", false, oT2_Name[0] ? oT2_Name : 0, true, z_prepass);
+		}
 		if (z_prepass) C.RS.SetRS(D3DRS_ZFUNC, D3DCMP_EQUAL);
 
 		C.r_dx10Sampler("smp_linear");
