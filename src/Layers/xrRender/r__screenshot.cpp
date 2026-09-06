@@ -167,6 +167,13 @@ void CRender::ScreenshotImpl(ScreenshotMode mode, LPCSTR name, CMemoryWriter* me
 		break;
 	case IRender_interface::SM_NORMAL:
 		{
+			// The real F12 screenshot key (Level_input.cpp -> CRenderDevice::Screenshot())
+			// takes this synchronous path, NOT ScreenshotAsyncBegin()/m_bMakeAsyncSS (that
+			// flag is only ever set by screenshot_manager.cpp, which is excluded from this
+			// SP-only Linux build). Piggyback the RT pixel-readback diagnostic here instead,
+			// by setting the same flag phase_scene_end()/phase_combine() already check.
+			RImplementation.m_bMakeAsyncSS = true;
+
 			string64 t_stemp;
 			string_path buf;
 			xr_sprintf(buf, sizeof(buf), "ss_%s_%s_(%s).%s", Core.UserName, timestamp(t_stemp),
