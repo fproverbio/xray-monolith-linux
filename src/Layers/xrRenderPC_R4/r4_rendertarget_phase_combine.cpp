@@ -6,6 +6,77 @@
 
 #define STENCIL_CULL 0
 
+// One-shot diagnostic: read back a render target's actual pixel bytes via a
+// staging texture and report whether it holds real non-zero data or is still
+// at its cleared state. Piggybacks on the existing F12 async-screenshot flag
+// (RImplementation.m_bMakeAsyncSS) so it fires on demand without a new keybind.
+void DumpRTPixelStats(ID3DTexture2D* pSrc, LPCSTR label)
+{
+	if (!pSrc)
+	{
+		Msg("! RT_DEBUG: %s - NULL surface", label);
+		return;
+	}
+
+	D3D_TEXTURE2D_DESC desc;
+	pSrc->GetDesc(&desc);
+
+	D3D_TEXTURE2D_DESC stagingDesc = desc;
+	stagingDesc.Usage = D3D_USAGE_STAGING;
+	stagingDesc.BindFlags = 0;
+	stagingDesc.CPUAccessFlags = D3D_CPU_ACCESS_READ;
+	stagingDesc.MiscFlags = 0;
+
+	ID3DTexture2D* pStaging = NULL;
+	HRESULT hr = HW.pDevice->CreateTexture2D(&stagingDesc, NULL, &pStaging);
+	if (FAILED(hr) || !pStaging)
+	{
+		Msg("! RT_DEBUG: %s - staging texture creation failed (0x%08x)", label, hr);
+		return;
+	}
+
+	HW.pContext->CopyResource(pStaging, pSrc);
+
+	D3D_MAPPED_TEXTURE2D mapped;
+	hr = HW.pContext->Map(pStaging, 0, D3D_MAP_READ, 0, &mapped);
+	if (FAILED(hr))
+	{
+		Msg("! RT_DEBUG: %s - Map failed (0x%08x)", label, hr);
+		pStaging->Release();
+		return;
+	}
+
+	u32 nonzero_bytes = 0;
+	u32 total_bytes = 0;
+	u8 sample_min = 255, sample_max = 0;
+	u64 sum = 0;
+
+	u8* pRow = (u8*)mapped.pData;
+	u32 row_bytes = desc.Width * 4; // scan only the meaningful bytes per row, ignore pitch padding
+	if (row_bytes > mapped.RowPitch) row_bytes = mapped.RowPitch;
+	for (u32 y = 0; y < desc.Height; ++y)
+	{
+		for (u32 x = 0; x < row_bytes; ++x)
+		{
+			u8 b = pRow[x];
+			if (b != 0) nonzero_bytes++;
+			sum += b;
+			if (b < sample_min) sample_min = b;
+			if (b > sample_max) sample_max = b;
+			total_bytes++;
+		}
+		pRow += mapped.RowPitch;
+	}
+
+	HW.pContext->Unmap(pStaging, 0);
+	pStaging->Release();
+
+	Msg("! RT_DEBUG: %s [%ux%u fmt=%d] nonzero_bytes=%u/%u min=%u max=%u avg=%.4f",
+		label, desc.Width, desc.Height, (int)desc.Format,
+		nonzero_bytes, total_bytes, sample_min, sample_max,
+		total_bytes ? (double)sum / total_bytes : 0.0);
+}
+
 void CRenderTarget::DoAsyncScreenshot()
 {
 	//	Igor: screenshot will not have postprocess applied.
@@ -713,6 +784,16 @@ void CRenderTarget::phase_combine()
 		RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 	}
 	RCache.set_Stencil(FALSE);
+
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		DumpRTPixelStats(rt_Position->pSurface, "rt_Position(post-scene)");
+		DumpRTPixelStats(rt_Accumulator->pSurface, "rt_Accumulator(post-scene)");
+		if (RImplementation.o.dx10_msaa)
+			DumpRTPixelStats(rt_Generic->pSurface, "rt_Generic(post-combine)");
+		else
+			DumpRTPixelStats(rt_Color->pSurface, "rt_Color(post-combine)");
+	}
 
 	if (RImplementation.o.dx11_hdr10) {
 		// TODO: we should be able to avoid a copy if both are enabled

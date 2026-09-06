@@ -68,11 +68,21 @@ void CRenderTarget::disable_aniso()
 }
 
 // end
+void DumpRTPixelStats(ID3DTexture2D* pSrc, LPCSTR label);
+
 void CRenderTarget::phase_scene_end()
 {
 	disable_aniso();
 
 	RCache.set_RT(NULL, 3); // Always reset the 4th RT ( Motion Vectors )
+
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		DumpRTPixelStats(rt_Position->pSurface, "rt_Position(scene_end)");
+		DumpRTPixelStats(rt_Color->pSurface, "rt_Color(scene_end)");
+		if (RImplementation.o.albedo_wo)
+			DumpRTPixelStats(rt_Accumulator->pSurface, "rt_Accumulator(scene_end)");
+	}
 
 	if (!RImplementation.o.albedo_wo) return;
 
