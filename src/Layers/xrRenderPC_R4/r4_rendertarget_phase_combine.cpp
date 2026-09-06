@@ -253,6 +253,14 @@ void CRenderTarget::phase_combine()
 		m_blur_scale.set(scale, -scale).div(12.f);
 	}*/
 
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		// combine_1 (the deferred-lighting recombine draw into rt_Generic_0/1)
+		// is entirely skipped whenever _menu_pp is true - confirm it's really
+		// false during normal gameplay, not stuck true from the main menu.
+		Msg("! RT_DEBUG: phase_combine _menu_pp=%d", _menu_pp ? 1 : 0);
+	}
+
 	// Draw full-screen quad textured with our scene image
 	if (!_menu_pp)
 	{
