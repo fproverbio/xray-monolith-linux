@@ -495,6 +495,17 @@ void CRenderTarget::phase_combine()
 		if (g_pGamePersistent) g_pGamePersistent->OnRenderPPUI_main(); // PP-UI
 	}
 
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		// Bisecting the pre-combine_2 zeroing of rt_Generic_0: is it already
+		// zero right after forward rendering, or does something later
+		// (phase_bloom, distortion, sunshafts, blur, dof, lut...) zero it?
+		if (RImplementation.o.dx10_msaa)
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(post-forward)");
+		else
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(post-forward)");
+	}
+
 	//	Igor: for volumetric lights
 	//	combine light volume here
 	if (RImplementation.o.ssfx_volumetric)
@@ -522,6 +533,15 @@ void CRenderTarget::phase_combine()
 
 	// for msaa we need a resolved color buffer - Holger
 	phase_bloom(); // HDR RT invalidated here
+
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		// Is rt_Generic_0 already zero right after phase_bloom() returns?
+		if (RImplementation.o.dx10_msaa)
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(post-bloom)");
+		else
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(post-bloom)");
+	}
 
 	//RImplementation.rmNormal();
 	//u_setrt(rt_Generic_1,0,0,HW.pBaseZB);
@@ -592,9 +612,26 @@ void CRenderTarget::phase_combine()
 		phase_3DSSReticle(); // Redotix99: for 3D Shader Based Scopes
 	}
 
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		// Checkpoint before distortion filter runs.
+		if (RImplementation.o.dx10_msaa)
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(pre-distort)");
+		else
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(pre-distort)");
+	}
+
 	//Compute blur textures
 	if (!Device.m_SecondViewport.IsSVPFrame()) // Temp fix for blur buffer and SVP
 		phase_blur();
+
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		if (RImplementation.o.dx10_msaa)
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(post-blur)");
+		else
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(post-blur)");
+	}
 
 	//Compute bloom (new)
 	if (RImplementation.o.ssfx_bloom)
@@ -608,13 +645,37 @@ void CRenderTarget::phase_combine()
 	{
 		phase_pp_bloom();
 	}
-	
+
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		if (RImplementation.o.dx10_msaa)
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(post-ppbloom)");
+		else
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(post-ppbloom)");
+	}
+
 	if (ps_r2_ls_flags.test(R2FLAG_DOF))
-	{	
+	{
 		phase_dof();
 	}
 
-	phase_lut();	
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		if (RImplementation.o.dx10_msaa)
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(post-dof)");
+		else
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(post-dof)");
+	}
+
+	phase_lut();
+
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		if (RImplementation.o.dx10_msaa)
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(post-lut)");
+		else
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(post-lut)");
+	}
 
 	if(ps_r2_mask_control.x > 0)
 	{
