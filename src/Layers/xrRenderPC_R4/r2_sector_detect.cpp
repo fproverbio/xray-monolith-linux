@@ -55,12 +55,30 @@ IRender_Sector* CRender::detectSector(const Fvector& P, Fvector& dir)
 	// Geometry model
 	int id2 = -1;
 	float range2 = range1;
-	Sectors_xrc.ray_query(g_pGameLevel->ObjectSpace.GetStaticModel(), P, dir, range2);
-	if (Sectors_xrc.r_count())
+	CDB::MODEL* staticModel = g_pGameLevel->ObjectSpace.GetStaticModel();
+	if (staticModel)
 	{
-		CDB::RESULT* RP2 = Sectors_xrc.r_begin();
-		id2 = RP2->id;
-		range2 = RP2->range;
+		Sectors_xrc.ray_query(staticModel, P, dir, range2);
+		if (Sectors_xrc.r_count())
+		{
+			CDB::RESULT* RP2 = Sectors_xrc.r_begin();
+			id2 = RP2->id;
+			range2 = RP2->range;
+		}
+	}
+
+	// One-shot diagnostic: dump the exact state that decides whether real
+	// scene geometry ever gets drawn (pLastSector never becomes non-null,
+	// so render_main() permanently takes its HUD-only branch, if neither
+	// query below ever finds a hit). Logged once per level load so it can't
+	// spam the log across a play session.
+	if (!m_sector_debug_logged)
+	{
+		m_sector_debug_logged = true;
+		Msg("! SECTOR_DEBUG: rmPortals=%s staticModel=%s id1=%d id2=%d P=(%.2f,%.2f,%.2f) dir=(%.2f,%.2f,%.2f)",
+			rmPortals ? "present" : "NULL",
+			staticModel ? "present" : "NULL",
+			id1, id2, P.x, P.y, P.z, dir.x, dir.y, dir.z);
 	}
 
 	// Select ID

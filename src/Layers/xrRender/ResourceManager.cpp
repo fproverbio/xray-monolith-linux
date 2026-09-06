@@ -339,6 +339,12 @@ Shader* CResourceManager::Create(LPCSTR s_shader, LPCSTR s_textures, LPCSTR s_co
 				return pShader;
 			else
 			{
+				// Was previously a silent fallback - real level/environment
+				// shaders that fail to resolve here get replaced by a
+				// passthrough stub with no diagnostic trace, which can make
+				// a shader-load failure look identical to a working scene
+				// that's just not being drawn. Log every occurrence.
+				Msg("! WARNING: shader '%s' failed to create, falling back to stub_default", s_shader);
 				if (_lua_HasShader("stub_default"))
 					return _lua_Create("stub_default", s_textures);
 				else

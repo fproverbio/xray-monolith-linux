@@ -136,6 +136,7 @@ void CRender::level_Unload()
 	// 1.
 	xr_delete(rmPortals);
 	pLastSector = 0;
+	m_sector_debug_logged = false;
 	vLastCameraPos.set(0, 0, 0);
 	// 2.
 	for (I = 0; I < Sectors.size(); I++) xr_delete(Sectors[I]);
@@ -377,6 +378,7 @@ void CRender::LoadSectors(IReader* fs)
 	//		Sectors[d]->DebugDump	();
 
 	pLastSector = 0;
+	m_sector_debug_logged = false;
 }
 
 void CRender::LoadSWIs(CStreamReader* base_fs)
