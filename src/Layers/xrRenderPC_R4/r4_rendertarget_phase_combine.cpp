@@ -677,6 +677,22 @@ void CRenderTarget::phase_combine()
 	RCache.set_CullMode(CULL_NONE);
 	RCache.set_Stencil(FALSE);
 
+	if (RImplementation.m_bMakeAsyncSS)
+	{
+		// Input to the combine_2 draw below ("s_image" sampler) - if this is
+		// already zero, the corruption happened upstream (SSR/water/rain/
+		// forward/volumetrics/bloom/distortion), not in combine_2 itself.
+		if (RImplementation.o.dx10_msaa)
+		{
+			DumpRTPixelStats(rt_Generic_0_r->pSurface, "rt_Generic_0_r(pre-combine_2)");
+			DumpRTPixelStats(rt_Generic_1_r->pSurface, "rt_Generic_1_r(pre-combine_2)");
+		}
+		else
+		{
+			DumpRTPixelStats(rt_Generic_0->pSurface, "rt_Generic_0(pre-combine_2)");
+			DumpRTPixelStats(rt_Generic_1->pSurface, "rt_Generic_1(pre-combine_2)");
+		}
+	}
 
 	if (1)
 	{
