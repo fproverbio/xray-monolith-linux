@@ -150,6 +150,9 @@ void LuaError(lua_State* L)
 void Script::vfExportToLua(CLuaVirtualMachine* tpLuaVM)
 {
     ::luabind::open(tpLuaVM);
+    // See script_engine.cpp's matching call: gamedata scripts rely on the
+    // legacy super(...) idiom, which luabind hard-errors on unless disabled.
+    ::luabind::disable_super_deprecation();
     ::luabind::set_error_callback(LuaError);
 
     lua_atpanic(tpLuaVM, Script::LuaPanic);

@@ -121,6 +121,17 @@ namespace xr_imgui
             }
         }
 
+        // dxImGuiRender::OnDeviceCreate() is a no-op stub (no D3DCompile
+        // available for the DX11 debug-UI shaders on this port yet - see
+        // dxImGuiRender.cpp), so nothing ever uploads a font texture, which
+        // is normally what triggers ImFontAtlas::Build(). Without a build,
+        // every ImFont stays in its just-constructed state (ContainerAtlas
+        // == null, no glyphs), and ImGui::NewFrame() null-derefs it on the
+        // very first frame via SetCurrentFont(GetDefaultFont()). Build() is
+        // pure CPU-side atlas packing - it doesn't touch the renderer - so
+        // it's safe/correct to force it here regardless of backend status.
+        io.Fonts->Build();
+
         Device.seqFrame.Add(this, -5);
         Device.seqRender.Add(this, -5);
     }
